@@ -1,0 +1,13 @@
+include_directories(../../include)
+set(LIB_SRCS FFT.cpp FacVec.cpp GF2.cpp GF2E.cpp GF2EX.cpp GF2EXFactoring.cpp GF2X.cpp GF2X1.cpp
+GF2XFactoring.cpp GF2XVec.cpp HNF.cpp ctools.cpp LLL.cpp LLL_FP.cpp LLL_QP.cpp
+LLL_RR.cpp LLL_XD.cpp RR.cpp WordVector.cpp ZZ.cpp ZZVec.cpp ZZX.cpp ZZX1.cpp
+ZZXCharPoly.cpp ZZXFactoring.cpp ZZ_p.cpp ZZ_pE.cpp ZZ_pEX.cpp ZZ_pEXFactoring.cpp ZZ_pX.cpp ZZ_pX1.cpp ZZ_pXCharPoly.cpp
+ZZ_pXFactoring.cpp fileio.cpp lip.cpp lzz_p.cpp lzz_pE.cpp lzz_pEX.cpp
+lzz_pEXFactoring.cpp lzz_pX.cpp lzz_pX1.cpp lzz_pXCharPoly.cpp lzz_pXFactoring.cpp mat_GF2.cpp mat_GF2E.cpp
+mat_RR.cpp mat_ZZ.cpp mat_ZZ_p.cpp mat_ZZ_pE.cpp mat_lzz_p.cpp mat_lzz_pE.cpp
+mat_poly_ZZ.cpp mat_poly_ZZ_p.cpp mat_poly_lzz_p.cpp
+quad_float.cpp tools.cpp vec_GF2.cpp vec_GF2E.cpp vec_RR.cpp
+vec_ZZ.cpp vec_ZZ_p.cpp vec_ZZ_pE.cpp vec_lzz_p.cpp vec_lzz_pE.cpp xdouble.cpp
+G_LLL_FP.cpp G_LLL_QP.cpp G_LLL_XD.cpp G_LLL_RR.cpp thread.cpp BasicThreadPool.cpp GetTime.cpp GetPID.cpp)
+add_library(ntl STATIC ${LIB_SRCS})
