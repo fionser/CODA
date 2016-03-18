@@ -1,10 +1,9 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/core/modules")
+include(ExternalProject)
 find_package(GMP)
 if(NOT GMP_FOUND)
-include(ExternalProject)
-set(GMP_PATH ${CMAKE_SOURCE_DIR}/core/tmp/gmp)
+set(GMP_PATH ${CMAKE_SOURCE_DIR}/tmp/gmp)
 ExternalProject_Add(GMP
-    PREFIX ${GMP_PATH}
     TMP_DIR ${GMP_PATH}/tmp
     STAMP_DIR ${GMP_PATH}/stmp
     DOWNLOAD_DIR ${GMP_PATH}/download
@@ -19,10 +18,8 @@ endif(NOT GMP_FOUND)
 
 find_package(NTL 9.6.0)
 if (NOT NTL_FOUND)
-include(ExternalProject)
-set(NTL_PATH ${CMAKE_SOURCE_DIR}/core/tmp/ntl)
+set(NTL_PATH ${CMAKE_SOURCE_DIR}/tmp/ntl)
 ExternalProject_Add(NTL
-    PREFIX ${NTL_PATH}
     TMP_DIR ${NTL_PATH}/tmp
     STAMP_DIR ${NTL_PATH}/stmp
     DOWNLOAD_DIR ${NTL_PATH}/download
