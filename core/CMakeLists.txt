@@ -22,7 +22,7 @@ ExternalProject_Add(NTL
     DOWNLOAD_DIR ${NTL_PATH}/download
     URL http://www.shoup.net/ntl/ntl-9.6.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
-    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure -NTL_GMP_LIP=on
+    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure NTL_GMP_LIP=on
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND
