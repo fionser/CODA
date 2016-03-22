@@ -1,4 +1,4 @@
-MakeCache.txt
+CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Makefile
@@ -34,3 +34,5 @@ install_manifest.txt
 *.app
 .DS_Store
 CMakeCache.txt
+tmp
+
