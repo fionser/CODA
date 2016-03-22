@@ -629,7 +629,7 @@ template bool intVecCRT(vec_ZZ&, const ZZ&, const Vec<zz_p>&, long);
 
 // MinGW hack
 #ifndef lrand48
-#if defined(__MINGW32__) || defined(WIN32)
+#if defined(__MINGW32__) || defined(WIN32) || defined(__CYGWIN__)
 #define drand48() (((double)rand()) / RAND_MAX)
 #define lrand48() rand()
 #endif

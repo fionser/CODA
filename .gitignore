@@ -33,5 +33,6 @@ install_manifest.txt
 *.out
 *.app
 .DS_Store
+CMakeCache.txt
 tmp
 
