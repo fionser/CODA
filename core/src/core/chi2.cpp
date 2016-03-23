@@ -282,7 +282,7 @@ bool evaluate(const std::vector<std::string> &inputDirs,
     if (!_evaluate(genotype, phenotype, rets))
         return false;
 
-    bool ok = core::dumpCiphers(rets, util::concatenate(outputDir, "FILE_1"));
+    bool ok = core::dumpCiphers(rets, util::concatenate(outputDir, "FILE_result"));
     if (ok) {
         auto fd = util::createDoneFile(outputDir);
         fwrite("DONE\n", 5UL, 1UL, fd);

@@ -70,6 +70,7 @@ sk_ptr loadSK(bool *ok, const context_ptr &context, const std::string &skFile) {
 
     std::fstream in(skFile, std::ios::binary | std::ios::in);
     if (!in.is_open()) {
+        L_WARN(global::_console, "Can not open {0}", skFile);
         if (!ok) *ok = false;
         return nullptr;
     }
@@ -237,6 +238,8 @@ bool evaluate(const std::string &sessionDirPath,
     std::vector<std::string> userDirs;
     for (auto dir : dirs) {
         if (dir.compare(".") == 0 || dir.compare("..") == 0)
+            continue;
+        if (dir.compare("Meta") == 0 || dir.compare("result") == 0)
             continue;
         userDirs.push_back(util::concatenate(sessionDirPath, dir));
     }
