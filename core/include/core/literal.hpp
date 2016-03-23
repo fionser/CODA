@@ -4,8 +4,10 @@
 #define OS_WIN 1
 #include <windows.h>
 #endif
+
 #include <string>
-namespace coda {
+namespace literal {
+extern std::string separator;
 long stol(const std::string &str, std::size_t *pos = 0, int base = 0);
-} // namespace coda
+} // namespace literal
 #endif

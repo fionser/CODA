@@ -1,6 +1,5 @@
 #include "core/protocol.hpp"
 #include "HElib/FHE.h"
-#include "HElib/NumbTh.h"
 #include "HElib/EncryptedArray.h"
 namespace protocol {
 bool genKeypair(core::Protocol protocol,
@@ -10,13 +9,13 @@ bool genKeypair(core::Protocol protocol,
     core::FHEArg args;
     switch (protocol) {
     case core::Protocol::PROT_CI2:
-	args = chi2::fheArgs;
-	break;
+        args = chi2::_fheArgs;
+        break;
     case core::Protocol::PROT_CON:
-	args = contingency::fheArgs;
-	break;
+        args = contingency::_fheArgs;
+        break;
     default:
-	return false;
+        return false;
     }
 
     FHEcontext context(args.m, args.p, args.r);

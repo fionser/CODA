@@ -16,8 +16,13 @@ std::string getDirPath(const std::string &path);
 
 std::string concatenate(const std::string &path, const std::string &file);
 
-bool createDoneFile(const std::string &path);
+FILE *createDoneFile(const std::string &path);
 
-std::vector<std::string> listDir(const std::string &dir);
+enum class flag_t {
+    FILE_ONLY,
+    DIR_ONLY
+};
+
+std::vector<std::string> listDir(const std::string &dir, flag_t f);
 } // namespace util
 #endif // CORE_FILE_UTILITY_H

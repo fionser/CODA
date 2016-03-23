@@ -1,17 +1,31 @@
 #include "core/literal.hpp"
-namespace coda {
+namespace literal {
 #ifdef OS_WIN
+#include <stack>
+#incude <locale>
 long stol(const std::string &str, std::size_t *pos, int base) {
-	long ret = 0;
 	size_t len = str.size();
-	for (size_t i = 0; i < len; i++) {
-		ret = ret * 10 + long(str.c_str()[len - i] - '0');
+	const char *cstr = str.c_str();
+	std::stack<char> st;
+	for (size_t i = 0; i < len && !std::issapce(cstr[i]); i++)
+	    st.push(cstr[i]);
+
+	if (pos)
+	    *pos = st.size();
+	long ret = 0;
+	while (!st.empty()) {
+	    ret = ret * base + (long)(st.top() - '0');
+	    st.pop();
 	}
+
 	return ret;
 }
+std::string separator = "\\";
 #else
 long stol(const std::string &str, std::size_t *pos, int base) {
     return std::stol(str, pos, base);
 }
-#endif
-} // namespace coda
+
+std::string separator = "/";
+#endif // OS_WIN
+} // namespace literal
