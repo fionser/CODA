@@ -64,26 +64,26 @@ pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile) {
 
 sk_ptr loadSK(bool *ok, const context_ptr &context, const std::string &skFile) {
     if (context == nullptr) {
-        if (!ok) *ok = false;
+        if (ok) *ok = false;
         return nullptr;
     }
 
     std::fstream in(skFile, std::ios::binary | std::ios::in);
     if (!in.is_open()) {
         L_WARN(global::_console, "Can not open {0}", skFile);
-        if (!ok) *ok = false;
+        if (ok) *ok = false;
         return nullptr;
     }
 
     auto sk = std::make_shared<FHESecKey>(*context);
     if (sk == nullptr) {
-        if (!ok) *ok = false;
+        if (ok) *ok = false;
         return nullptr;
     }
 
     in >> *sk;
     in.close();
-    if (!ok) *ok = true;
+    if (ok) *ok = true;
     return sk;
 }
 
