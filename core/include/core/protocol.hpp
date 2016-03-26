@@ -14,7 +14,7 @@ extern std::string _genotype_data;
 extern std::string _phenotype_data;
 
 bool encrypt(const std::string &inputFilePath,
-             const std::string &outputFilePath,
+             const std::string &outputDirPath,
              core::pk_ptr pk);
 
 bool decrypt(const std::string &inputFilePath,
@@ -32,7 +32,7 @@ namespace contingency {
 extern const core::FHEArg _fheArgs;
 
 bool encrypt(const std::string &inputFilePath,
-             const std::string &outputFilePath,
+             const std::string &outputDirPath,
              core::pk_ptr pk);
 
 bool decrypt(const std::string &inputFilePath,

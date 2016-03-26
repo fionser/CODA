@@ -94,7 +94,7 @@ static NTL::ZZX randomPoly(long n) {
 }
 
 static bool encryptPhenotype(std::fstream &fin,
-                             const std::string &outputFilePath,
+                             const std::string &outputDirPath,
                              core::pk_ptr pk) {
     const long n = _fheArgs.m >> 1;
     std::vector<long> coeffs(n, 0);
@@ -116,17 +116,17 @@ static bool encryptPhenotype(std::fstream &fin,
     auto poly = backwardPack(coeffs);
     Ctxt cipher(*pk);
     pk->Encrypt(cipher, poly);
-    std::fstream fout(util::concatenate(outputFilePath, "FILE_1"),
+    std::fstream fout(util::concatenate(outputDirPath, "FILE_1"),
 	 	      std::ios::binary | std::ios::out);
     fout << cipher;
     fout.close();
 
-    createDoneFile(outputFilePath, _phenotype_data);
+    createDoneFile(outputDirPath, _phenotype_data);
     return true;
 }
 
 static bool encryptGenotype(std::fstream &fin,
-                            const std::string &outputFilePath,
+                            const std::string &outputDirPath,
                             core::pk_ptr pk) {
     const long n = _fheArgs.m >> 1;
     std::vector<long> coeff(n);
@@ -148,17 +148,17 @@ static bool encryptGenotype(std::fstream &fin,
     auto poly = forwardPack(coeff);
     Ctxt cipher(*pk);
     pk->Encrypt(cipher, poly);
-    std::fstream fout(util::concatenate(outputFilePath, "FILE_1"),
+    std::fstream fout(util::concatenate(outputDirPath, "FILE_1"),
 		      std::ios::binary | std::ios::out);
     fout << cipher;
     fout.close();
 
-    createDoneFile(outputFilePath, _genotype_data);
+    createDoneFile(outputDirPath, _genotype_data);
     return true;
 }
 
 bool encrypt(const std::string &inputFilePath,
-             const std::string &outputFilePath,
+             const std::string &outputDirPath,
              core::pk_ptr pk) {
     std::fstream fin(inputFilePath);
     if (!fin.is_open()) {
@@ -168,7 +168,7 @@ bool encrypt(const std::string &inputFilePath,
 
     std::string line;
     std::getline(fin, line);
-    if (line.find("#protocol PROT_") == std::string::npos) {
+    if (line.find("#protocol PROT_CI2") == std::string::npos) {
         L_ERROR(global::_console,
                 "Invalid file format {0}: no valid protocol type was set",
                 inputFilePath);
@@ -177,9 +177,9 @@ bool encrypt(const std::string &inputFilePath,
 
     std::getline(fin, line);
     if (line.find("#type phenotype") != std::string::npos)
-        return encryptPhenotype(fin, outputFilePath, pk);
+        return encryptPhenotype(fin, outputDirPath, pk);
     else if (line.find("#type genotype") != std::string::npos)
-        return encryptGenotype(fin, outputFilePath, pk);
+        return encryptGenotype(fin, outputDirPath, pk);
     return false;
 }
 

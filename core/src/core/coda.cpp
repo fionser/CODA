@@ -27,20 +27,20 @@ std::istream& operator>>(std::istream &in, FHEArg &args)
 std::string toString(Protocol t) {
     switch (t) {
     case Protocol::PROT_CI2:
-	return "PROT_CI2";
+        return "PROT_CI2";
     case Protocol::PROT_CON:
-	return "PROT_CON";
+        return "PROT_CON";
     default:
-	return "PROT_UKN";
+        return "PROT_UKN";
     }
 }
 
 Protocol getProtocol(std::string description) {
     if (description.compare("PROT_CI2") == 0)
-	return Protocol::PROT_CI2;
+        return Protocol::PROT_CI2;
 
     if (description.compare("PROT_CON") == 0)
-	return Protocol::PROT_CON;
+        return Protocol::PROT_CON;
 
     return Protocol::PROT_UKN;
 }

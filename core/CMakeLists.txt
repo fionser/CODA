@@ -32,7 +32,7 @@ add_subdirectory(src/HElib lib/fhe)
 add_subdirectory(src/doctopt.cpp lib/doctopt)
 add_subdirectory(src/core lib/core-imp)
 include_directories(include/)
-add_executable(core core.cpp)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lntl -lgmp")
+add_executable(core core.cpp)
 target_link_libraries(core docopt core-imp fhe)
