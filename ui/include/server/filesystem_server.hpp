@@ -7,7 +7,7 @@
 #include <vector>
 #include <dirent.h>
 #include <sys/stat.h>
-#include "filesystem_base.hpp"
+#include "common/filesystem_base.hpp"
 
 class FileSystemServer : public FileSystemBase {
     public:
