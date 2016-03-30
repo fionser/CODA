@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
-#include "filesystem_base.hpp"
+#include "common/filesystem_base.hpp"
 
 class FileSystemClient : public FileSystemBase {
     public:
