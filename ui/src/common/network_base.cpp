@@ -1,6 +1,6 @@
 #include "network_base.hpp"
 
-const int BUFF_LEN  = 65536;
+const int BUFF_LEN  = 128;
 
 int NetworkBase::send_msg(int socket, const std::string msg)
 {
@@ -95,20 +95,36 @@ int NetworkBase::snd_file(int socket, const std::string local_file_path, const s
     int sum_size = 0;
     while (sum_size < file_size) {
         int msg_size = 0;
-        if ((msg_size = read(file, buf, sizeof(buf)-1)) > 0) {
-            buf[msg_size] = '\0';
-            if(send_msg(socket, std::string(buf)) != 0) {
-                L_ERROR(_console, "send file contents error.");
-                close(file);
-                return 1;
+
+        if ((msg_size = read(file, buf, BUFF_LEN)) > 0) {
+            write(socket, buf, msg_size);
+            sum_size += msg_size;
+            // fprintf(stdout, "debug : size = %d/%d\n" ,sum_size, file_size);
+            if(sum_size >= file_size){
+                break;
             }
-            sum_size += std::string(buf).size();
-            L_DEBUG(_console, "send file size = {0}/{1}", sum_size, file_size);
         } else {
-            L_ERROR(_console, "send file contents error..");
+            // fprintf(stderr, "error : file size is not correct.\n");
             close(file);
             return 1;
         }
+
+        // old
+//        if ((msg_size = read(file, buf, sizeof(buf)-1)) > 0) {
+//            buf[msg_size] = '\0';
+//            if(send_msg(socket, std::string(buf)) != 0) {
+//                L_ERROR(_console, "send file contents error.");
+//                close(file);
+//                return 1;
+//            }
+//            sum_size += std::string(buf).size();
+//            L_DEBUG(_console, "send file size = {0}/{1}", sum_size, file_size);
+//        } else {
+//            L_ERROR(_console, "send file contents error..");
+//            close(file);
+//            return 1;
+//        }
+
     }
     close(file);
     if(recv_check(socket, CConst::MSG_OK) != 0) {
@@ -163,16 +179,32 @@ int NetworkBase::recv_file(int socket, const std::string local_file_path, const 
     // receive file
     while (sum_size < file_size) {
         int msg_size = 0;
-        if (recv_msg(socket, buf, sizeof(buf)) == 0) {
-            msg_size = strlen(buf);
+
+        if ((msg_size = read(socket, buf, BUFF_LEN)) > 0) {
             write(file, buf, msg_size);
             sum_size += msg_size;
-            L_DEBUG(_console, "write file size = {0}/{1}", sum_size, file_size);
+            // fprintf(stdout, "debug : size = %d/%d\n" ,sum_size, file_size);
+            if(sum_size >= file_size){
+                // fprintf(stdout, "debug : recieving %s is over\n", server_file_path);
+                break;
+            }
         } else {
-            L_ERROR(_console, "write file error.");
+            // fprintf(stderr, "error : file size is not correct.\n");
             close(file);
             return 1;
         }
+
+        // old
+//        if (recv_msg(socket, buf, sizeof(buf)) == 0) {
+//            msg_size = strlen(buf);
+//            write(file, buf, msg_size);
+//            sum_size += msg_size;
+//            L_DEBUG(_console, "write file size = {0}/{1}", sum_size, file_size);
+//        } else {
+//            L_ERROR(_console, "write file error.");
+//            close(file);
+//            return 1;
+//        }
     }
     close(file);
     if(send_msg(socket, CConst::MSG_OK) != 0) {
