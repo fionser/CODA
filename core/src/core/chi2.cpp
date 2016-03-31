@@ -10,7 +10,7 @@
 
 namespace protocol {
 namespace chi2 {
-const core::FHEArg _fheArgs = {64, 1031, 2, 5};
+const core::FHEArg _fheArgs = {.m = 16384, .p = 1031, .r = 2, .L = 4};
 enum class dataType_t { GENOTYPE, PHENOTYPE, UNKNOWN };
 std::string _genotype_data = "data_type genotype_data";
 std::string _phenotype_data = "data_type phenotype_data";
