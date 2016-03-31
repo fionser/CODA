@@ -33,12 +33,14 @@ extern const core::FHEArg _fheArgs;
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
-             core::pk_ptr pk);
+             core::pk_ptr pk,
+             core::context_ptr context);
 
 bool decrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
              core::pk_ptr pk,
-             core::sk_ptr sk);
+             core::sk_ptr sk,
+             core::context_ptr context);
 
 bool evaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,

@@ -157,7 +157,7 @@ bool encrypt(const std::string &inputFilePath,
     case core::Protocol::PROT_CI2:
         return protocol::chi2::encrypt(inputFilePath, outputFilePath, pk);
     case core::Protocol::PROT_CON:
-        return protocol::contingency::encrypt(inputFilePath, outputFilePath, pk);
+        return protocol::contingency::encrypt(inputFilePath, outputFilePath, pk, context);
     default:
         L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
         return false;
@@ -178,7 +178,7 @@ bool decrypt(const std::string &inputFilePath,
     case core::Protocol::PROT_CI2:
         return protocol::chi2::decrypt(inputFilePath, outputFilePath, pk, sk);
     case core::Protocol::PROT_CON:
-        return protocol::contingency::decrypt(inputFilePath, outputFilePath, pk, sk);
+        return protocol::contingency::decrypt(inputFilePath, outputFilePath, pk, sk, context);
     default:
         L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
         return false;
