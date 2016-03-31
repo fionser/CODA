@@ -36,3 +36,4 @@ install_manifest.txt
 CMakeCache.txt
 tmp
 .idea/
+build/

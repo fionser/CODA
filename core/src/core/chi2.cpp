@@ -1,5 +1,5 @@
+#include <set>
 #include <fstream>
-#include <algorithm>
 #include <HElib/FHE.h>
 #include <core/core.hpp>
 #include <spdlog/spdlog.h>
@@ -12,41 +12,43 @@ namespace protocol {
 namespace chi2 {
 const core::FHEArg _fheArgs = {.m = 16384, .p = 1031, .r = 2, .L = 5};
 enum class dataType_t { GENOTYPE, PHENOTYPE, UNKNOWN };
-std::string _genotype_data = "data_type genotype_data";
-std::string _phenotype_data = "data_type phenotype_data";
+const char* GENOTYPE_FILE_HEADER = "genotype";
+const char* PHENOTYP_FILE_HEADER = "phenotype";
+class DoneFileCreator {
+public:
+    DoneFileCreator() {}
+    ~DoneFileCreator() {}
+    struct DoneFile {
+        dataType_t type;
+        size_t N;
+    };
+
+    static std::string generate(const DoneFile &df) {
+        switch (df.type) {
+        case dataType_t::GENOTYPE:
+            return generate_genotype(df);
+        case dataType_t::PHENOTYPE:
+            return generate_phenotype(df);
+        default:
+            return "";
+        }
+    }
+
+    static DoneFile createDoneFile(const util::Meta &meta);
+
+private:
+    static std::string generate_genotype(const DoneFile &f);
+    static std::string generate_phenotype(const DoneFile &f);
+};
 
 class UserEncDataLoader {
 public:
     UserEncDataLoader() {};
-    dataType_t checkType(const std::string &dir);
-    void load(const std::string &dir,
-              core::pk_ptr pk,
-              std::list<Ctxt> &out);
+    DoneFileCreator::DoneFile loadDoneFile(const std::string &dir);
+    void loadCiphers(const std::string &dir,
+                     core::pk_ptr pk,
+                     std::list<Ctxt> &out);
 };
-
-static dataType_t getDataType(const std::string path) {
-    util::Meta meta;
-    bool ok;
-    std::tie(meta, ok) = util::readMetaFile(path);
-    if (!ok) {
-        L_WARN(global::_console, "Can not open file {0}", path);
-        return dataType_t::UNKNOWN;
-    }
-
-    auto kv = meta.find("data_type");
-    if (kv == meta.end()) {
-        L_WARN(global::_console, "Can not get the data type from {0}", path);
-        return dataType_t::UNKNOWN;
-    }
-
-    if (kv->second.at(0).compare("genotype_data") == 0)
-        return dataType_t::GENOTYPE;
-
-    if (kv->second.at(0).compare("phenotype_data") == 0)
-        return dataType_t::PHENOTYPE;
-    L_WARN(global::_console, "Might be invalid .done.lock file in {0}", path);
-    return dataType_t::UNKNOWN;
-}
 
 static bool createDoneFile(const std::string &path, const std::string type) {
     auto doneFd = util::createDoneFile(path);
@@ -98,6 +100,7 @@ static bool encryptPhenotype(std::fstream &fin,
                              core::pk_ptr pk) {
     const long n = _fheArgs.m >> 1;
     std::vector<long> coeffs(n, 0);
+    std::set<long> unique_id;
     size_t pos;
     for (std::string line; std::getline(fin, line); ) {
         long id = literal::stol(line, &pos, 10);
@@ -106,11 +109,19 @@ static bool encryptPhenotype(std::fstream &fin,
             L_WARN(global::_console, "With ID {0} > n ({1})", id, n);
             continue;
         }
+
         if (ph != 0 && ph != 1) {
             L_WARN(global::_console, "Invalid line: {0}", line);
             continue;
         }
+
+        if (unique_id.find(id) != unique_id.end()) {
+            L_WARN(global::_console, "ID {0} exists more than one time", id);
+            continue;
+        }
+
         coeffs.at(id - 1) = ph;
+        unique_id.insert(id);
     }
 
     auto poly = backwardPack(coeffs);
@@ -121,7 +132,10 @@ static bool encryptPhenotype(std::fstream &fin,
     fout << cipher;
     fout.close();
 
-    createDoneFile(outputDirPath, _phenotype_data);
+    DoneFileCreator::DoneFile  doneFile = {.type = dataType_t::PHENOTYPE,
+                                           .N = unique_id.size()};
+    createDoneFile(outputDirPath, DoneFileCreator::generate(doneFile));
+
     return true;
 }
 
@@ -130,19 +144,30 @@ static bool encryptGenotype(std::fstream &fin,
                             core::pk_ptr pk) {
     const long n = _fheArgs.m >> 1;
     std::vector<long> coeff(n);
+    std::set<long> unique_id;
     size_t pos;
     for (std::string line; std::getline(fin, line); ) {
+        if (line.empty()) continue;
+
         long id = literal::stol(line, &pos, 10);
         long gh = literal::stol(line.substr(pos), &pos, 10);
         if (id > n || id <= 0) {
             L_WARN(global::_console, "With ID {0} > n {1}", id, n);
             continue;
         }
+
         if (!(gh >= 0 && gh <= 2)) {
             L_WARN(global::_console, "Invalid line {0} in genotype file", line);
             continue;
         }
+
+        if (unique_id.find(id) != unique_id.end()) {
+            L_WARN(global::_console, "ID {0} exists more than one time", id);
+            continue;
+        }
+
         coeff.at(id - 1) = gh;
+        unique_id.insert(id);
     }
 
     auto poly = forwardPack(coeff);
@@ -153,7 +178,9 @@ static bool encryptGenotype(std::fstream &fin,
     fout << cipher;
     fout.close();
 
-    createDoneFile(outputDirPath, _genotype_data);
+    DoneFileCreator::DoneFile  doneFile = {.type = dataType_t::GENOTYPE,
+                                              .N = unique_id.size()};
+    createDoneFile(outputDirPath, DoneFileCreator::generate(doneFile));
     return true;
 }
 
@@ -183,13 +210,73 @@ bool encrypt(const std::string &inputFilePath,
     return false;
 }
 
+static void __output_chi2(std::fstream &fd,
+                          const std::array<long, 4> observations)
+{
+    std::array<long, 4> Os;
+    Os[0] = observations[0];
+    Os[1] = observations[2] - Os[0];
+    Os[2] = observations[1] - Os[0];
+    Os[3] = observations[3] - observations[1] - Os[1];
+
+    double _r = observations[2] * 1.0 / (observations[3] - observations[2]);
+    std::array<double, 4> Es;
+    Es[0] = observations[1] * observations[2] * 1.0 / observations[3];
+    Es[1] = (observations[3] - observations[1]) * observations[2] * 1.0 / observations[3];
+    Es[2] = Es[0] / _r;
+    Es[3] = Es[1] / _r;
+
+    fd << "\t#A\t#a\n";
+    fd << "case\t" << Os[0] << "\t" << Os[1] << "\n";
+    fd << "control\t" << Os[2] << "\t" << Os[3] << "\n";
+
+    for (auto e : Es) {
+        if (std::abs(e) < 1e-8) {
+            L_WARN(global::_console, "With expetection 0");
+            fd << "chi2 value NA\n";
+            return;
+        }
+    }
+
+    double chi2 = 0.0;
+    for (size_t i = 0; i < 4; i++) {
+        auto diff = Os[i] - Es[i];
+        chi2 = chi2 + (diff * diff) / Es[i];
+    }
+
+    fd << "chi2 value " << chi2 << "\n";
+}
+
 bool decrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
              core::pk_ptr pk,
              core::sk_ptr sk) {
+    util::Meta doneFile;
+    bool ok;
+    auto dir = util::getDirPath(inputFilePath);
+    auto doneFilePath = util::concatenate(dir, global::_doneFileName);
+    std::tie(doneFile, ok) = util::readMetaFile(doneFilePath);
+    if (!ok) {
+        L_WARN(global::_console, "No .done.lock under {0}", dir);
+        return false;
+    }
+
+    auto kv = doneFile.find("N");
+    if (kv == doneFile.end()) {
+        L_WARN(global::_console, "Invalid .done.lock under {0}", dir);
+        return false;
+    }
+
+    long nr_patients = literal::stol(kv->second.front());
+
     std::list<Ctxt> ciphers;
     if (!core::loadCiphers(ciphers, pk, inputFilePath))
         return false;
+
+    if (ciphers.size() != 3) {
+        L_ERROR(global::_console, "Invalid input file {0}", inputFilePath);
+        return false;
+    }
 
     auto oFile = util::concatenate(outputFilePath, "FILE_1");
     std::fstream ostream(oFile, std::ios::out | std::ios::binary);
@@ -199,11 +286,14 @@ bool decrypt(const std::string &inputFilePath,
     }
 
     NTL::ZZX poly;
+    std::array<long, 4> obs;
+    size_t idx = 0;
     for (auto &c : ciphers) {
         sk->Decrypt(poly, c);
-        ostream << poly[0] << "\n";
+        obs[idx++] = NTL::to_long(poly[0]);
     }
-    ostream.close();
+    obs[3] = nr_patients << 1;
+    __output_chi2(ostream, obs);
 
     auto fd = util::createDoneFile(outputFilePath);
     fwrite("DONE\n", 5UL, 1UL, fd);
@@ -211,7 +301,7 @@ bool decrypt(const std::string &inputFilePath,
     return true;
 }
 
-static bool _evaluate(const std::list<Ctxt> &gs,
+static bool __evaluate(const std::list<Ctxt> &gs,
                       const std::list<Ctxt> &ps,
                       std::list<Ctxt> &rets) {
     Ctxt g(gs.front());
@@ -255,63 +345,151 @@ static bool _evaluate(const std::list<Ctxt> &gs,
     return true;
 }
 
+static ssize_t __loadCiphers(std::list<Ctxt> &gs, std::list<Ctxt> &ps,
+                             core::pk_ptr pk,
+                             const std::vector<std::string> &inputDirs) {
+    ssize_t nr_geno = 0, nr_pheno = 0;
+    UserEncDataLoader loader;
+    for (auto dir : inputDirs) {
+        auto df = loader.loadDoneFile(dir);
+        switch (df.type) {
+        case dataType_t::GENOTYPE:
+            if (nr_geno != 0 && nr_geno != df.N) {
+                L_WARN(global::_console,
+                       "Mismatching the patient numbers in genotype {0} ≠ {1}",
+                       nr_geno, df.N);
+                return -1;
+            } else {
+                nr_geno = static_cast<ssize_t>(df.N);
+            }
+
+            loader.loadCiphers(dir, pk, gs);
+            break;
+        case dataType_t::PHENOTYPE:
+            if (nr_pheno != 0 && nr_pheno != df.N) {
+                L_WARN(global::_console,
+                       "Mismatching the patient numbers in phenotype {0} ≠ {1}",
+                       nr_geno, df.N);
+                return -1;
+            } else {
+                nr_pheno = static_cast<ssize_t>(df.N);
+            }
+
+            loader.loadCiphers(dir, pk, ps);
+            break;
+        default:
+            L_WARN(global::_console, "Invalid .done.lock file in {0}", dir);
+            return -1;
+        }
+    }
+
+    if (nr_pheno != nr_geno) {
+        L_WARN(global::_console, "Mismatching the patient numbers {0} ≠ {1}",
+               nr_geno, nr_geno);
+        return -1;
+    }
+
+    if (gs.empty() || ps.empty()) {
+        L_WARN(global::_console, "Empty genotype data or phenotype data");
+        return 0;
+    }
+
+    return nr_geno;
+}
+
 bool evaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,
               core::pk_ptr pk) {
     std::list<Ctxt> genotype, phenotype;
-    UserEncDataLoader loader;
-    for (auto dir : inputDirs) {
-        switch (loader.checkType(dir)) {
-        case dataType_t::GENOTYPE:
-            loader.load(dir, pk, genotype);
-            break;
-        case dataType_t::PHENOTYPE:
-            loader.load(dir, pk, phenotype);
-            break;
-        default:
-            L_WARN(global::_console, "Invalid .done.lock file in {0}", dir);
-        }
-    }
-
-    if (genotype.empty() || phenotype.empty()) {
-        L_WARN(global::_console, "Empty genotype data or phenotype data");
+    ssize_t nr_patients;
+    nr_patients = __loadCiphers(genotype, phenotype, pk, inputDirs);
+    if (nr_patients <= 0)
         return false;
-    }
 
     std::list<Ctxt> rets;
-    if (!_evaluate(genotype, phenotype, rets))
+    if (!__evaluate(genotype, phenotype, rets))
         return false;
 
     bool ok = core::dumpCiphers(rets, util::concatenate(outputDir, "FILE_result"));
     if (ok) {
         auto fd = util::createDoneFile(outputDir);
-        fwrite("DONE\n", 5UL, 1UL, fd);
+        char buf[1024];
+        snprintf(buf, sizeof(buf), "N %zd\n", nr_patients);
+        fwrite(buf, strlen(buf), 1UL, fd);
         fclose(fd);
         return true;
     }
     return false;
 }
 
-dataType_t UserEncDataLoader::checkType(const std::string &dir) {
-    auto files = util::listDir(dir, util::flag_t::FILE_ONLY);
-    for (auto f : files) {
-        if (f.compare(global::_doneFileName) == 0)
-            return getDataType(util::concatenate(dir, f));
-    }
 
-    return dataType_t::UNKNOWN;
+DoneFileCreator::DoneFile UserEncDataLoader::loadDoneFile(const std::string &dir) {
+    auto files = util::listDir(dir, util::flag_t::FILE_ONLY);
+    DoneFileCreator::DoneFile df;
+    for (auto &f : files) {
+        if (f.compare(global::_doneFileName) == 0) {
+            util::Meta meta;
+            auto doneFile = util::concatenate(dir, f);
+            bool ok;
+            std::tie(meta, ok) = util::readMetaFile(doneFile);
+            if (!ok) {
+                L_WARN(global::_console, "Can not load file {0}", doneFile);
+                df.type = dataType_t::UNKNOWN;
+                return df;
+            }
+            return DoneFileCreator::createDoneFile(meta);
+        }
+    }
+    return df;
 }
 
 #define HAS_PREFIX(a, b) (a.find(b) == 0)
 
-void UserEncDataLoader::load(const std::string &dir,
-                             core::pk_ptr pk,
-                             std::list<Ctxt> &out) {
+void UserEncDataLoader::loadCiphers(const std::string &dir,
+                                    core::pk_ptr pk,
+                                    std::list<Ctxt> &out) {
     auto files = util::listDir(dir, util::flag_t::FILE_ONLY);
     for (auto f : files) {
         if (HAS_PREFIX(f, "FILE_"))
             core::loadCiphers(out, pk, util::concatenate(dir, f));
     }
 }
+
+DoneFileCreator::DoneFile
+DoneFileCreator::createDoneFile(const util::Meta &meta) {
+    DoneFile df = {.type = dataType_t::UNKNOWN, .N = 0UL };
+    auto kv = meta.find("data_type");
+    if (kv == meta.end()) {
+        L_WARN(global::_console,
+               "Invalid done file without setting the filed [data_type]");
+        return df;
+    }
+
+    if (kv->second.front().compare(PHENOTYP_FILE_HEADER) == 0)
+        df.type = dataType_t::PHENOTYPE;
+    else if (kv->second.front().compare(GENOTYPE_FILE_HEADER) == 0)
+        df.type = dataType_t::GENOTYPE;
+
+    kv = meta.find("N");
+    if (kv != meta.end())
+        df.N = static_cast<size_t>(std::stol(kv->second.front()));
+
+    return df;
+}
+
+std::string
+DoneFileCreator::generate_phenotype(const DoneFileCreator::DoneFile &f) {
+    char buf[1024 * 1024];
+    snprintf(buf, sizeof(buf), "data_type %s\nN %zd", PHENOTYP_FILE_HEADER, f.N);
+    return std::string(buf);
+}
+
+std::string
+DoneFileCreator::generate_genotype(const DoneFileCreator::DoneFile &f) {
+    char buf[1024 * 1024];
+    snprintf(buf, sizeof(buf), "data_type %s\nN %zd", GENOTYPE_FILE_HEADER, f.N);
+    return std::string(buf);
+}
+
 } // namespace chi2
 } // namespace protocol
