@@ -7,7 +7,7 @@
 # Created by Tai Chi Minh Ralph Eastwood <tcmreastwood@gmail.com>
 
 FIND_PATH(NTL_INCLUDE_DIR RR.h
-    HINTS
+    HINTS ${CMAKE_SOURCE_DIR}/tmp
     $ENV{NTLDIR}
     PATH_SUFFIXES NTL include/NTL include
     PATHS
@@ -23,24 +23,13 @@ FIND_PATH(NTL_INCLUDE_DIR RR.h
 
 FIND_LIBRARY(NTL_LIBRARY
     NAMES ntl
-    HINTS
-    $ENV{NTLDIR}
-    PATH_SUFFIXES lib64 lib libs64 libs libs/Win32 libs/Win64
-    PATHS
-    ~/Library/Frameworks
-    /Library/Frameworks
-    /usr/local
-    /usr
-    /sw
-    /opt/local
-    /opt/csw
-    /opt
-    )
+    HINTS ${CMAKE_SOURCE_DIR}/tmp
+    PATH_SUFFIXES lib64 lib libs64 libs libs/Win32 libs/Win64)
 
 
 # handle the QUIETLY and REQUIRED arguments and set NTL_FOUND to TRUE if
 # all listed variables are TRUE
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(NTL DEFAULT_MSG NTL_LIBRARY NTL_INCLUDE_DIR)
-
+MESSAGE(STATUS "NTL libs: " ${NTL_LIBRARY} " " ${NTL_INCLUDE_DIR})
 MARK_AS_ADVANCED(NTL_LIBRARY NTL_INCLUDE_DIR)

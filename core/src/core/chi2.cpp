@@ -10,7 +10,7 @@
 
 namespace protocol {
 namespace chi2 {
-const core::FHEArg _fheArgs = {64, 1031, 2, 5};
+const core::FHEArg _fheArgs = {.m = 16384, .p = 1031, .r = 2, .L = 5};
 enum class dataType_t { GENOTYPE, PHENOTYPE, UNKNOWN };
 std::string _genotype_data = "data_type genotype_data";
 std::string _phenotype_data = "data_type phenotype_data";
@@ -309,10 +309,8 @@ void UserEncDataLoader::load(const std::string &dir,
                              std::list<Ctxt> &out) {
     auto files = util::listDir(dir, util::flag_t::FILE_ONLY);
     for (auto f : files) {
-        if (HAS_PREFIX(f, "FILE_")) {
-            L_INFO(global::_console, "Load {0}", util::concatenate(dir, f));
+        if (HAS_PREFIX(f, "FILE_"))
             core::loadCiphers(out, pk, util::concatenate(dir, f));
-        }
     }
 }
 } // namespace chi2
