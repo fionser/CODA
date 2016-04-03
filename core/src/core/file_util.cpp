@@ -1,10 +1,11 @@
 #include <string>
 #include <vector>
+#include <cerrno>
 #include <fstream>
-#include <iterator>
-#include <iostream>
 #include <sstream>
 #include <stdio.h>
+#include <iterator>
+#include <iostream>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -58,7 +59,10 @@ std::string concatenate(const std::string &path, const std::string &file) {
 
 FILE *createDoneFile(const std::string &path) {
     auto p = concatenate(path, global::_doneFileName);
-    FILE *out = fopen(p.c_str(), "w");
+    FILE *out = fopen(p.c_str(), "w+");
+    if (!out) {
+        L_WARN(global::_console, "{0}: {1}", path, std::strerror(errno));
+    }
     return out;
 }
 

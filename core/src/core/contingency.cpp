@@ -15,141 +15,65 @@ namespace contingency {
 const core::FHEArg _fheArgs = {.m = 5227, .p = 67499, .r = 1, .L = 5};
 
 struct ProtocolHeader {
+    int64_t domain_product;
     std::string protocol;
     std::vector<int64_t> attrDomain;
 };
 
 struct __Plain {
+    int64_t uid;
     std::vector<int64_t> attributes;
 };
 typedef std::list<__Plain> __Body;
 
 struct __Ctxt {
-    Ctxt *c; // From HElib/Ctxt.h
-    int64_t domain_product;
+    std::vector<Ctxt *> c; // From HElib/Ctxt.h
+    int64_t uid;
+    size_t used; // show how many valid Ctxt
 };
 
 static void __ctxt_free(struct __Ctxt *ctxt) {
-    if (ctxt && ctxt->c)
-        delete ctxt->c;
+    if (!ctxt) return;
+    for (Ctxt *c : ctxt->c)
+        if (c) delete c;
 }
 
-struct __Comb {
-    std::vector<int64_t> indices;
-};
-typedef std::vector<__Comb> __Combs;
-
-static void __get_all_combination(__Combs &combs,
-                                  __Comb &current,
-                                  const ProtocolHeader &header,
-                                  size_t pos) {
-    assert(current.indices.size() == header.attrDomain.size() && "Same indices size");
-
-    if (pos >= header.attrDomain.size()) {
-        combs.push_back(current);
+static void __ctxt_create(__Ctxt *_ctxt,
+                          const __Plain &data,
+                          const ProtocolHeader &header,
+                          const EncryptedArray &ea,
+                          core::pk_ptr pk) {
+    if (!_ctxt) {
+        L_DEBUG(global::_console, "Null pointer of _ctxt in __ctxt_create");
         return;
     }
 
-    for (int64_t index = 0; index < header.attrDomain[pos]; index++) {
-        current.indices.at(pos) = index;
-        __get_all_combination(combs, current, header, pos + 1);
+    size_t sze = _ctxt->c.size();
+    for (size_t i = sze; i < data.attributes.size(); i++)
+        _ctxt->c.push_back(new Ctxt(*pk));
+
+    std::vector<long> coeff(static_cast<size_t>(ea.size()), 0);
+    for (size_t i = 0; i < data.attributes.size(); i++) {
+        coeff.at(data.attributes.at(i)) = 1;
+        ea.encrypt(*_ctxt->c.at(i), *pk, coeff);
+        coeff.at(data.attributes.at(i)) = 0;
     }
+
+    _ctxt->uid = data.uid;
+    _ctxt->used = data.attributes.size();
 }
 
-static bool __equal(const __Comb &c, const __Plain &p) {
-    if (c.indices.size() != p.attributes.size()) {
-        L_DEBUG(global::_console, "Combination size {0}, body size {1}",
-                c.indices.size(), p.attributes.size());
-        return false;
-    }
-
-    for (size_t i = 0 ; i < c.indices.size(); i++) {
-        if (c.indices[i] != p.attributes[i])
-            return false;
-    }
-
-    return true;
-}
-
-/// TODO(riku) use faster algorithm
-static NTL::ZZX __count_each_combination(const __Combs &combs,
-                                         const __Body &body,
-                                         const EncryptedArray &ea) {
-    std::vector<long> slots(static_cast<size_t>(ea.size()), 0L);
-
-    for (auto &p : body) {
-        ssize_t index = 0;
-        bool found = false;
-        for (ssize_t i = 0; i < combs.size(); i++) {
-            if (__equal(combs[i], p)) {
-                found = true;
-                index += i;
-                break;
-            }
-        }
-
-        if (!found) {
-            L_WARN(global::_console, "Mismatch in body!");
-            continue;
-        }
-
-        slots.at(index) += 1;
-    }
-
-    NTL::ZZX poly;
-    ea.encode(poly, slots);
-    return poly;
-}
-
-static __Ctxt __ctxt_create(const __Body &body,
-                            const ProtocolHeader &header,
-                            core::pk_ptr pk,
-                            core::context_ptr context) {
-    int64_t domain_product = 1;
-    for (auto d : header.attrDomain)
-        domain_product *= d;
-
-    auto G = context->alMod.getFactorsOverZZ()[0];
-    EncryptedArray ea(*context, G);
-    if (ea.size() < domain_product) {
-        L_WARN(global::_console, "Not enough slot {0} for {1}", ea.size(), domain_product);
-        return {nullptr, 0};
-    }
-
-    __Combs combs;
-    combs.reserve(domain_product);
-    __Comb current = { .indices = std::vector<int64_t>(header.attrDomain.size()) };
-    __get_all_combination(combs, current, header, 0);
-    NTL::ZZX poly = __count_each_combination(combs, body, ea);
-
-    Ctxt *ctxt = new Ctxt(*pk);
-    pk->Encrypt(*ctxt, poly);
-    return {ctxt, domain_product};
-}
-
-static bool __dumpCtxt(const __Ctxt &ctxt,
-                       const std::string &outputDirPath) {
-    auto outputFile = util::concatenate(outputDirPath, "FILE_1");
-    std::fstream ostream(outputFile, std::ios::binary | std::ios::out);
-    if (!ostream.is_open()) {
-        L_WARN(global::_console, "Can not create {0}", outputFile);
-        return false;
-    }
-
-    ostream << *ctxt.c;
-    ostream << ctxt.domain_product;
-    ostream.close();
-
+static bool __createDoneFile(const std::string &outputDirPath) {
     auto doneFile = util::concatenate(outputDirPath, global::_doneFileName);
     FILE *fd = fopen(doneFile.c_str(), "w+");
     if (!fd) {
         L_WARN(global::_console, "Can not create {0} under {1}",
-               global::_doneFileName, outputFile);
+               global::_doneFileName, outputDirPath);
         return false;
     }
 
     char buf[1024];
-    snprintf(buf, sizeof(buf), "domain_product %" PRId64 "\n", ctxt.domain_product);
+    snprintf(buf, sizeof(buf), "DONE");
     size_t len = strlen(buf);
     if (fwrite(buf, 1UL, len, fd) != len) {
         L_WARN(global::_console, "Error happened when to write {0}", doneFile);
@@ -158,6 +82,33 @@ static bool __dumpCtxt(const __Ctxt &ctxt,
     }
 
     fclose(fd);
+    return true;
+}
+
+static bool __dumpCtxt(const __Ctxt &ctxt,
+                       const ProtocolHeader &header,
+                       const std::string &outputDirPath) {
+    char buf[1024];
+    snprintf(buf, sizeof(buf), "FILE_%" PRId64, ctxt.uid);
+    auto outputFile = util::concatenate(outputDirPath, buf);
+    std::fstream ostream(outputFile, std::ios::binary | std::ios::out);
+    if (!ostream.is_open()) {
+        L_WARN(global::_console, "Can not create {0}", outputFile);
+        return false;
+    }
+
+    ostream << ctxt.uid;
+    for (auto D : header.attrDomain)
+        ostream << " " << D;
+    ostream << std::endl;
+
+    for (size_t i = 0; i < ctxt.used; i++) {
+        ostream << *ctxt.c.at(i);
+        if (i + 1 < ctxt.used)
+            ostream << std::endl;
+    }
+    ostream.close();
+
     return true;
 }
 
@@ -177,6 +128,7 @@ static bool __parseHeader(ProtocolHeader *header, std::fstream &fin) {
 
     line = line.substr(5);
     auto fields = util::splitBySpace(line);
+    int64_t dp = 1;
     for (auto &f : fields) {
         int64_t v = static_cast<int64_t>(literal::stol(f, &pos, 10));
         if (pos != f.size()) {
@@ -184,7 +136,9 @@ static bool __parseHeader(ProtocolHeader *header, std::fstream &fin) {
             return false;
         }
         header->attrDomain.push_back(v);
+        dp *= v;
     }
+    header->domain_product = dp;
 
     return !header->attrDomain.empty();
 }
@@ -199,17 +153,27 @@ static bool __parseBody(__Body &body, std::fstream &fin,
 
     for (std::string line; std::getline(fin, line); ) {
         auto values = util::splitBySpace(line);
-        if (values.size() != header->attrDomain.size()) {
+        /// the first field is uid
+        if (values.size() != header->attrDomain.size() + 1) {
             L_WARN(global::_console, "The number of attributes in the file body mismatches the header");
             return false;
         }
 
         __Plain plain;
+        size_t pos;
+        int64_t v = static_cast<int64_t>(literal::stol(values[0], &pos, 10));
+        if (pos != values[0].size()) {
+            L_WARN(global::_console, "Invalid uid {0} in the file body",
+                   values[0]);
+            return false;
+        }
+        plain.uid = v;
+
         for (size_t i = 0; i < header->attrDomain.size(); i++) {
-            size_t pos;
-            int64_t v = static_cast<int64_t>(literal::stol(values[i], &pos, 10));
-            if (pos != values[i].size()) {
-                L_WARN(global::_console, "Invalid value {0} in the file body", values[i]);
+            v = static_cast<int64_t>(literal::stol(values[i + 1], &pos, 10));
+            if (pos != values[i + 1].size()) {
+                L_WARN(global::_console, "Invalid value {0} in the file body",
+                       values[i + 1]);
                 return false;
             }
 
@@ -251,29 +215,19 @@ bool encrypt(const std::string &inputFilePath,
         return false;
     }
 
-    int64_t domain_product = 1;
-    for (auto d : header.attrDomain)
-        domain_product *= d;
+    auto G = context->alMod.getFactorsOverZZ()[0];
+    EncryptedArray ea(*context, G);
 
-    auto _ctxt = __ctxt_create(body, header, pk, context);
-    return __dumpCtxt(_ctxt, outputDirPath);
-    //return __encrypt(fin, outputDirPath, header, pk);
+    __Ctxt _ctxt;
+    for (auto &plain : body) {
+        __ctxt_create(&_ctxt, plain, header, ea, pk);
+        __dumpCtxt(_ctxt, header, outputDirPath);
+    }
+
+    __ctxt_free(&_ctxt);
+    return __createDoneFile(outputDirPath);
 }
 
-bool evaluate(const std::vector<std::string> &inputDirs,
-              const std::string &outputDir,
-              core::pk_ptr pk) {
-    L_INFO(global::_console, "Not implemented yet");
-    return false;
-}
 
-bool decrypt(const std::string &inputFilePath,
-             const std::string &outputFilePath,
-             core::pk_ptr pk,
-             core::sk_ptr sk,
-             core::context_ptr context) {
-    L_INFO(global::_console, "Not implemented yet");
-    return false;
-}
 } // namespace contingency
 } // namespace protocol

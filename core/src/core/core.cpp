@@ -255,7 +255,8 @@ bool evaluate(const std::string &sessionDirPath,
     case core::Protocol::PROT_CI2:
         return protocol::chi2::evaluate(userDirs, outputDirPath, pk);
     case core::Protocol::PROT_CON:
-        return protocol::contingency::evaluate(userDirs, outputDirPath, pk);
+        return protocol::contingency::evaluate(userDirs, outputDirPath, pk,
+                                               context);
     default:
         L_ERROR(global::_console, "Unknown protocol was set in {0}", metaFilePath);
         return false;

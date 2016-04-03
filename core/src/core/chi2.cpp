@@ -302,8 +302,8 @@ bool decrypt(const std::string &inputFilePath,
 }
 
 static bool __evaluate(const std::list<Ctxt> &gs,
-                      const std::list<Ctxt> &ps,
-                      std::list<Ctxt> &rets) {
+                       const std::list<Ctxt> &ps,
+                       std::list<Ctxt> &rets) {
     Ctxt g(gs.front());
     Ctxt p(ps.front());
 
