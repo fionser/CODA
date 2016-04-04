@@ -1,6 +1,6 @@
 include_directories(../../include/)
+include_directories(${PROJECT_BINARY_DIR}/tmp/include)
 include_directories(../../include/HElib)
-include_directories(${CMAKE_SOURCE_DIR}/tmp/include)
 set(LIB_SRC KeySwitching.cpp EncryptedArray.cpp FHE.cpp Ctxt.cpp CModulus.cpp
         FHEContext.cpp PAlgebra.cpp DoubleCRT.cpp NumbTh.cpp bluestein.cpp
         IndexSet.cpp timing.cpp replicate.cpp hypercube.cpp matching.cpp

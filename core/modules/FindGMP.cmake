@@ -3,20 +3,16 @@
 # GMP_INCLUDE_DIR - the GMP include directory
 # GMP_LIBRARIES - Libraries needed to use GMP
 
-if (GMP_INCLUDE_DIR AND GMP_LIBRARIES)
-    # Already in cache, be silent
-    set(GMP_FIND_QUIETLY TRUE)
-endif (GMP_INCLUDE_DIR AND GMP_LIBRARIES)
-
 find_path(GMP_INCLUDE_DIR
-	  HINTS ${CMAKE_SOURCE_DIR}/tmp
-	  PATH_SUFFIXES include
+		  HINTS ${PROJECT_BINARY_DIR}/tmp
+	      PATH_SUFFIXES include
           NAMES gmp.h)
+
 find_library(GMP_LIBRARIES
-	HINTS ${CMAKE_SOURCE_DIR}/tmp
-	    PATH_SUFFIXES lib64 lib libs64 libs libs/Win32 libs/Win64
-             NAMES gmp libgmp )
-find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx )
+	         HINTS ${PROJECT_BINARY_DIR}/tmp
+	         PATH_SUFFIXES lib64 lib libs64 libs libs/Win32 libs/Win64
+             NAMES gmp libgmp)
+find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
 
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
