@@ -31,7 +31,7 @@ ExternalProject_Add(NTL
     INSTALL_COMMAND make install)
 endif(NOT CODA_BUILD)
 
-if(CODA_BUILD)
+if(BUILD_CODA)
 SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")
 add_subdirectory(src/core core-imp)
 add_subdirectory(src/doctopt.cpp doctopt)
@@ -49,4 +49,4 @@ find_library(local-gmp
 MESSAGE(STATUS ${local-ntl})
 MESSAGE(STATUS ${local-gmp})
 target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
-endif(CODA_BUILD)
+endif(BUILD_CODA)
