@@ -41,5 +41,5 @@ add_subdirectory(src/HElib fhe)
 include_directories(include/)
 
 add_executable(core core.cpp)
-target_link_libraries(core docopt core-imp fhe ${local-ntl} ${local-gmp})
+target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
 
