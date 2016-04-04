@@ -10,18 +10,27 @@ bool genKeypair(core::Protocol protocol,
 
 namespace chi2 {
 extern const core::FHEArg _fheArgs;
-extern std::string _genotype_data;
-extern std::string _phenotype_data;
 
+/// @param inputFilePath The raw data file.
+/// @param outputDirPath The directory to place the cipher file(s).
+/// @param pk The public encryption key.
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
              core::pk_ptr pk);
 
+/// @param inputFilePath One cipher file.
+/// @param outputFilePath The directory to place the result file.
+/// @param pk The public encryption key.
+/// @param sk The secret decryption key.
 bool decrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
              core::pk_ptr pk,
              core::sk_ptr sk);
 
+/// @param inputDirs The collection of users' data directory.
+///                  @see bool encrypt(const std::string &, const std::string &, core::pk_ptr).
+/// @param outputDir The directory to place the evaluation result.
+/// @param pk The public encryption key.
 bool evaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,
               core::pk_ptr pk);
@@ -33,16 +42,19 @@ extern const core::FHEArg _fheArgs;
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
-             core::pk_ptr pk);
+             core::pk_ptr pk,
+             core::context_ptr context);
 
 bool decrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
              core::pk_ptr pk,
-             core::sk_ptr sk);
+             core::sk_ptr sk,
+             core::context_ptr context);
 
 bool evaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,
-              core::pk_ptr pk);
+              core::pk_ptr pk,
+              core::context_ptr context);
 } // contingency
 } // namespace protocol
 #endif // core_PROTOCOL_PROTOCOL_H
