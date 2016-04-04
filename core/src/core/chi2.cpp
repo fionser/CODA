@@ -1,6 +1,7 @@
 #include <set>
 #include <fstream>
 #include <HElib/FHE.h>
+#include <algorithm>
 #include <core/core.hpp>
 #include <spdlog/spdlog.h>
 #include <core/global.hpp>
