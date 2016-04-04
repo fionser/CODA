@@ -1,2 +1,2 @@
-add_subdirectory(src/client client)
-add_subdirectory(src/server server)
+add_subdirectory(src/client)
+add_subdirectory(src/server)

@@ -33,14 +33,13 @@ ExternalProject_Add(NTL
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
 endif(NTL_NOT_FOUND)
-
-add_subdirectory(src/core lib/core-imp)
-add_subdirectory(src/doctopt.cpp lib/doctopt)
-add_subdirectory(src/HElib lib/fhe)
+find_library(local-ntl ntl HINTS ${CMAKE_SOURCE_DIR}/tmp/lib)
+find_library(local-gmp gmp HINTS ${CMAKE_SOURCE_DIR}/tmp/lib)
+add_subdirectory(src/core core-imp)
+add_subdirectory(src/doctopt.cpp doctopt)
+add_subdirectory(src/HElib fhe)
 include_directories(include/)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L ${CMAKE_SOURCE_DIR}/tmp/lib -lntl -lgmp")
 add_executable(core core.cpp)
-target_link_libraries(core docopt core-imp fhe)
-
+target_link_libraries(core docopt core-imp fhe ${local-ntl} ${local-gmp})
 
