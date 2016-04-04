@@ -1,10 +1,52 @@
-find_library(local-ntl ntl HINTS ${PROJECT_BINARY_DIR}/tmp/lib)
-find_library(local-gmp gmp HINTS ${PROJECT_BINARY_DIR}/tmp/lib)
+if(NOT CODA_BUILD)
+include(ExternalProject)
+set(GMP_PATH ${PROJECT_BINARY_DIR}/tmp/gmp)
+ExternalProject_Add(GMP
+	TMP_DIR ${GMP_PATH}/tmp
+	PREFIX ${GMP_PATH}
+	STAMP_DIR ${GMP_PATH}/stmp
+	DOWNLOAD_DIR ${GMP_PATH}/download
+	URL https://gmplib.org/download/gmp/gmp-6.0.0a.tar.bz2
+	SOURCE_DIR ${GMP_PATH}/source
+	CONFIGURE_COMMAND ${GMP_PATH}/source/configure --prefix=${PROJECT_BINARY_DIR}
+	BINARY_DIR ${GMP_PATH}/build
+	BUILD_COMMAND make
+	INSTALL_COMMAND make install)
 
+set(GMP_INCLUDE_DIR ${PROJECT_BINARY_DIR}/tmp/include)
+set(GMP_LIBRARIES ${PROJECT_BINARY_DIR}/tmp/lib)
+
+set(NTL_PATH ${PROJECT_BINARY_DIR}/tmp/ntl)
+ExternalProject_Add(NTL
+    DEPENDS GMP
+    PREFIX ${NTL_PATH}
+    TMP_DIR ${NTL_PATH}/tmp
+    STAMP_DIR ${NTL_PATH}/stmp
+    DOWNLOAD_DIR ${NTL_PATH}/download
+    URL http://www.shoup.net/ntl/ntl-9.6.0.tar.gz
+    SOURCE_DIR ${NTL_PATH}/source
+    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on PREFIX=${PROJECT_BINARY_DIR}
+    BINARY_DIR ${NTL_PATH}/source/src/
+    BUILD_COMMAND make
+    INSTALL_COMMAND make install)
+endif(NOT CODA_BUILD)
+
+if(CODA_BUILD)
+SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")
 add_subdirectory(src/core core-imp)
 add_subdirectory(src/doctopt.cpp doctopt)
 add_subdirectory(src/HElib fhe)
-
 include_directories(include/)
+
 add_executable(core core.cpp)
+
+find_library(local-ntl
+             NAMES libntl.a ntl
+	     HINTS "${PROJECT_BINARY_DIR}/lib")
+find_library(local-gmp
+             NAMES libgmp.a gmp
+	     HINTS "${PROJECT_BINARY_DIR}/lib")
+MESSAGE(STATUS ${local-ntl})
+MESSAGE(STATUS ${local-gmp})
 target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
+endif(CODA_BUILD)
