@@ -386,7 +386,7 @@ static ssize_t __loadCiphers(std::list<Ctxt> &gs, std::list<Ctxt> &ps,
 
     if (nr_pheno != nr_geno) {
         L_WARN(global::_console, "Mismatching the patient numbers {0} ≠ {1}",
-               nr_geno, nr_geno);
+               nr_geno, nr_pheno);
         return -1;
     }
 
@@ -411,7 +411,7 @@ bool evaluate(const std::vector<std::string> &inputDirs,
     if (!__evaluate(genotype, phenotype, rets))
         return false;
 
-    bool ok = core::dumpCiphers(rets, util::concatenate(outputDir, "FILE_result"));
+    bool ok = core::dumpCiphers(rets, util::concatenate(outputDir, "File_result"));
     if (ok) {
         auto fd = util::createDoneFile(outputDir);
         char buf[1024];

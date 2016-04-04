@@ -17,12 +17,12 @@ namespace CConst {
     const char *D_NAMES[] = {
         "Meta", // 0
         "Data", // 1
-        "Data/Plaine", // 2
-        "Data/Plaine/private", // 3
-        "Data/Plaine/result", // 4
+        "Data/Plain", // 2
+        "Data/Plain/private", // 3
+        "Data/Plain/result", // 4
         "Data/Enc", // 5
         "Data/Enc/Send", // 6
-        "Data/Enc/Reciev" // 7
+        "Data/Enc/Receive" // 7
     };
     const char* META_FILE_NAME = "meta.ini";
     const char* FLAG_FILE_NAME = ".done.lock";
