@@ -50,8 +50,8 @@ static bool genKeypair(const std::string &metaFilePath) {
 
     switch (protocol) {
     case core::Protocol::PROT_CI2:
-        return core::genKeypair(protocol, metaFilePath);
     case core::Protocol::PROT_CON:
+    case core::Protocol::PROT_MEAN:
         return core::genKeypair(protocol, metaFilePath);
     default:
         L_ERROR(_console, "No protocol type is set! Please check file \"{0}\"", metaFilePath);
@@ -65,8 +65,10 @@ int main(int argc, char *argv[]) {
 
     if (args["gen"].asBool()) {
         auto metaFilePath = args["<meta file path>"].asString();
-        if (!genKeypair(metaFilePath))
+        if (!genKeypair(metaFilePath)) {
+            L_ERROR(_console, "Something went wrong in the key-generation");
             return -1;
+        }
     } else if (args["encrypt"].asBool()) {
         auto inputFilePath = args["<input file path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();

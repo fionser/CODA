@@ -1,4 +1,4 @@
-if(NOT CODA_BUILD)
+if(NOT BUILD_CODA)
 include(ExternalProject)
 set(GMP_PATH ${PROJECT_BINARY_DIR}/tmp/gmp)
 ExternalProject_Add(GMP
@@ -29,7 +29,7 @@ ExternalProject_Add(NTL
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
-endif(NOT CODA_BUILD)
+endif(NOT BUILD_CODA)
 
 if(BUILD_CODA)
 SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")

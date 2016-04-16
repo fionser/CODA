@@ -1,6 +1,5 @@
 #include "core/protocol.hpp"
 #include "HElib/FHE.h"
-#include "HElib/EncryptedArray.h"
 namespace protocol {
 bool genKeypair(core::Protocol protocol,
 		std::fstream &skStream,
@@ -13,6 +12,9 @@ bool genKeypair(core::Protocol protocol,
         break;
     case core::Protocol::PROT_CON:
         args = contingency::_fheArgs;
+        break;
+    case core::Protocol::PROT_MEAN:
+        args = mean::_fheArgs;
         break;
     default:
         return false;

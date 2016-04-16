@@ -158,6 +158,8 @@ bool encrypt(const std::string &inputFilePath,
         return protocol::chi2::encrypt(inputFilePath, outputFilePath, pk);
     case core::Protocol::PROT_CON:
         return protocol::contingency::encrypt(inputFilePath, outputFilePath, pk, context);
+    case core::Protocol::PROT_MEAN:
+        return protocol::mean::encrypt(inputFilePath, outputFilePath, pk, context);
     default:
         L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
         return false;
@@ -165,7 +167,7 @@ bool encrypt(const std::string &inputFilePath,
 }
 
 bool decrypt(const std::string &inputFilePath,
-             const std::string &outputFilePath,
+             const std::string &outputDir,
              const std::string &metaFilePath) {
     util::Meta meta;
     core::context_ptr context = nullptr;
@@ -176,9 +178,11 @@ bool decrypt(const std::string &inputFilePath,
     auto protocol = getProtocol(meta["protocol"].front());
     switch (protocol) {
     case core::Protocol::PROT_CI2:
-        return protocol::chi2::decrypt(inputFilePath, outputFilePath, pk, sk);
+        return protocol::chi2::decrypt(inputFilePath, outputDir, pk, sk);
     case core::Protocol::PROT_CON:
-        return protocol::contingency::decrypt(inputFilePath, outputFilePath, pk, sk, context);
+        return protocol::contingency::decrypt(inputFilePath, outputDir, pk, sk, context);
+    case core::Protocol::PROT_MEAN:
+        return protocol::mean::decrypt(inputFilePath, outputDir, pk, sk, context);
     default:
         L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
         return false;
@@ -231,6 +235,19 @@ bool dumpCiphers(const std::list<Ctxt> &ciphers, const std::string &file) {
     return true;
 }
 
+bool dumpCiphers(std::vector<Ctxt *> const& ciphers, std::string const& file) {
+    std::ofstream out(file);
+    if (!out.is_open()) {
+        L_ERROR(global::_console, "Can not dump into file {0}", file);
+        return false;
+    }
+
+    for (auto &c : ciphers)
+        out << *c;
+    out.close();
+    return true;
+}
+
 bool evaluate(const std::string &sessionDirPath,
               const std::string &outputDirPath,
               const std::string &metaFilePath) {
@@ -257,6 +274,8 @@ bool evaluate(const std::string &sessionDirPath,
     case core::Protocol::PROT_CON:
         return protocol::contingency::evaluate(userDirs, outputDirPath, pk,
                                                context);
+    case core::Protocol::PROT_MEAN:
+        return protocol::mean::evaluate(userDirs, outputDirPath, pk, context);
     default:
         L_ERROR(global::_console, "Unknown protocol was set in {0}", metaFilePath);
         return false;
