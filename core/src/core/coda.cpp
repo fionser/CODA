@@ -42,6 +42,9 @@ Protocol getProtocol(std::string description) {
     if (description.compare("PROT_CON") == 0)
         return Protocol::PROT_CON;
 
+    if (description.compare("PROT_MEAN") == 0)
+        return Protocol::PROT_MEAN;
+
     return Protocol::PROT_UKN;
 }
 } // namespace core

@@ -57,11 +57,11 @@ std::string concatenate(const std::string &path, const std::string &file) {
     return path + literal::separator + file;
 }
 
-FILE *createDoneFile(const std::string &path) {
-    auto p = concatenate(path, global::_doneFileName);
+FILE *createDoneFile(const std::string &dirpath) {
+    auto p = concatenate(dirpath, global::_doneFileName);
     FILE *out = fopen(p.c_str(), "w+");
     if (!out) {
-        L_WARN(global::_console, "{0}: {1}", path, std::strerror(errno));
+        L_WARN(global::_console, "{0}: {1}", dirpath, std::strerror(errno));
     }
     return out;
 }

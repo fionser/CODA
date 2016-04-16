@@ -16,7 +16,7 @@ std::string getDirPath(const std::string &path);
 
 std::string concatenate(const std::string &path, const std::string &file);
 
-FILE *createDoneFile(const std::string &path);
+FILE *createDoneFile(const std::string &dirpath);
 
 enum class flag_t {
     FILE_ONLY,

@@ -37,6 +37,8 @@ std::istream& operator>>(std::istream &in, FHEArg &args);
 enum class Protocol {
     PROT_CI2, // chi-2
     PROT_CON, // contingency table
+    PROT_MEAN,
+    PROT_MAX,
     PROT_UKN  // unknown
 };
 
