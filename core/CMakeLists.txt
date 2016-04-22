@@ -6,7 +6,7 @@ ExternalProject_Add(GMP
 	PREFIX ${GMP_PATH}
 	STAMP_DIR ${GMP_PATH}/stmp
 	DOWNLOAD_DIR ${GMP_PATH}/download
-	URL https://gmplib.org/download/gmp/gmp-6.0.0a.tar.bz2
+	URL ${PROJECT_SOURCE_DIR}/thirdparties/gmp-6.1.0.tar.bz2
 	SOURCE_DIR ${GMP_PATH}/source
 	CONFIGURE_COMMAND ${GMP_PATH}/source/configure --prefix=${PROJECT_BINARY_DIR}
 	BINARY_DIR ${GMP_PATH}/build
@@ -23,7 +23,7 @@ ExternalProject_Add(NTL
     TMP_DIR ${NTL_PATH}/tmp
     STAMP_DIR ${NTL_PATH}/stmp
     DOWNLOAD_DIR ${NTL_PATH}/download
-    URL http://www.shoup.net/ntl/ntl-9.6.0.tar.gz
+    URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.7.1.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
     CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on PREFIX=${PROJECT_BINARY_DIR}
     BINARY_DIR ${NTL_PATH}/source/src/
