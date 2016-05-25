@@ -355,27 +355,11 @@ static ssize_t __loadCiphers(std::list<Ctxt> &gs, std::list<Ctxt> &ps,
         auto df = loader.loadDoneFile(dir);
         switch (df.type) {
         case dataType_t::GENOTYPE:
-            if (nr_geno != 0 && nr_geno != df.N) {
-                L_WARN(global::_console,
-                       "Mismatching the patient numbers in genotype {0} ≠ {1}",
-                       nr_geno, df.N);
-                return -1;
-            } else {
-                nr_geno = static_cast<ssize_t>(df.N);
-            }
-
+	    nr_geno += static_cast<ssize_t>(df.N);
             loader.loadCiphers(dir, pk, gs);
             break;
         case dataType_t::PHENOTYPE:
-            if (nr_pheno != 0 && nr_pheno != df.N) {
-                L_WARN(global::_console,
-                       "Mismatching the patient numbers in phenotype {0} ≠ {1}",
-                       nr_geno, df.N);
-                return -1;
-            } else {
-                nr_pheno = static_cast<ssize_t>(df.N);
-            }
-
+	    nr_pheno += static_cast<ssize_t>(df.N);
             loader.loadCiphers(dir, pk, ps);
             break;
         default:
@@ -385,8 +369,8 @@ static ssize_t __loadCiphers(std::list<Ctxt> &gs, std::list<Ctxt> &ps,
     }
 
     if (nr_pheno != nr_geno) {
-        L_WARN(global::_console, "Mismatching the patient numbers {0} ≠ {1}",
-               nr_geno, nr_pheno);
+        L_WARN(global::_console, "Mismatching the number of patients {0} ≠ {1}",
+	       nr_geno, nr_pheno);
         return -1;
     }
 
