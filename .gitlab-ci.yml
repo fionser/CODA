@@ -1,0 +1,20 @@
+image: ubuntu:14.04
+before_script:
+    - apt-get update -qq && apt-get install -y -qq g++
+    - g++ -version
+
+compile_NTL_GMP:
+    only:
+        - test/CI
+    stage: build
+    script:
+        - mkdir build && cd build && cmake ..
+        - make -j
+
+compile_CODA:
+    only:
+        - test/CI
+    stage: build
+    script:
+        - cd build && cmake ..
+        - make -j
