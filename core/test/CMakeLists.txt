@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES(../include)
+INCLUDE_DIRECTORIES(../include/)
 ADD_EXECUTABLE(test_gt TestGreaterThan.cpp)
 ADD_TEST(NAME TestGreaterThan
          COMMAND $<TARGET_FILE:test_gt>
