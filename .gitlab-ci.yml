@@ -1,0 +1,8 @@
+image: rikulwj/ubuntu
+compile_CODA:
+    only:
+        - test/CI
+    stage: build
+    script:
+        - cd build && cmake ..
+        - make -j
