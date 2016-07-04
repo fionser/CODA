@@ -1,4 +1,4 @@
-if (${BUILD_UI})
+if (${BUILD_ui})
 add_subdirectory(src/client)
 add_subdirectory(src/server)
-endif (${BUILD_UI})
+endif (${BUILD_ui})
