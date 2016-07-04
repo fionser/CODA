@@ -89,11 +89,11 @@ bool evaluate(const std::vector<std::string> &inputDirs,
 
 } // namespace mean
 
-namespace max {
+namespace rank {
 extern const core::FHEArg _fheArgs;
 
 /// @param inputFilePath The raw data file.
-/// @param outputDirPath The directory to place the cipher file(s).
+/// @param outputD
 /// @param pk The public encryption key.
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
@@ -116,6 +116,6 @@ bool evaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,
               core::pk_ptr pk);
 
-} // namespace max
+} // namespace rank
 } // namespace protocol
 #endif // core_PROTOCOL_PROTOCOL_H

@@ -1,4 +1,4 @@
-if(NOT BUILD_CODA)
+if(${BUILD_LIB})
 include(ExternalProject)
 set(GMP_PATH ${PROJECT_BINARY_DIR}/tmp/gmp)
 ExternalProject_Add(GMP
@@ -29,13 +29,14 @@ ExternalProject_Add(NTL
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
-endif(NOT BUILD_CODA)
+endif(${BUILD_LIB})
 
-if(BUILD_CODA)
+if(${BUILD_CORE})
 SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")
 add_subdirectory(src/core core-imp)
 add_subdirectory(src/doctopt.cpp doctopt)
 add_subdirectory(src/HElib fhe)
+add_subdirectory(test test)
 include_directories(include/)
 
 add_executable(core core.cpp)
@@ -49,4 +50,4 @@ find_library(local-gmp
 MESSAGE(STATUS ${local-ntl})
 MESSAGE(STATUS ${local-gmp})
 target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
-endif(BUILD_CODA)
+endif(${BUILD_CORE})
