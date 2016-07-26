@@ -26,9 +26,9 @@ ExternalProject_Add(NTL
     TMP_DIR ${NTL_PATH}/tmp
     STAMP_DIR ${NTL_PATH}/stmp
     DOWNLOAD_DIR ${NTL_PATH}/download
-    URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.7.1.tar.gz
+    URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.10.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
-    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
+    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_ENABLE_TLS_HACK=on NTL_THREADS=on NTL_THREAD_BOOST=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
