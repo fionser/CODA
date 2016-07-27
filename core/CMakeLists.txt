@@ -28,7 +28,7 @@ ExternalProject_Add(NTL
     DOWNLOAD_DIR ${NTL_PATH}/download
     URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.10.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
-    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
+    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
@@ -40,7 +40,7 @@ ExternalProject_Add(NTL
     DOWNLOAD_DIR ${NTL_PATH}/download
     URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.10.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
-    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
+    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
@@ -48,13 +48,14 @@ endif(${BUILD_lib})
 
 if(${BUILD_core})
 SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")
+add_definitions(-DFHE_THREADS)
 add_subdirectory(src/core core-imp)
 add_subdirectory(src/doctopt.cpp doctopt)
 add_subdirectory(src/HElib fhe)
 add_subdirectory(test test)
 include_directories(include/)
 
-add_executable(core core.cpp)
+#add_executable(core core.cpp)
 
 find_library(local-ntl
              NAMES libntl.a ntl
@@ -64,5 +65,5 @@ find_library(local-gmp
 	     HINTS "${PROJECT_BINARY_DIR}/lib")
 MESSAGE(STATUS ${local-ntl})
 MESSAGE(STATUS ${local-gmp})
-target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
+#target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
 endif(${BUILD_core})

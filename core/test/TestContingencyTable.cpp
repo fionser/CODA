@@ -6,7 +6,11 @@
 #include "HElib/Ctxt.h"
 #include "HElib/FHE.h"
 #include "HElib/EncryptedArray.h"
-
+#ifdef FHE_THREADS
+#define NR_THREADS 8
+#else
+#define NR_THREADS 1
+#endif
 void test_CT() {
     long m = 5227;
 //    long m = 2110;
@@ -29,15 +33,15 @@ void test_CT() {
     // Attribute R with size = 4
     slots[6] = 0; slots[7] = 1; slots[8] = 0; slots[9] = 0;
 
-    const size_t N = 10;
-    std::vector<Ctxt> ctxts(N, *pk);
-    for (size_t i = 0; i < N; i++) {
-        ea->encrypt(ctxts.at(i), *pk, slots);
-    }
+    Ctxt _tmp(*pk);
+    ea->encrypt(_tmp, *pk, slots);
+    const size_t N = 1000;
+    std::vector<Ctxt> ctxts(N, _tmp);
 
-    core::Attribute P = { .text = "P", .size = 2, .offset = 0};
-    core::Attribute Q = { .text = "Q", .size = 4, .offset = 2};
-    core::Attribute R = { .text = "R", .size = 4, .offset = 6};
+    auto type = core::Attribute::Type::CATEGORICAL;
+    struct core::Attribute P = { text : "P", type: type, size : 2, offset : 0};
+    struct core::Attribute Q = { text : "Q", type: type, size : 4, offset : 2};
+    struct core::Attribute R = { text : "R", type: type, size : 4, offset : 6};
 
     auto helper = new core::PrivateContingencyTableHelper(P, Q, 5, ea);
     core::PrivateContingencyTable CT(context, helper);
@@ -51,6 +55,7 @@ void test_CT() {
     FHE_NTIMER_STOP(Decryption);
     printf("%zd publishable counting\n", publishable.size());
 
+    //printAllTimers(std::cout);
     printNamedTimer(std::cout, "Conduction");
     printNamedTimer(std::cout, "GreaterThan");
     printNamedTimer(std::cout, "Blinding");
@@ -85,12 +90,13 @@ void test_repeat() {
     slots[2] = 3; slots[3] = 4; slots[4] = 5; slots[5] = 6;
 //    slots[6] = 7; slots[7] = 7; slots[8] = 7; slots[9] = 7;
 
-    const size_t N = 20;
+    const size_t N = 100;
     Ctxt ctxt(*pk);
     ea->encrypt(ctxt, *pk, slots);
 
-    core::Attribute P = { .text = "P", .size = 2, .offset = 0};
-    core::Attribute Q = { .text = "Q", .size = 3, .offset = 2};
+    auto type = core::Attribute::Type::CATEGORICAL;
+    struct core::Attribute P = { text : "P", type: type, size : 2, offset : 0};
+    struct core::Attribute Q = { text : "Q", type: type, size : 3, offset : 2};
     auto helper = new core::PrivateContingencyTableHelper(P, Q, 5, ea);
     helper->setCT(&ctxt);
     auto repeated = helper->repeat(500);

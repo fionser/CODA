@@ -10,12 +10,15 @@
 #include "core/greaterthan.h"
 #include <vector>
 #include <thread>
+#include <algorithm>
 
 #include <NTL/ZZ.h>
 
 #ifdef FHE_THREADS
 #define NR_THREADS 8
+#warning  "Using 8 threads"
 #else
+#warning "Using single threads"
 #define NR_THREADS 1
 #endif
 
