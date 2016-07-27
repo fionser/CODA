@@ -12,9 +12,9 @@
 #define NR_THREADS 1
 #endif
 void test_CT() {
-    long m = 5227;
-//    long m = 2110;
-    long p = 67499;
+    long m = 16384; // security = 80
+//    long m = 32768; // security = 230
+    long p = 8191;
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
     buildModChain(*context, 8);
     std::cout << "SLevel " << context->securityLevel() << "\n";
