@@ -12,6 +12,13 @@
 #include <thread>
 
 #include <NTL/ZZ.h>
+
+#ifdef FHE_THREADS
+#define NR_THREADS 8
+#else
+#define NR_THREADS 1
+#endif
+
 namespace core {
 std::pair<size_t, size_t> coprime(size_t i, size_t j) {
     while (NTL::GCD(i, j) != 1) {
@@ -79,26 +86,27 @@ PrivateContingencyTable::compute_table(const std::vector <Ctxt> &attributes,
                                        Attribute p, Attribute q,
                                        const EncryptedArray *ea) const {
     std::atomic<size_t> counter(0);
-    std::mutex lock;
     size_t nr_ctxts = attributes.size();
     const auto &pk = attributes.front().getPubKey();
     std::shared_ptr<Ctxt> ct = std::make_shared<Ctxt>(pk);
-    auto program = [&]() {
+    std::vector<Ctxt> workers_space(NR_THREADS, pk);
+    auto program = [&](const long worker_id) {
         size_t next;
         while (true) {
             next = counter.fetch_add(1UL);
             if (next >= nr_ctxts) break;
             auto tmp = process(attributes.at(next), p, q, *ea);
-            lock.lock();
-            ct->operator+=(tmp);
-            lock.unlock();
+            workers_space.at(worker_id) += tmp;
         }
     };
 
     std::vector<std::thread> workers;
-    for (auto wr = 0; wr < 1; wr++)
-        workers.push_back(std::thread(program));
+    for (auto wr = 0; wr < NR_THREADS; wr++)
+        workers.push_back(std::thread(program, wr));
     for (auto &&wr : workers) wr.join();
+
+    for (auto &tmp : workers_space)
+        ct->operator+=(tmp);
     ct->reLinearize();
     return ct;
 }
