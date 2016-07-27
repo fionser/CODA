@@ -13,7 +13,8 @@ void test_CT() {
     long p = 67499;
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
     buildModChain(*context, 8);
-    std::cout << context->securityLevel() << "\n";
+    std::cout << "SLevel " << context->securityLevel() << "\n";
+    std::cout << "Num of Gens " << context->zMStar.numOfGens() << "\n";
     core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
     sk->GenSecKey(64);
     addSome1DMatrices(*sk);
@@ -28,14 +29,14 @@ void test_CT() {
     // Attribute R with size = 4
     slots[6] = 0; slots[7] = 1; slots[8] = 0; slots[9] = 0;
 
-    const size_t N = 1000;
+    const size_t N = 10;
     std::vector<Ctxt> ctxts(N, *pk);
     for (size_t i = 0; i < N; i++) {
         ea->encrypt(ctxts.at(i), *pk, slots);
     }
 
     core::Attribute P = { .text = "P", .size = 2, .offset = 0};
-    core::Attribute Q = { .text = "Q", .size = 4, .offset = 2}
+    core::Attribute Q = { .text = "Q", .size = 4, .offset = 2};
     core::Attribute R = { .text = "R", .size = 4, .offset = 6};
 
     auto helper = new core::PrivateContingencyTableHelper(P, Q, 5, ea);
