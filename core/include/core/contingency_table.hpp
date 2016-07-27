@@ -34,10 +34,12 @@ public:
     struct ResultType {
         typedef std::vector<ctxt_ptr> Type_n_uv;
         typedef std::vector<ctxt_ptr> Type_gamma;
+        typedef std::vector<Type_gamma> Type_tilde_gamma;
         Type_n_uv n_uv;
         Type_gamma gamma;
-        Type_gamma tilde_gamma;
+        Type_tilde_gamma tilde_gamma;
     };
+    typedef std::vector<long> AESKey_t;
 
     PrivateContingencyTable(context_ptr context,
                             PrivateContingencyTableHelper *helper);
@@ -54,10 +56,10 @@ private:
     ResultType::Type_gamma special_greater_than(ctxt_ptr CT, long domain_size,
                                                 const EncryptedArray *ea) const;
 
-    ResultType::Type_gamma add_key_to_gamma(const ResultType::Type_gamma &gamma,
-                                            const std::vector<long> &keys,
-                                            long domain_size,
-                                            const EncryptedArray *ea) const;
+    ResultType::Type_tilde_gamma add_key_to_gamma(const ResultType::Type_gamma &gamma,
+                                                  const std::vector<AESKey_t> &keys,
+                                                  long domain_size,
+                                                  const EncryptedArray *ea) const;
 
 private:
     context_ptr context = nullptr;
@@ -67,14 +69,17 @@ private:
 class PrivateContingencyTableHelper {
 public:
     typedef typename PrivateContingencyTable::ResultType::Type_gamma Type_gamma;
+    typedef typename PrivateContingencyTable::ResultType::Type_tilde_gamma Type_tilde_gamma;
     struct Publishable {
         size_t u, v;
-        long hash_key;
+        NTL::ZZ aes_key;
     };
 
-    PrivateContingencyTableHelper(const Attribute P, const Attribute Q,
-                                 const long threshold, const EncryptedArray *ea)
-    : P(P), Q(Q), threshold(threshold), ea(ea) {}
+    PrivateContingencyTableHelper(const Attribute P,
+                                  const Attribute Q,
+                                  const long threshold,
+                                  const EncryptedArray *ea)
+            : P(P), Q(Q), threshold(threshold), ea(ea), key_bits(128L) {}
 
     virtual ~PrivateContingencyTableHelper() {}
 
@@ -82,11 +87,15 @@ public:
 
     size_t how_many_copies(long domain_size) const;
 
+    size_t how_many_copies_for_bits(const EncryptedArray *ea) const;
+
     size_t repeats_per_cipher() const;
 
     size_t block_size() const;
 
     void setCT(const Ctxt *ctxt) { this->CT = ctxt; }
+
+    void setKeyLength(long s) { key_bits = s; }
 
     Attribute getP() const { return P; }
 
@@ -94,13 +103,23 @@ public:
 
     long getThreshold() const { return threshold; }
 
+    long aesKeyLength() const { return key_bits; }
+
     void open_gamma(std::vector<Publishable> &no_suppression,
                     const Type_gamma  &gamma,
-                    const Type_gamma  &tilde_gamma,
+                    const Type_tilde_gamma  &tilde_gamma,
                     const EncryptedArray *ea, sk_ptr sk);
+private:
+    std::vector<PrivateContingencyTable::AESKey_t>
+        decryptToGetAESKeys(const Type_tilde_gamma &tilde_gamma,
+                            const size_t loc,
+                            const std::vector<size_t> &zeros,
+                            const EncryptedArray *ea, sk_ptr sk) const;
+
 private:
     Attribute P, Q;
     const long threshold;
+    long key_bits;
     const Ctxt *CT = nullptr;
     const EncryptedArray *ea;
 };

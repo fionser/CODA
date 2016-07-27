@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     ArgMapping mapping;
     long slots = 100;
     long security = 80;
-    long level = 10;
+    long level = 8;
     long plain = 2;
     mapping.arg("p", plain, "plaintext");
     mapping.arg("L", level, "level");
@@ -23,30 +23,21 @@ int main(int argc, char *argv[]) {
     mapping.arg("S", slots, "how many slots?");
     mapping.parse(argc, argv);
 
-//    long m = 1024;
-//    for (;;) {
-//        do {
-//            m = m << 1;
-//        } while (phi_N(m) < 8515);
-//
-//        long trial = 0;
-//        long p = NTL::NextPrime(plain, 15);
-//        while (numOfSlots(m, p) < (slots << 1)) {
-//            p = NTL::NextPrime(p + 1);
-//            if (p == m) p = NTL::NextPrime(p + 1, 15);
-//            trial += 1;
-//            if (trial > 10000) break;
-//        }
-//
-//        if (numOfSlots(m, p) >= slots) {
-//            plain = p;
-//            break;
-//        }
-//        printf("trial failed with %ld\n", m);
-//    }
-
-    long m = 16384;
-    plain = 8191;
+    long m = NTL::NextPrime(phi_N(16384 * 2));
+    long p = 65537;//8191;
+    long max_slots = 0;
+    printf("m(%ld) = %ld\n", m, phi_N(m));
+    for (long t = 0; t < 10000; t++) {
+        p = NTL::NextPrime(p + 2);
+        PAlgebra zMStar(m, p);
+        if (zMStar.numOfGens() == 1 && zMStar.getNSlots() > max_slots) {
+            max_slots = zMStar.getNSlots();
+            plain = p;
+            printf("%ld %ld\n", plain, max_slots);
+        }
+    }
+//    long m = 16384;
+//    plain = 8191;
     FHEcontext context(m, plain, 1);
     buildModChain(context, level);
     std::cout << "SL " << context.securityLevel() << "\n";

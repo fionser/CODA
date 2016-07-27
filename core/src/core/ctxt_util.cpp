@@ -10,7 +10,7 @@
 #include <algorithm>
 
 namespace core {
-static size_t number_bits(long a) {
+size_t number_bits(long a) {
     size_t bits = 0;
     while (a > 0) {
         bits += 1;
@@ -99,18 +99,5 @@ std::vector<std::vector<long>> randomness(long D, const EncryptedArray &ea) {
     return parts;
 }
 
-NTL::ZZX random_key(const EncryptedArray &ea) {
-    long pr = ea.getAlMod().getPPowR();
-    std::vector<long> poly(ea.size(), NTL::RandomBnd(pr));
-    NTL::ZZX k;
-    ea.encode(k, poly);
-    return k;
-}
-
-void add_key(greaterthan::ResultType &gamma, NTL::ZZX key) {
-   for (auto &c : gamma) {
-       c->addConstant(key);
-   }
-}
 }
 

@@ -24,8 +24,6 @@ std::vector<std::vector<long>> random_permutation(long D, const EncryptedArray &
 
 std::vector<std::vector<long>> randomness(long D, const EncryptedArray &ea);
 
-NTL::ZZX random_key(const EncryptedArray &ea);
-
-void add_key(greaterthan::ResultType &gamma, NTL::ZZX key);
+size_t number_bits(long a);
 } // namespace core
 #endif //CODA_CLION_CTXT_UTIL_HPP

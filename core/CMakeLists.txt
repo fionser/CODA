@@ -48,7 +48,7 @@ endif(${BUILD_lib})
 
 if(${BUILD_core})
 SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")
-add_definitions(-DFHE_THREADS)
+add_definitions(-DNFHE_THREADS)
 add_subdirectory(src/core core-imp)
 add_subdirectory(src/doctopt.cpp doctopt)
 add_subdirectory(src/HElib fhe)
