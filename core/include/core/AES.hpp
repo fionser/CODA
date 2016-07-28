@@ -14,10 +14,9 @@ public:
     class Ctxt : public std::vector<uint8_t> {
     public:
         friend class AES128;
-        Ctxt(size_t length)
+        Ctxt(size_t length = 0)
         : std::vector<uint8_t>(length),
           _length(0) { }
-        Ctxt() { Ctxt::Ctxt(0); }
         ~Ctxt() {}
         size_t size() const { return _length;}
         void size(const size_t size) {_length = size;}

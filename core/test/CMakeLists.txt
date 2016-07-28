@@ -24,4 +24,4 @@ ADD_EXECUTABLE(test_aes TestAES.cpp)
 ADD_TEST(NAME TestAES
         COMMAND $<TARGET_FILE:test_aes>
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
-TARGET_LINK_LIBRARIES(test_aes core-imp fhe crypto ${local-ntl} ${local-gmp})
+TARGET_LINK_LIBRARIES(test_aes core-imp fhe crypto ${local-ntl} ${local-gmp} pthread)
