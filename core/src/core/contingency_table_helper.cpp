@@ -9,6 +9,13 @@
 #include "core/greaterthan.h"
 #include <vector>
 #include <algorithm>
+#include <thread>
+
+#ifdef FHE_THREADS
+#define NR_THREADS 8
+#else
+#define NR_THREADS 1
+#endif
 
 namespace core {
 size_t PrivateContingencyTableHelper::repeats_per_cipher() const {
@@ -52,38 +59,50 @@ open_gamma(std::vector <Publishable> &unsuppression,
     size_t usable_size = ea->size() / bs * bs;
     auto modified_sizes = coprime(P.size, Q.size);
     auto bit_per = number_bits(ea->getAlMod().getPPowR());
-    std::vector<long> decrypted(ea->size());
-
-    for (size_t i = 0; i < gamma.size(); i++) {
-        const auto &part = gamma.at(i);
-//        if (!part->isCorrect())
-//            printf("Warnning! might be an invalid cipher\n");
-        ea->decrypt(*part, *sk, decrypted);
-        std::vector <size_t> zeros;
-        for (size_t j = 0; j < usable_size; j++) {
-            if (decrypted.at(j) != 0) continue;
-            size_t u = j % modified_sizes.first;
-            size_t v = j % modified_sizes.second;
-            if (u >= P.size || v >= Q.size) {
-                printf("WARN! position %zd impossible be zero!\n", j);
-                continue;
+    std::atomic<size_t> counter(0);
+    std::mutex tmux;
+    auto program = [&]() {
+        size_t sze = gamma.size();
+        size_t i;
+        while ((i= counter.fetch_add(1)) < sze) {
+            const auto &part = gamma.at(i);
+//            if (!part->isCorrect())
+//                printf("Warnning! might be an invalid cipher\n");
+            std::vector<long> decrypted(ea->size());
+            ea->decrypt(*part, *sk, decrypted);
+            std::vector <size_t> zeros;
+            for (size_t j = 0; j < usable_size; j++) {
+                if (decrypted.at(j) != 0) continue;
+                size_t u = j % modified_sizes.first;
+                size_t v = j % modified_sizes.second;
+                if (u >= P.size || v >= Q.size) {
+                    printf("WARN! position %zd impossible be zero!\n", j);
+                    continue;
+                }
+                zeros.push_back(j);
             }
-            zeros.push_back(j);
+
+            if (zeros.empty()) continue;
+
+            auto aesKeys = decryptToGetAESKeys(tilde_gamma, i, zeros, ea, sk);
+
+            for (size_t j = 0; j < zeros.size(); j++) {
+                auto crtidx = zeros[j] % bs;
+                size_t u = crtidx % modified_sizes.first;
+                size_t v = crtidx % modified_sizes.second;
+                Publishable info = {.u = u, .v = v, .j = crtidx,
+                        .aes_key = convKey(aesKeys.at(j), bit_per)};
+                tmux.lock();
+                unsuppression.push_back(info);
+                tmux.unlock();
+            }
         }
+    };
 
-        if (zeros.empty()) continue;
-
-        auto aesKeys = decryptToGetAESKeys(tilde_gamma, i, zeros, ea, sk);
-
-        for (size_t j = 0; j < zeros.size(); j++) {
-            auto crtidx = zeros[j] % bs;
-            size_t u = crtidx % modified_sizes.first;
-            size_t v = crtidx % modified_sizes.second;
-            Publishable info = {.u = u, .v = v, .j = crtidx,
-                                .aes_key = convKey(aesKeys.at(j), bit_per)};
-            unsuppression.push_back(info);
-        }
-    }
+    std::vector<std::thread> workers;
+    for (size_t wr = 0; wr < NR_THREADS; wr++)
+        workers.push_back(std::thread(program));
+    for (auto &wr : workers) wr.join();
 }
 
 std::vector <PrivateContingencyTable::AESKey_t>
