@@ -25,5 +25,11 @@ std::vector<std::vector<long>> random_permutation(long D, const EncryptedArray &
 std::vector<std::vector<long>> randomness(long D, const EncryptedArray &ea);
 
 size_t number_bits(long a);
+
+template<class HELibObj>
+std::string conv(const HELibObj &obj);
+
+template<class HElibObj>
+void conv(HElibObj &obj, const std::string &message);
 } // namespace core
 #endif //CODA_CLION_CTXT_UTIL_HPP

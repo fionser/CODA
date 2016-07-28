@@ -8,6 +8,7 @@
 #include <NTL/ZZ.h>
 #include <random>
 #include <algorithm>
+#include <sstream>
 
 namespace core {
 size_t number_bits(long a) {
@@ -99,5 +100,17 @@ std::vector<std::vector<long>> randomness(long D, const EncryptedArray &ea) {
     return parts;
 }
 
+template<>
+std::string conv(const Ctxt &obj) {
+    std::stringstream sstream;
+    sstream << obj;
+    return sstream.str();
+}
+
+template<>
+void conv(Ctxt &obj, const std::string &str) {
+    std::stringstream sstream(str);
+    sstream >> obj;
+}
 }
 

@@ -23,8 +23,8 @@ int main(int argc, char *argv[]) {
     mapping.arg("S", slots, "how many slots?");
     mapping.parse(argc, argv);
 
-    long m = NTL::NextPrime(phi_N(16384 * 2));
-    long p = 65537;//8191;
+    long m = 16384 * 2;
+    long p = 1 << 8;//8191;
     long max_slots = 0;
     printf("m(%ld) = %ld\n", m, phi_N(m));
     for (long t = 0; t < 10000; t++) {

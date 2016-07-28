@@ -1,6 +1,8 @@
 include_directories(../../include)
 include_directories(${NTL_INCLUDE_PATH})
+find_package(OpenSSL)
+include_directories(${OPENSSL_INCLUDE_DIR}/)
 set(LIB_SRCS chi2.cpp coda.cpp core.cpp contingency.cpp file_util.cpp global.cpp
         literal.cpp protocol.cpp contingency-eval.cpp.cpp mean.cpp greaterthan.cpp rank-k.cpp
-        ctxt_util.cpp contingency_table.cpp)
+        ctxt_util.cpp contingency_table.cpp AES.cpp)
 add_library(core-imp STATIC ${LIB_SRCS})
