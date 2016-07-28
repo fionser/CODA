@@ -9,7 +9,10 @@
 #include <memory>
 #include "coda.hpp"
 #include "../HElib/Ctxt.h"
+#include "AES.hpp"
 #include "greaterthan.h"
+
+namespace NTL { class ZZX; }
 
 namespace core {
 struct Attribute {
@@ -27,12 +30,11 @@ struct Attribute {
 
 class PrivateContingencyTableHelper;
 
-
 class PrivateContingencyTable {
 public:
     typedef std::shared_ptr<Ctxt> ctxt_ptr;
     struct ResultType {
-        typedef std::vector<ctxt_ptr> Type_n_uv;
+        typedef std::vector<AES128::Ctxt> Type_n_uv;
         typedef std::vector<ctxt_ptr> Type_gamma;
         typedef std::vector<Type_gamma> Type_tilde_gamma;
         Type_n_uv n_uv;
@@ -53,6 +55,13 @@ private:
                            Attribute p, Attribute q,
                            const EncryptedArray *ea) const;
 
+    Ctxt do_compute(const Ctxt &one_record, const Attribute &p,
+                    const Attribute &q, const EncryptedArray *ea) const;
+
+    std::vector<ctxt_ptr> extract_cells_in_table(const ctxt_ptr& CT,
+                                                 Attribute p, Attribute q,
+                                                 const EncryptedArray *ea) const;
+
     ResultType::Type_gamma special_greater_than(ctxt_ptr CT, long domain_size,
                                                 const EncryptedArray *ea) const;
 
@@ -61,6 +70,10 @@ private:
                                                   long domain_size,
                                                   const EncryptedArray *ea) const;
 
+    ResultType::Type_n_uv aes_encrypt_cells(const std::vector<ctxt_ptr> &cells,
+                                            const std::vector<AESKey_t> &keys,
+                                            const EncryptedArray *ea) const;
+
 private:
     context_ptr context = nullptr;
     PrivateContingencyTableHelper *helper = nullptr;
@@ -68,6 +81,7 @@ private:
 
 class PrivateContingencyTableHelper {
 public:
+    typedef typename PrivateContingencyTable::ResultType::Type_n_uv Type_n_uv;
     typedef typename PrivateContingencyTable::ResultType::Type_gamma Type_gamma;
     typedef typename PrivateContingencyTable::ResultType::Type_tilde_gamma Type_tilde_gamma;
     struct Publishable {
@@ -93,22 +107,27 @@ public:
 
     size_t block_size() const;
 
-    void setCT(const Ctxt *ctxt) { this->CT = ctxt; }
+    void setCT(const Ctxt *ctxt) {this->CT = ctxt; }
 
-    void setKeyLength(long s) { key_bits = s; }
+    void setKeyLength(long s) {key_bits = s;}
 
-    Attribute getP() const { return P; }
+    Attribute getP() const { return P;}
 
-    Attribute getQ() const { return Q; }
+    Attribute getQ() const { return Q;}
 
-    long getThreshold() const { return threshold; }
+    long getThreshold() const { return threshold;}
 
-    long aesKeyLength() const { return key_bits; }
+    long aesKeyLength() const { return key_bits;}
 
     void open_gamma(std::vector<Publishable> &no_suppression,
                     const Type_gamma  &gamma,
                     const Type_tilde_gamma  &tilde_gamma,
-                    const EncryptedArray *ea, sk_ptr sk);
+                    const EncryptedArray *ea, sk_ptr sk) const;
+
+    std::vector<long> final_decrypt(const Type_n_uv &cells,
+                                    const std::vector<Publishable> &publishable,
+                                    const sk_ptr sk,
+                                    const EncryptedArray *ea) const;
 private:
     std::vector<PrivateContingencyTable::AESKey_t>
         decryptToGetAESKeys(const Type_tilde_gamma &tilde_gamma,
@@ -123,6 +142,16 @@ private:
     const Ctxt *CT = nullptr;
     const EncryptedArray *ea;
 };
+
 long CRT(long u, long v, long k1, long k2);
+
+std::pair<size_t, size_t> coprime(size_t i, size_t j);
+
+
+PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz, long bit_per, long partition);
+
+NTL::ZZX convKey(const std::vector<PrivateContingencyTable::AESKey_t> &keys, long p, const EncryptedArray *ea);
+
+NTL::ZZ convKey(PrivateContingencyTable::AESKey_t aes, long bit_per);
 } // namespace core
 #endif //CODA_CLION_CONTINGENCY_TABLE_HPP

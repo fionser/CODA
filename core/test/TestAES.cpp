@@ -32,5 +32,6 @@ int main() {
 
     plain[0] = 0;
     sk.Decrypt(plain, decrypted);
-    return plain[0] == 10? 0 : 1;
+    assert(plain[0] == 10);
+    return 0;
 }

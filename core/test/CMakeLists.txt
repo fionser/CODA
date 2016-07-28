@@ -15,7 +15,7 @@ ADD_EXECUTABLE(test_contingency TestContingencyTable.cpp)
 ADD_TEST(NAME TestContingency
         COMMAND $<TARGET_FILE:test_contingency>
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
-TARGET_LINK_LIBRARIES(test_contingency core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
+TARGET_LINK_LIBRARIES(test_contingency core-imp fhe crypto ${local-ntl} ${local-gmp} pthread docopt)
 
 
 find_package(OpenSSL)

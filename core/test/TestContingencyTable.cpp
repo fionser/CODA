@@ -14,12 +14,13 @@
 void test_CT() {
     long parameters[][2] = {
             {8219, 77933}, // 80-bits
-            {16384, 8191},
+            {16384, 6143}, // 80-bits
+            {16384, 8191}, // 80-bits
             {16384 * 2, 8191}, // 200+ bits
     };
 
-    long m = parameters[0][0];
-    long p = parameters[0][1];
+    long m = parameters[1][0];
+    long p = parameters[1][1];
 
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
     buildModChain(*context, 10);
@@ -55,15 +56,18 @@ void test_CT() {
     auto helper = new core::PrivateContingencyTableHelper(P, Q, 5, ea);
     core::PrivateContingencyTable CT(context, helper);
     auto encrypted_CT = CT.evaluate(ctxts);
+    auto &n_uv = encrypted_CT.n_uv;
     auto &gamma = encrypted_CT.gamma;
     auto &tilde_gamma = encrypted_CT.tilde_gamma;
 
     FHE_NTIMER_START(Decryption);
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishable;
     helper->open_gamma(publishable, gamma, tilde_gamma, ea, sk);
+    auto counts = helper->final_decrypt(n_uv, publishable, sk, ea);
     FHE_NTIMER_STOP(Decryption);
-    for (auto &pb : publishable) {
-        std::cout << pb.u << " " << pb.v << " " << pb.aes_key << "\n";
+    auto modified = core::coprime(P.size, Q.size);
+    for (size_t x = 0; x < counts.size(); x++) {
+        printf("%lu %lu -> %ld\n", x % modified.first, x % modified.second, counts.at(x));
     }
 
     //printAllTimers(std::cout);

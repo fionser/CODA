@@ -47,9 +47,8 @@ AES128::Ctxt AES128::encrypt(const std::string &message) {
 
     EVP_CIPHER_CTX_cleanup(&ctx);
 
-    AES128::Ctxt _ctxt(ctxt_len);
-    _ctxt.swap(ctxt);
-    return _ctxt;
+    ctxt.size(ctxt_len);
+    return ctxt;
 }
 
 std::string AES128::decrypt(const AES128::Ctxt &ctxt) {

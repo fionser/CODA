@@ -7,10 +7,24 @@
 #include <openssl/aes.h>
 #include <NTL/ZZ.h>
 #include <vector>
+#include <memory>
 namespace core {
 class AES128 {
 public:
-    typedef std::vector<uint8_t> Ctxt;
+    class Ctxt : public std::vector<uint8_t> {
+    public:
+        friend class AES128;
+        Ctxt(size_t length)
+        : std::vector<uint8_t>(length),
+          _length(0) { }
+        Ctxt() { Ctxt::Ctxt(0); }
+        ~Ctxt() {}
+        size_t size() const { return _length;}
+        void size(const size_t size) {_length = size;}
+    private:
+        size_t _length;
+    } ;
+
     AES128(const NTL::ZZ& init_key);
 
     ~AES128() {}

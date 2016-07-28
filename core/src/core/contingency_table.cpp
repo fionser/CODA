@@ -23,157 +23,17 @@
 #endif
 
 namespace core {
-std::pair<size_t, size_t> coprime(size_t i, size_t j) {
-    while (NTL::GCD(i, j) != 1) {
-        if (i > j) j += 1;
-        else i += 1;
-    }
-    return std::make_pair(i, j);
-};
-
-static Ctxt process(const Ctxt &one_record,
-                    const Attribute &I,
-                    const Attribute &J,
-                    const EncryptedArray &ea) {
-    auto modified_sizes = coprime(I.size, J.size);
-    assert(modified_sizes.first * modified_sizes.second <= ea.size() && "Too large domain!");
-
-    Ctxt attr_i(one_record), attr_j(one_record);
-    ea.rotate(attr_i, -static_cast<long>(I.offset));
-    ea.rotate(attr_j, -static_cast<long>(J.offset));
-
-    mask_first(attr_i, modified_sizes.first, ea);
-    mask_first(attr_j, modified_sizes.second, ea);
-    attr_i = core::repeat0(attr_i, modified_sizes.first, modified_sizes.second, ea);
-    attr_j = core::repeat0(attr_j, modified_sizes.second, modified_sizes.first, ea);
-
-    attr_i *= attr_j;
-    return attr_i;
-}
-
 static long InvMod(long a, long p) {
     long p0(p), t, q;
     long x0(0), x1(1);
     if (p == 1) return 1;
-    while (a > 1) {
+    while (a> 1) {
         q = a / p;
         t = p; p = a % p; a = t;
         t = x0; x0 = x1 - q * x0; x1 = t;
     }
     if (x1 < 0) x1 += p0;
     return x1;
-}
-
-static NTL::ZZ convKey(PrivateContingencyTable::AESKey_t aes, long bit_per) {
-    long nr_bytes = (bit_per >> 3) * aes.size();
-    std::vector<uint8_t> bytes;
-    for (auto v : aes) {
-        while (v > 0) {
-            bytes.push_back(v & 0xFF);
-            v = v >> 8;
-        }
-    }
-    return NTL::ZZFromBytes(bytes.data(), nr_bytes);
-}
-
-/// bit_per must be 8-multiple
-static PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
-                                                 long bit_per,
-                                                 long partition) {
-    PrivateContingencyTable::AESKey_t key;
-    long nr_bytes = NTL::NumBytes(zz);
-    std::vector<uint8_t> bytes(nr_bytes);
-    NTL::BytesFromZZ(bytes.data(), zz, nr_bytes);
-    long z = 0;
-    long need = bit_per;
-    for (int i = 0; i < nr_bytes; i++)  {
-        if (need > 8) {
-            z = (z << 8) + bytes.at(i);
-            need -= 8;
-        } else {
-            auto mask = (1 << need) - 1;
-            key.push_back((z << need) + (bytes[i] & mask));
-            if (need == 0) {
-                z = 0;
-            } else {
-                z = (bytes[i] >> need);
-            }
-            need = bit_per;
-        }
-    }
-    if (z != 0) key.push_back(z);
-
-    assert(key.size() == partition);
-    return key;
-}
-
-static NTL::ZZX convKey(const std::vector<PrivateContingencyTable::AESKey_t> &keys,
-                        long p,
-                        const EncryptedArray *ea) {
-    auto bs = keys.size();
-    std::vector<long> poly(ea->size(), 0);
-    size_t usable_size = ea->size() / bs * bs;
-    for (auto b = 0; b < bs; b++) {
-        assert(p < keys.at(b).size());
-        long k = keys[b][p];
-        for (auto i = b; i < usable_size; i += bs)
-            poly[i] = k;
-    }
-
-    NTL::ZZX zzx;
-    ea->encode(zzx, poly);
-    return zzx;
-}
-
-// return x that x = u mod k1, x = v mod k2
-long CRT(long u, long v, long k1, long k2) {
-    assert(NTL::GCD(k1, k2) == 1);
-    auto P = k1 * k2;
-    return (u * InvMod(k2, k1) * k2 + v * InvMod(k1, k2) * k1) % P;
-}
-
-static NTL::ZZX make_I_x(long u, long v, long k1, long k2,
-                         const EncryptedArray *ea) {
-    std::vector<long> X(ea->size(), 0);
-    X.at(CRT(u, v, k1, k2)) = 1;
-    NTL::ZZX poly;
-    ea->encode(poly, X);
-    return poly;
-}
-
-PrivateContingencyTable
-::PrivateContingencyTable(context_ptr context,
-                          PrivateContingencyTableHelper *helper)
-        : context(context), helper(helper) { }
-
-std::shared_ptr<Ctxt>
-PrivateContingencyTable::compute_table(const std::vector <Ctxt> &attributes,
-                                       Attribute p, Attribute q,
-                                       const EncryptedArray *ea) const {
-    std::atomic<size_t> counter(0);
-    size_t nr_ctxts = attributes.size();
-    const auto &pk = attributes.front().getPubKey();
-    std::shared_ptr<Ctxt> ct = std::make_shared<Ctxt>(pk);
-    std::vector<Ctxt> workers_space(NR_THREADS, pk);
-    auto program = [&](const long worker_id) {
-        size_t next;
-        while (true) {
-            next = counter.fetch_add(1UL);
-            if (next >= nr_ctxts) break;
-            auto tmp = process(attributes.at(next), p, q, *ea);
-            workers_space.at(worker_id) += tmp;
-        }
-    };
-
-    std::vector<std::thread> workers;
-    for (auto wr = 0; wr < NR_THREADS; wr++)
-        workers.push_back(std::thread(program, wr));
-    for (auto &&wr : workers) wr.join();
-
-    for (auto &tmp : workers_space)
-        ct->operator+=(tmp);
-    ct->reLinearize();
-    return ct;
 }
 
 static std::vector<NTL::ZZX>
@@ -185,7 +45,7 @@ random_permutation_for_GT(size_t block_size, size_t copies,
     for (long i = 0; i < I.size(); i++) I.at(i) = -threshold - i;
     auto pr = ea->getAlMod().getPPowR();
     long dummy_random;
-    do { dummy_random = NTL::RandomBnd(pr); } while(dummy_random == 0);
+    do {dummy_random = NTL::RandomBnd(pr); } while(dummy_random == 0);
 
     std::vector<std::vector<long>> parts(copies, std::vector<long>(ea->size(), dummy_random));
 
@@ -218,7 +78,7 @@ random_hash_key(size_t block_size,
     NTL::ZZ randomness;
     for (size_t b = 0; b < block_size; b++) {
         NTL::RandomBits(randomness, key_bits);
-//        std::cout << randomness << "\n";
+        std::cout << b << " " << randomness <<"\n";
         keys.emplace_back(convKey(randomness, bits, partition));
     }
     return keys;
@@ -244,6 +104,69 @@ randomness_for_GT(size_t copies, const EncryptedArray *ea) {
     }
 
     return rets;
+}
+
+static NTL::ZZX make_I_x(long u, long v, long k1, long k2,
+                         const EncryptedArray *ea) {
+    std::vector<long> X(ea->size(), 0);
+    X.at(CRT(u, v, k1, k2)) = 1;
+    NTL::ZZX poly;
+    ea->encode(poly, X);
+    return poly;
+}
+
+PrivateContingencyTable
+::PrivateContingencyTable(context_ptr context,
+                          PrivateContingencyTableHelper *helper)
+        : context(context), helper(helper) { }
+
+Ctxt PrivateContingencyTable::do_compute(const Ctxt &one_record,
+                                         const Attribute &p, const Attribute &q,
+                                         const EncryptedArray *ea) const {
+    auto modified_sizes = coprime(p.size, q.size);
+    assert(modified_sizes.first * modified_sizes.second <= ea->size() && "Too large domain!");
+
+    Ctxt attr_i(one_record), attr_j(one_record);
+    ea->rotate(attr_i, -static_cast<long>(p.offset));
+    ea->rotate(attr_j, -static_cast<long>(q.offset));
+
+    mask_first(attr_i, modified_sizes.first, *ea);
+    mask_first(attr_j, modified_sizes.second, *ea);
+    attr_i = core::repeat0(attr_i, modified_sizes.first, modified_sizes.second, *ea);
+    attr_j = core::repeat0(attr_j, modified_sizes.second, modified_sizes.first, *ea);
+
+    attr_i *= attr_j;
+    return attr_i;
+}
+
+std::shared_ptr<Ctxt>
+PrivateContingencyTable::compute_table(const std::vector <Ctxt> &attributes,
+                                       Attribute p, Attribute q,
+                                       const EncryptedArray *ea) const {
+    std::atomic<size_t> counter(0);
+    size_t nr_ctxts = attributes.size();
+    const auto &pk = attributes.front().getPubKey();
+    std::shared_ptr<Ctxt> ct = std::make_shared<Ctxt>(pk);
+    std::vector<Ctxt> workers_space(NR_THREADS, pk);
+    auto program = [&](const long worker_id) {
+        size_t next;
+        while (true) {
+            next = counter.fetch_add(1UL);
+            if (next>= nr_ctxts) break;
+            auto tmp = do_compute(attributes.at(next), p, q, ea);
+            workers_space.at(worker_id) += tmp;
+        }
+    };
+
+    std::vector<std::thread> workers;
+    for (auto wr = 0; wr < NR_THREADS; wr++)
+        workers.push_back(std::thread(program, wr));
+    for (auto &&wr : workers) wr.join();
+
+    for (auto &tmp : workers_space)
+        ct->operator+=(tmp);
+    ct->reLinearize();
+    return ct;
 }
 
 PrivateContingencyTable::ResultType::Type_gamma
@@ -286,6 +209,41 @@ PrivateContingencyTable::add_key_to_gamma(const ResultType::Type_gamma &gamma,
     return tilde_gammas;
 }
 
+PrivateContingencyTable::ResultType::Type_n_uv
+PrivateContingencyTable::aes_encrypt_cells(const std::vector<ctxt_ptr> &cells,
+                                           const std::vector<AESKey_t> &keys,
+                                           const EncryptedArray *ea) const {
+    ResultType::Type_n_uv n_uv(cells.size());
+    auto bits = number_bits(ea->getAlMod().getPPowR());
+    for (size_t i = 0; i < cells.size(); i++) {
+        auto raw_str = conv(*cells.at(i));
+        AES128 aes(convKey(keys.at(i), bits));
+        n_uv.at(i) = aes.encrypt(raw_str);
+    }
+    return n_uv;
+}
+
+std::vector<ctxt_ptr>
+PrivateContingencyTable::extract_cells_in_table(const ctxt_ptr& CT,
+                                                Attribute p, Attribute q,
+                                                const EncryptedArray *ea) const {
+    std::vector<ctxt_ptr> cells(p.size * q.size);
+    auto modified_size = coprime(p.size, q.size);
+    for (size_t i = 0; i < cells.size(); i++) {
+        cells.at(i) = std::make_shared<Ctxt>(*CT);
+    }
+
+    for (size_t u = 0; u < p.size; u++) {
+        for (size_t v = 0; v < q.size; v++) {
+            auto x = CRT(u, v, modified_size.first, modified_size.second);
+            auto Ix = make_I_x(u, v, modified_size.first, modified_size.second, ea);
+            cells.at(x)->multByConstant(Ix);
+        }
+    }
+
+    return cells;
+}
+
 PrivateContingencyTable::ResultType
 PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     assert(!attributes.empty());
@@ -300,107 +258,102 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
            helper->repeats_per_cipher(),
            helper->how_many_copies(domain_size),
            helper->how_many_copies_for_bits(ea));
+
     FHE_NTIMER_START(Conduction);
     auto contingency_table = compute_table(attributes, P, Q, ea);
+    auto cells = extract_cells_in_table(contingency_table, P, Q, ea);
     FHE_NTIMER_STOP(Conduction);
+
     FHE_NTIMER_START(GreaterThan);
     auto gamma = special_greater_than(contingency_table, domain_size, ea);
     FHE_NTIMER_STOP(GreaterThan);
+
     FHE_NTIMER_START(Blinding);
     auto keys = random_hash_key(helper->block_size(),
                                 helper->repeats_per_cipher(),
                                 helper->aesKeyLength(),
                                 ea);
+    auto n_uv = aes_encrypt_cells(cells, keys, ea);
     auto tilde_gamma = add_key_to_gamma(gamma, keys, domain_size, ea);
     FHE_NTIMER_STOP(Blinding);
 
-    return { .n_uv = std::vector<ctxt_ptr>(1, contingency_table), .gamma = gamma, .tilde_gamma = tilde_gamma };
+    return {.n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
 }
 
-size_t PrivateContingencyTableHelper::repeats_per_cipher() const {
-    auto cont_table_size = block_size();
-    assert(cont_table_size <= ea->size() && "One cipher can't contain the whole contingency table");
-    return ea->size() / cont_table_size;
-}
-
-size_t PrivateContingencyTableHelper::how_many_copies(long domain_size) const {
-    size_t repeats = repeats_per_cipher();
-    return (domain_size + repeats - 1UL) / repeats;
-}
-
-size_t
-PrivateContingencyTableHelper::how_many_copies_for_bits(const EncryptedArray *ea) const {
-    auto bit_per = (number_bits(ea->getAlMod().getPPowR()) / 8UL) << 3;
-    printf("%ld %ld\n", ea->getAlMod().getPPowR(),number_bits(ea->getAlMod().getPPowR()));
-    return (aesKeyLength() + bit_per - 1)/ bit_per;
-}
-
-size_t PrivateContingencyTableHelper::block_size() const {
-    auto modified_size = coprime(P.size, Q.size);
-    return modified_size.first * modified_size.second;
-}
-
-std::shared_ptr<Ctxt> PrivateContingencyTableHelper::repeat(size_t R) const {
-    assert(CT != nullptr && "the CT haven't been set");
-    size_t repeats = std::min(R, repeats_per_cipher());
-    if (repeats != R)
-        printf("Warning! hope to repeat %zd times but only get %zd\n", R, repeats);
-    return std::make_shared<Ctxt>(core::repeat0(*CT, block_size(), repeats, *ea));
-}
-
-void PrivateContingencyTableHelper::open_gamma(std::vector<Publishable> &unsuppression,
-                                               const Type_gamma &gamma,
-                                               const Type_tilde_gamma &tilde_gamma,
-                                               const EncryptedArray *ea,
-                                               sk_ptr sk) {
-    size_t bs = block_size();
-    size_t usable_size = ea->size() / bs * bs;
-    auto modified_sizes = coprime(P.size, Q.size);
-    auto bit_per = number_bits(ea->getAlMod().getPPowR());
-    std::vector<long> decrypted(ea->size());
-
-    for (size_t i = 0; i < gamma.size(); i++) {
-        const auto &part = gamma.at(i);
-        if (!part->isCorrect())
-            printf("Warnning! might be an invalid cipher\n");
-        ea->decrypt(*part, *sk, decrypted);
-        std::vector<size_t> zeros;
-        for (size_t j = 0; j < usable_size; j++) {
-            if (decrypted.at(j) != 0) continue;
-            zeros.push_back(j);
-        }
-
-        if (zeros.empty()) continue;
-
-        auto aesKeys = decryptToGetAESKeys(tilde_gamma, i, zeros, ea, sk);
-
-        for (size_t j = 0; j < zeros.size(); j++) {
-            size_t u = zeros[j] % modified_sizes.first;
-            size_t v = zeros[j] % modified_sizes.second;
-            Publishable info = { .u = u, .v = v, .aes_key = convKey(aesKeys.at(j), bit_per) };
-            unsuppression.push_back(info);
+/// bit_per must be 8-multiple
+PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
+                                                 long bit_per,
+                                                 long partition) {
+    PrivateContingencyTable::AESKey_t key;
+    long nr_bytes = NTL::NumBytes(zz);
+    std::vector<uint8_t> bytes(nr_bytes);
+    NTL::BytesFromZZ(bytes.data(), zz, nr_bytes);
+    long z = 0;
+    long need = bit_per;
+    for (int i = 0; i < nr_bytes; i++)  {
+        if (need> 8) {
+            z = (z << 8) + bytes.at(i);
+            need -= 8;
+        } else {
+            auto mask = (1 << need) - 1;
+            key.push_back((z << need) + (bytes[i] & mask));
+            if (need == 0) {
+                z = 0;
+            } else {
+                z = (bytes[i] >> need);
+            }
+            need = bit_per;
         }
     }
+    if (z != 0) key.push_back(z);
+
+    assert(key.size() == partition);
+    return key;
 }
 
-std::vector<PrivateContingencyTable::AESKey_t>
-PrivateContingencyTableHelper::decryptToGetAESKeys(const Type_tilde_gamma &tilde_gammas,
-                                                   const size_t loc,
-                                                   const std::vector<size_t> &zeros,
-                                                   const EncryptedArray *ea, sk_ptr sk) const {
-    size_t bs = block_size();
-    std::vector<PrivateContingencyTable::AESKey_t> keys(zeros.size());
+//// Some helper functions
+NTL::ZZX convKey(const std::vector<PrivateContingencyTable::AESKey_t> &keys,
+                        long p,
+                        const EncryptedArray *ea) {
+    auto bs = keys.size();
+    std::vector<long> poly(ea->size(), 0);
     size_t usable_size = ea->size() / bs * bs;
-    std::vector<long> slots;
+    for (auto b = 0; b < bs; b++) {
+        assert(p < keys.at(b).size());
+        long k = keys[b][p];
+        for (auto i = b; i < usable_size; i += bs)
+            poly[i] = k;
+    }
 
-    for (auto &parts : tilde_gammas) {
-        ea->decrypt(*(parts.at(loc)), *sk, slots);
-        for (size_t j = 0; j < zeros.size(); j++) {
-            keys.at(j).push_back(slots.at(zeros[j]));
+    NTL::ZZX zzx;
+    ea->encode(zzx, poly);
+    return zzx;
+}
+
+NTL::ZZ convKey(PrivateContingencyTable::AESKey_t aes, long bit_per) {
+    long nr_bytes = (bit_per>> 3) * aes.size();
+    std::vector<uint8_t> bytes;
+    for (auto v : aes) {
+        while (v> 0) {
+            bytes.push_back(v & 0xFF);
+            v = v >> 8;
         }
     }
-    return keys;
+    return NTL::ZZFromBytes(bytes.data(), nr_bytes);
 }
 
+std::pair<size_t, size_t> coprime(size_t i, size_t j) {
+    while (NTL::GCD(i, j) != 1) {
+        if (i> j) j += 1;
+        else i += 1;
+    }
+    return std::make_pair(i, j);
 }
 
+// return x that x = u mod k1, x = v mod k2
+long CRT(long u, long v, long k1, long k2) {
+    assert(NTL::GCD(k1, k2) == 1);
+    auto P = k1 * k2;
+    return (u * InvMod(k2, k1) * k2 + v * InvMod(k1, k2) * k1) % P;
+}
+}
