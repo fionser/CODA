@@ -9,7 +9,7 @@
 #include <list>
 #include <map>
 #ifdef FHE_THREADS
-#define NR_THREADS 8
+#define NR_THREADS 16
 #else
 #define NR_THREADS 1
 #endif
@@ -52,18 +52,18 @@ static void print(const std::vector<std::vector<int>> &counting) {
     }
 }
 
-std::list<std::vector<long>>
+std::vector<std::vector<long>>
 generate_data(core::Attribute P, core::Attribute Q, long N, long slots) {
-	std::list<std::vector<long>> data;
-    std::vector<std::vector<int>> counting(P.size, std::vector<int>(Q.size, 0));
+	std::vector<std::vector<long>> data;
+	std::vector<std::vector<int>> counting(P.size, std::vector<int>(Q.size, 0));
 	for (long i = 0; i < N; i++) {
-	   	long u = static_cast<long>(NTL::RandomBnd(P.size));
-	   	long v = static_cast<long>(NTL::RandomBnd(Q.size));
+		long u = static_cast<long>(NTL::RandomBnd(P.size));
+		long v = static_cast<long>(NTL::RandomBnd(Q.size));
 
 		Pair_t pp(u, v);
-        counting.at(u).at(v) += 1;
+		counting.at(u).at(v) += 1;
 
-        std::vector<long> row(slots, 0);
+		std::vector<long> row(slots, 0);
 		row.at(P.offset + u) = 1;
 		row.at(Q.offset + v) = 1;
 		data.push_back(row);
@@ -93,20 +93,27 @@ void test_CT(const long N) {
     core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
 
     auto type = core::Attribute::Type::CATEGORICAL;
-    struct core::Attribute P = { .text = "P", .type = type, .size = 2, .offset = 0};
-    struct core::Attribute Q = { .text = "Q", .type = type, .size = 4, .offset = 2};
-    struct core::Attribute R = { .text = "R", .type = type, .size = 4, .offset = 6};
+    struct core::Attribute P = { .text = "P", .type = type, .size = 5, .offset = 0};
+    struct core::Attribute Q = { .text = "Q", .type = type, .size = 11, .offset = P.size};
 
     auto ea = context->ea;
     auto _data = generate_data(P, Q, N, ea->size());
     std::vector<Ctxt> ctxts(N, *pk);
-    size_t idx = 0;
-    for (auto &row : _data) {
-        ea->encrypt(ctxts.at(idx), *pk, row);
-	    idx += 1;
-    }
-    std::cout << "To compute contingency table\n";
-    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */10, ea);
+    std::atomic<size_t> counter(0);
+    auto encrypt_program = [&]() {
+        size_t sze = ctxts.size();
+        size_t next;
+        while ((next = counter.fetch_add(1UL)) < sze) {
+        	ea->encrypt(ctxts.at(next), *pk, _data.at(next));
+        }
+    };
+    std::vector<std::thread> workers;
+    for (size_t wr = 0; wr < NR_THREADS; wr++) workers.push_back(std::thread(encrypt_program));
+    for (auto &wr : workers) wr.join();
+
+    long threshold = std::max<long>(2L, N / (P.size * Q.size));
+    printf("threshold %ld\n", threshold);
+    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */threshold, ea);
     core::PrivateContingencyTable CT(context, helper);
 
     auto encrypted_CT = CT.evaluate(ctxts);

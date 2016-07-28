@@ -15,8 +15,8 @@
 #include <NTL/ZZ.h>
 
 #ifdef FHE_THREADS
-#define NR_THREADS 8
-#warning  "Using 8 threads"
+#define NR_THREADS 48
+#warning "Using 48 threads"
 #else
 #warning "Using single threads"
 #define NR_THREADS 1

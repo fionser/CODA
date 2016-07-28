@@ -1,4 +1,5 @@
 INCLUDE_DIRECTORIES(../include/)
+INCLUDE_DIRECTORIES(${NTL_INLCUDE_PATH})
 ADD_EXECUTABLE(test_gt TestGreaterThan.cpp)
 ADD_TEST(NAME TestGreaterThan
          COMMAND $<TARGET_FILE:test_gt>
