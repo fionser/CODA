@@ -16,30 +16,43 @@
 struct Pair_t {
 	long u;
 	long v;
-	Pair_t(long u = 0, long v = 0) : u(u), v(v) {}
+	Pair_t(long u, long v) : u(u), v(v) {}
+    Pair_t(const Pair_t &oth) {
+        u = oth.u;
+        v = oth.v;
+    }
+    Pair_t& operator=(const Pair_t &oth) {
+        u = oth.u;
+        v = oth.v;
+        return *this;
+    }
+
 	bool operator==(const Pair_t &b) const {
 		return u == b.u && v == b.v;
 	}
+
 	bool operator<(const Pair_t &b) const {
-		return u < b.u && v < b.v;
+        if (u < b.u) return true;
+        return v < b.v;
 	}
 };
-
 
 std::list<std::vector<long>> 
 generate_data(core::Attribute P, core::Attribute Q, long N, long slots) {
 	std::list<std::vector<long>> data;
 	std::map<Pair_t, int> counting;
 	for (long i = 0; i < N; i++) {
-		std::vector<long> row(slots, 0);
 	   	long u = static_cast<long>(NTL::RandomBnd(P.size));
 	   	long v = static_cast<long>(NTL::RandomBnd(Q.size));
+
 		Pair_t pp(u, v);
 		const auto& kv = counting.find(pp);
 		if (kv == counting.end())
 			counting.insert({pp, 1});
 		else
 			kv->second += 1;
+
+        std::vector<long> row(slots, 0);
 		row.at(P.offset + u) = 1;
 		row.at(Q.offset + v) = 1;
 		data.push_back(row);
@@ -72,21 +85,22 @@ void test_CT(const long N) {
     core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
 
     auto type = core::Attribute::Type::CATEGORICAL;
-    struct core::Attribute P = { .text = "P", .type = type, .size = 2, .offset = 0};
-    struct core::Attribute Q = { .text = "Q", .type = type, .size = 4, .offset = 2};
+    struct core::Attribute P = { .text = "P", .type = type, .size = 3, .offset = 0};
+    struct core::Attribute Q = { .text = "Q", .type = type, .size = 4, .offset = 3};
     struct core::Attribute R = { .text = "R", .type = type, .size = 4, .offset = 6};
 
     auto ea = context->ea;
     auto _data = generate_data(P, Q, N, ea->size());
-    std::vector<Ctxt> ctxts(_data.size(), *pk);
+    std::vector<Ctxt> ctxts(N, *pk);
     size_t idx = 0;
     for (auto &row : _data) {
         ea->encrypt(ctxts.at(idx), *pk, row);
-	idx += 1;
+	    idx += 1;
     }
 
-    auto helper = new core::PrivateContingencyTableHelper(P, Q, 5, ea);
+    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */5, ea);
     core::PrivateContingencyTable CT(context, helper);
+
     auto encrypted_CT = CT.evaluate(ctxts);
     auto &n_uv = encrypted_CT.n_uv;
     auto &gamma = encrypted_CT.gamma;
