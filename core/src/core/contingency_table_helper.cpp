@@ -26,8 +26,6 @@ size_t PrivateContingencyTableHelper::how_many_copies(long domain_size) const {
 size_t PrivateContingencyTableHelper::
 how_many_copies_for_bits(const EncryptedArray *ea) const {
     auto bit_per = (number_bits(ea->getAlMod().getPPowR()) / 8UL) << 3;
-    printf("%ld %ld\n", ea->getAlMod().getPPowR(),
-           number_bits(ea->getAlMod().getPPowR()));
     return (aesKeyLength() + bit_per - 1) / bit_per;
 }
 
@@ -40,8 +38,7 @@ std::shared_ptr <Ctxt> PrivateContingencyTableHelper::repeat(size_t R) const {
     assert(CT != nullptr && "the CT haven't been set");
     size_t repeats = std::min(R, repeats_per_cipher());
     if (repeats != R)
-        printf("Warning! hope to repeat %zd times but only get %zd\n", R,
-               repeats);
+        printf("Warning! hope to repeat %zd times but only get %zd\n", R, repeats);
     return std::make_shared<Ctxt>(
             core::repeat0(*CT, block_size(), repeats, *ea));
 }
@@ -59,12 +56,18 @@ open_gamma(std::vector <Publishable> &unsuppression,
 
     for (size_t i = 0; i < gamma.size(); i++) {
         const auto &part = gamma.at(i);
-        if (!part->isCorrect())
-            printf("Warnning! might be an invalid cipher\n");
+//        if (!part->isCorrect())
+//            printf("Warnning! might be an invalid cipher\n");
         ea->decrypt(*part, *sk, decrypted);
         std::vector <size_t> zeros;
         for (size_t j = 0; j < usable_size; j++) {
             if (decrypted.at(j) != 0) continue;
+            size_t u = j % modified_sizes.first;
+            size_t v = j % modified_sizes.second;
+            if (u >= P.size || v >= Q.size) {
+                printf("WARN! position %zd impossible be zero!\n", j);
+                continue;
+            }
             zeros.push_back(j);
         }
 
@@ -73,9 +76,10 @@ open_gamma(std::vector <Publishable> &unsuppression,
         auto aesKeys = decryptToGetAESKeys(tilde_gamma, i, zeros, ea, sk);
 
         for (size_t j = 0; j < zeros.size(); j++) {
-            size_t u = zeros[j] % modified_sizes.first;
-            size_t v = zeros[j] % modified_sizes.second;
-            Publishable info = {.u = u, .v = v,
+            auto crtidx = zeros[j] % bs;
+            size_t u = crtidx % modified_sizes.first;
+            size_t v = crtidx % modified_sizes.second;
+            Publishable info = {.u = u, .v = v, .j = crtidx,
                                 .aes_key = convKey(aesKeys.at(j), bit_per)};
             unsuppression.push_back(info);
         }
@@ -89,7 +93,7 @@ PrivateContingencyTableHelper::decryptToGetAESKeys(
         const std::vector <size_t> &zeros,
         const EncryptedArray *ea, sk_ptr sk) const {
     size_t bs = block_size();
-    std::vector <PrivateContingencyTable::AESKey_t> keys(zeros.size());
+    std::vector<PrivateContingencyTable::AESKey_t> keys(zeros.size());
     size_t usable_size = ea->size() / bs * bs;
     std::vector<long> slots;
 
@@ -115,9 +119,8 @@ final_decrypt(const Type_n_uv &cells,
     std::vector<long> slots(ea->size(), 0);
     ea->encrypt(ctxt, pk, slots);
     for (auto &p : publishable) {
-//        std::cout << "Publishable Key " << p.aes_key << "\n";
         AES128 aes(p.aes_key);
-        auto idx = CRT(p.u, p.v, modified.first, modified.second);
+        auto idx = p.u * Q.size + p.v;
         std::string decrypt_aes = aes.decrypt(cells.at(idx));
         conv(ctxt, decrypt_aes);
         ea->decrypt(ctxt, *sk, slots);
@@ -129,7 +132,7 @@ final_decrypt(const Type_n_uv &cells,
                 count = ss;
             }
         }
-        plain_cells.push_back(count);
+        plain_cells.at(idx) = count;
     }
 
     return plain_cells;

@@ -87,6 +87,7 @@ public:
     typedef typename PrivateContingencyTable::ResultType::Type_tilde_gamma Type_tilde_gamma;
     struct Publishable {
         size_t u, v;
+        size_t j;
         NTL::ZZ aes_key;
     };
 

@@ -37,30 +37,38 @@ struct Pair_t {
 	}
 };
 
-std::list<std::vector<long>> 
+static void print(const std::vector<std::vector<int>> &counting) {
+    printf("   ");
+    auto Q = counting.front().size();
+    for (size_t v = 0; v < Q; v++)
+        printf("%3ld", v);
+    printf("\n");
+    auto P = counting.size();
+    for (size_t u = 0; u < P; u++) {
+        printf("%3ld", u);
+        for (size_t v = 0; v < Q; v++)
+            printf("%3d", counting[u][v]);
+        printf("\n");
+    }
+}
+
+std::list<std::vector<long>>
 generate_data(core::Attribute P, core::Attribute Q, long N, long slots) {
 	std::list<std::vector<long>> data;
-	std::map<Pair_t, int> counting;
+    std::vector<std::vector<int>> counting(P.size, std::vector<int>(Q.size, 0));
 	for (long i = 0; i < N; i++) {
 	   	long u = static_cast<long>(NTL::RandomBnd(P.size));
 	   	long v = static_cast<long>(NTL::RandomBnd(Q.size));
 
 		Pair_t pp(u, v);
-		const auto& kv = counting.find(pp);
-		if (kv == counting.end())
-			counting.insert({pp, 1});
-		else
-			kv->second += 1;
+        counting.at(u).at(v) += 1;
 
         std::vector<long> row(slots, 0);
 		row.at(P.offset + u) = 1;
 		row.at(Q.offset + v) = 1;
 		data.push_back(row);
 	}
-	printf("generated data\n");
-	for (auto &pp : counting) {
-		printf("%ld %ld %d\n", pp.first.u, pp.first.v, pp.second);
-	}
+    print(counting);
 	return data;
 }
 
@@ -85,8 +93,8 @@ void test_CT(const long N) {
     core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
 
     auto type = core::Attribute::Type::CATEGORICAL;
-    struct core::Attribute P = { .text = "P", .type = type, .size = 3, .offset = 0};
-    struct core::Attribute Q = { .text = "Q", .type = type, .size = 4, .offset = 3};
+    struct core::Attribute P = { .text = "P", .type = type, .size = 2, .offset = 0};
+    struct core::Attribute Q = { .text = "Q", .type = type, .size = 4, .offset = 2};
     struct core::Attribute R = { .text = "R", .type = type, .size = 4, .offset = 6};
 
     auto ea = context->ea;
@@ -97,8 +105,8 @@ void test_CT(const long N) {
         ea->encrypt(ctxts.at(idx), *pk, row);
 	    idx += 1;
     }
-
-    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */5, ea);
+    std::cout << "To compute contingency table\n";
+    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */10, ea);
     core::PrivateContingencyTable CT(context, helper);
 
     auto encrypted_CT = CT.evaluate(ctxts);
@@ -113,10 +121,13 @@ void test_CT(const long N) {
     FHE_NTIMER_STOP(Decryption);
 
     printf("Evaluated %ld records\n", ctxts.size());
-    auto modified = core::coprime(P.size, Q.size);
+    std::vector<std::vector<int>> ctable(P.size, std::vector<int>(Q.size, 0));
     for (size_t x = 0; x < counts.size(); x++) {
-        printf("%lu %lu -> %ld\n", x % modified.first, x % modified.second, counts.at(x));
+        auto u = x / Q.size;
+        auto v = x % Q.size;
+        ctable[u][v] = counts.at(x);
     }
+    print(ctable);
 
     //printAllTimers(std::cout);
     printNamedTimer(std::cout, "Conduction");

@@ -23,6 +23,14 @@
 #endif
 
 namespace core {
+
+static long toCRTIndex(long i, long p1, long p2) {
+    auto u = i / p2;
+    auto v = i % p2;
+    auto primes = coprime(p1, p2);
+    return CRT(u, v, primes.first, primes.second);
+}
+
 static long InvMod(long a, long p) {
     long p0(p), t, q;
     long x0(0), x1(1);
@@ -78,8 +86,9 @@ random_hash_key(size_t block_size,
     NTL::ZZ randomness;
     for (size_t b = 0; b < block_size; b++) {
         NTL::RandomBits(randomness, key_bits);
-//        std::cout << b << " " << randomness <<"\n";
         keys.emplace_back(convKey(randomness, bits, partition));
+//        std::cout << "DEBUG " << b % 3 << " " << b % 4 << " generated " << randomness << "\n";
+//        std::cout << "DEBUG location: " << b << " generated " << randomness << "\n";
     }
     return keys;
 }
@@ -217,7 +226,8 @@ PrivateContingencyTable::aes_encrypt_cells(const std::vector<ctxt_ptr> &cells,
     auto bits = number_bits(ea->getAlMod().getPPowR());
     for (size_t i = 0; i < cells.size(); i++) {
         auto raw_str = conv(*cells.at(i));
-        auto aes_key = convKey(keys.at(i), bits);
+        auto x = toCRTIndex(i, helper->getP().size, helper->getQ().size);
+        auto aes_key = convKey(keys.at(x), bits);
         AES128 aes(aes_key);
         n_uv.at(i) = aes.encrypt(raw_str);
     }
@@ -238,7 +248,8 @@ PrivateContingencyTable::extract_cells_in_table(const ctxt_ptr& CT,
         for (size_t v = 0; v < q.size; v++) {
             auto x = CRT(u, v, modified_size.first, modified_size.second);
             auto Ix = make_I_x(u, v, modified_size.first, modified_size.second, ea);
-            cells.at(x)->multByConstant(Ix);
+            cells.at(u * q.size + v)->multByConstant(Ix);
+//            std::cout << "DEBUG " << u << " " << v << " cell " << u * q.size + v << "\n";
         }
     }
 
@@ -262,6 +273,7 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
 
     FHE_NTIMER_START(Conduction);
     auto contingency_table = compute_table(attributes, P, Q, ea);
+    /// Attention! cells[i] is the (i/Q.size, i%Q.size)-th counting
     auto cells = extract_cells_in_table(contingency_table, P, Q, ea);
     FHE_NTIMER_STOP(Conduction);
 
@@ -270,10 +282,12 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     FHE_NTIMER_STOP(GreaterThan);
 
     FHE_NTIMER_START(Blinding);
+    /// Attension! keys[i] is for the (i % P'.size, i % Q'.size)-th counting
     auto keys = random_hash_key(helper->block_size(),
                                 helper->repeats_per_cipher(),
                                 helper->aesKeyLength(),
                                 ea);
+    /// n_uv[i] is stored the same way with cells[i]
     auto n_uv = aes_encrypt_cells(cells, keys, ea);
     auto tilde_gamma = add_key_to_gamma(gamma, keys, domain_size, ea);
     FHE_NTIMER_STOP(Blinding);
@@ -281,10 +295,11 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     return {.n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
 }
 
+//// Some helper functions
 /// bit_per must be 8-multiple
 PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
-                                                 long bit_per,
-                                                 long partition) {
+                                          long bit_per,
+                                          long partition) {
     PrivateContingencyTable::AESKey_t key;
     long nr_bytes = NTL::NumBytes(zz);
     std::vector<uint8_t> bytes(nr_bytes);
@@ -312,16 +327,15 @@ PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
     return key;
 }
 
-//// Some helper functions
 NTL::ZZX convKey(const std::vector<PrivateContingencyTable::AESKey_t> &keys,
-                        long p,
-                        const EncryptedArray *ea) {
+                 long partition,
+                 const EncryptedArray *ea) {
     auto bs = keys.size();
     std::vector<long> poly(ea->size(), 0);
     size_t usable_size = ea->size() / bs * bs;
     for (auto b = 0; b < bs; b++) {
-        assert(p < keys.at(b).size());
-        long k = keys[b][p];
+        assert(partition < keys.at(b).size());
+        long k = keys[b][partition];
         for (auto i = b; i < usable_size; i += bs)
             poly[i] = k;
     }
