@@ -63,6 +63,7 @@ find_library(local-ntl
 find_library(local-gmp
              NAMES libgmp.a gmp
 	     HINTS "${PROJECT_BINARY_DIR}/lib")
+MESSAGE(STATUS ${OPENSSL_INCLUDE_DIR})
 MESSAGE(STATUS ${local-ntl})
 MESSAGE(STATUS ${local-gmp})
 #target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
