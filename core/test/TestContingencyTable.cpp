@@ -11,7 +11,7 @@
 #else
 #define NR_THREADS 1
 #endif
-void test_CT() {
+void test_CT(const long N) {
     long parameters[][2] = {
             {8219, 77933}, // 80-bits
             {16384, 6143}, // 80-bits
@@ -42,7 +42,6 @@ void test_CT() {
 
     Ctxt _tmp(*pk);
     ea->encrypt(_tmp, *pk, slots);
-    const size_t N = 6;
     std::vector<Ctxt> ctxts(N, _tmp);
 
     auto type = core::Attribute::Type::CATEGORICAL;
@@ -65,6 +64,8 @@ void test_CT() {
     helper->open_gamma(publishable, gamma, tilde_gamma, ea, sk);
     auto counts = helper->final_decrypt(n_uv, publishable, sk, ea);
     FHE_NTIMER_STOP(Decryption);
+
+    printf("Evaluated %ld records\n", N);
     auto modified = core::coprime(P.size, Q.size);
     for (size_t x = 0; x < counts.size(); x++) {
         printf("%lu %lu -> %ld\n", x % modified.first, x % modified.second, counts.at(x));
@@ -123,8 +124,12 @@ void test_repeat() {
     printf("\n");
 }
 
-int main() {
-    test_CT();
+int main(int argc, char *argv[]) {
+    ArgMapping mapping;
+    long N = 10;
+    mapping.arg("N", N, "number of ciphers");
+    mapping.parse(argc, argv);
+    test_CT(N);
 //    test_crt();
 //    test_repeat();
     return 0;
