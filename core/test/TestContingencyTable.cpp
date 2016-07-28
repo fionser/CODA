@@ -42,7 +42,7 @@ void test_CT() {
 
     Ctxt _tmp(*pk);
     ea->encrypt(_tmp, *pk, slots);
-    const size_t N = 10;
+    const size_t N = 6;
     std::vector<Ctxt> ctxts(N, _tmp);
 
     auto type = core::Attribute::Type::CATEGORICAL;
@@ -90,7 +90,7 @@ void test_repeat() {
 //    long m = 2110;
     long p = 67499;
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
-    buildModChain(*context, 8);
+    buildModChain(*context, 9);
     std::cout << context->securityLevel() << "\n";
     core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
     sk->GenSecKey(64);
@@ -105,7 +105,7 @@ void test_repeat() {
     slots[2] = 3; slots[3] = 4; slots[4] = 5; slots[5] = 6;
 //    slots[6] = 7; slots[7] = 7; slots[8] = 7; slots[9] = 7;
 
-    const size_t N = 100;
+    const size_t N = 10;
     Ctxt ctxt(*pk);
     ea->encrypt(ctxt, *pk, slots);
 

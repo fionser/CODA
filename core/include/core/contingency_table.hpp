@@ -35,6 +35,7 @@ public:
     typedef std::shared_ptr<Ctxt> ctxt_ptr;
     struct ResultType {
         typedef std::vector<AES128::Ctxt> Type_n_uv;
+//        typedef std::vector<ctxt_ptr> Type_n_uv;
         typedef std::vector<ctxt_ptr> Type_gamma;
         typedef std::vector<Type_gamma> Type_tilde_gamma;
         Type_n_uv n_uv;

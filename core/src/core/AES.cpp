@@ -41,6 +41,7 @@ AES128::Ctxt AES128::encrypt(const std::string &message) {
         printf("some wrong in EVP_EncryptUpdate\n");
     ctxt_len += len;
 
+    len = 0;
     if (1 != EVP_EncryptFinal_ex(&ctx, ctxt.data() + ctxt_len, &len))
         printf("some wrong in EVP_EncryptFinal_ex\n");
     ctxt_len += len;
@@ -71,9 +72,10 @@ std::string AES128::decrypt(const AES128::Ctxt &ctxt) {
         printf("some wrong in EVP_DecryptUpdate\n");
     plain_len = len;
 
+    len = 0;
     if (1 != EVP_DecryptFinal_ex(&ctx, plain.data() + plain_len, &len)) {
         ;
-//        printf("some wrong in EVP_DecryptFinal_ex\n");
+        printf("some wrong in EVP_DecryptFinal_ex\n");
 //        ERR_print_errors_fp(stdout);
     }
     plain_len += len;

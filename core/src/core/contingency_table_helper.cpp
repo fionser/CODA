@@ -109,29 +109,26 @@ final_decrypt(const Type_n_uv &cells,
               const sk_ptr sk, const EncryptedArray *ea) const {
     assert(cells.size() >= publishable.size() && "Mismatch size!");
     std::vector<long> plain_cells(cells.size(), 0);
-
+    auto modified = coprime(P.size, Q.size);
     const FHEPubKey &pk = *sk;
     Ctxt ctxt(pk);
     std::vector<long> slots(ea->size(), 0);
     ea->encrypt(ctxt, pk, slots);
     for (auto &p : publishable) {
-        std::cout << "Publishable Key " << p.aes_key << "\n";
+//        std::cout << "Publishable Key " << p.aes_key << "\n";
         AES128 aes(p.aes_key);
-        auto idx = p.u * p.v;
+        auto idx = CRT(p.u, p.v, modified.first, modified.second);
         std::string decrypt_aes = aes.decrypt(cells.at(idx));
-
-        //conv(ctxt, decrypt_aes);
+        conv(ctxt, decrypt_aes);
         ea->decrypt(ctxt, *sk, slots);
 
         long count = 0;
-        for (auto s : slots) {
-            if (s != 0) {
-                assert(count != 0);
-                count = s;
+        for (auto ss : slots) {
+            if (ss != 0) {
+                assert(count == 0 && "Should only one zero!");
+                count = ss;
             }
         }
-
-//        assert(count > 0);
         plain_cells.push_back(count);
     }
 

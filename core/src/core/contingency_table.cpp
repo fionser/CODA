@@ -78,7 +78,7 @@ random_hash_key(size_t block_size,
     NTL::ZZ randomness;
     for (size_t b = 0; b < block_size; b++) {
         NTL::RandomBits(randomness, key_bits);
-        std::cout << b << " " << randomness <<"\n";
+//        std::cout << b << " " << randomness <<"\n";
         keys.emplace_back(convKey(randomness, bits, partition));
     }
     return keys;
@@ -217,7 +217,8 @@ PrivateContingencyTable::aes_encrypt_cells(const std::vector<ctxt_ptr> &cells,
     auto bits = number_bits(ea->getAlMod().getPPowR());
     for (size_t i = 0; i < cells.size(); i++) {
         auto raw_str = conv(*cells.at(i));
-        AES128 aes(convKey(keys.at(i), bits));
+        auto aes_key = convKey(keys.at(i), bits);
+        AES128 aes(aes_key);
         n_uv.at(i) = aes.encrypt(raw_str);
     }
     return n_uv;
