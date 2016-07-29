@@ -53,7 +53,7 @@ random_permutation_for_GT(size_t block_size, size_t copies,
     for (long i = 0; i < I.size(); i++) I.at(i) = -threshold - i;
     auto pr = ea->getAlMod().getPPowR();
     long dummy_random;
-    do {dummy_random = NTL::RandomBnd(pr); } while(dummy_random == 0);
+    do { dummy_random = NTL::RandomBnd(pr); } while(dummy_random == 0);
 
     std::vector<std::vector<long>> parts(copies, std::vector<long>(ea->size(), dummy_random));
 
@@ -107,7 +107,6 @@ randomness_for_GT(size_t copies, const EncryptedArray *ea) {
     std::vector<long> randomness(ea->size());
     std::vector<NTL::ZZX> rets(copies);
     for (size_t c = 0; c < copies; c++) {
-        random_sample(randomness, pr);
         random_sample(randomness, pr);
         ea->encode(rets.at(c), randomness);
     }
@@ -239,17 +238,16 @@ PrivateContingencyTable::extract_cells_in_table(const ctxt_ptr& CT,
                                                 Attribute p, Attribute q,
                                                 const EncryptedArray *ea) const {
     std::vector<ctxt_ptr> cells(p.size * q.size);
-    auto modified_size = coprime(p.size, q.size);
     for (size_t i = 0; i < cells.size(); i++) {
         cells.at(i) = std::make_shared<Ctxt>(*CT);
     }
 
+    auto modified_size = coprime(p.size, q.size);
     for (size_t u = 0; u < p.size; u++) {
         for (size_t v = 0; v < q.size; v++) {
             auto x = CRT(u, v, modified_size.first, modified_size.second);
             auto Ix = make_I_x(u, v, modified_size.first, modified_size.second, ea);
             cells.at(u * q.size + v)->multByConstant(Ix);
-//            std::cout << "DEBUG " << u << " " << v << " cell " << u * q.size + v << "\n";
         }
     }
 
@@ -264,7 +262,7 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
 
     Attribute P = helper->getP();
     Attribute Q = helper->getQ();
-    long domain_size = attributes.size();
+    long domain_size = attributes.size() - helper->getThreshold();
     printf("Block Size %zd; Repeating %zd; Copies %zd; Bit-copies %zd\n",
            helper->block_size(),
            helper->repeats_per_cipher(),
@@ -285,8 +283,7 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     /// Attension! keys[i] is for the (i % P'.size, i % Q'.size)-th counting
     auto keys = random_hash_key(helper->block_size(),
                                 helper->repeats_per_cipher(),
-                                helper->aesKeyLength(),
-                                ea);
+                                helper->aesKeyLength(), ea);
     /// n_uv[i] is stored the same way with cells[i]
     auto n_uv = aes_encrypt_cells(cells, keys, ea);
     auto tilde_gamma = add_key_to_gamma(gamma, keys, domain_size, ea);
@@ -302,28 +299,21 @@ PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
                                           long partition) {
     PrivateContingencyTable::AESKey_t key;
     long nr_bytes = NTL::NumBytes(zz);
+    assert(partition == ((nr_bytes << 3) / bit_per) && "Bit_per need to be 8-multiple");
+
     std::vector<uint8_t> bytes(nr_bytes);
     NTL::BytesFromZZ(bytes.data(), zz, nr_bytes);
-    long z = 0;
-    long need = bit_per;
-    for (int i = 0; i < nr_bytes; i++)  {
-        if (need> 8) {
-            z = (z << 8) + bytes.at(i);
-            need -= 8;
-        } else {
-            auto mask = (1 << need) - 1;
-            key.push_back((z << need) + (bytes[i] & mask));
-            if (need == 0) {
-                z = 0;
-            } else {
-                z = (bytes[i] >> need);
-            }
-            need = bit_per;
-        }
-    }
-    if (z != 0) key.push_back(z);
 
-    assert(key.size() == partition);
+    long byte_per = bit_per >> 3;
+    for (size_t i = 0; i < nr_bytes; i += byte_per) {
+        long z = 0;
+        for (size_t j = 0; j < byte_per; j++) {
+            z = (z << 3) + bytes.at(i + j);
+        }
+        key.push_back(z);
+    }
+
+    assert(key.size() == partition && "Wrong implementation!");
     return key;
 }
 
