@@ -9,7 +9,7 @@
 #include <list>
 #include <map>
 #ifdef FHE_THREADS
-#define NR_THREADS 16
+#define NR_THREADS 36
 #else
 #define NR_THREADS 1
 #endif
@@ -37,7 +37,7 @@ struct Pair_t {
 	}
 };
 
-static void print(const std::vector<std::vector<int>> &counting) {
+static void print(const std::vector<std::vector<long>> &counting) {
     printf("   ");
     auto Q = counting.front().size();
     for (size_t v = 0; v < Q; v++)
@@ -52,10 +52,11 @@ static void print(const std::vector<std::vector<int>> &counting) {
     }
 }
 
-std::vector<std::vector<long>>
+typedef std::vector<std::vector<long>> CTable_t;
+std::pair<CTable_t, CTable_t>
 generate_data(core::Attribute P, core::Attribute Q, long N, long slots) {
-	std::vector<std::vector<long>> data;
-	std::vector<std::vector<int>> counting(P.size, std::vector<int>(Q.size, 0));
+	CTable_t data;
+	CTable_t counting(P.size, std::vector<long>(Q.size, 0));
 	for (long i = 0; i < N; i++) {
 		long u = static_cast<long>(NTL::RandomBnd(P.size));
 		long v = static_cast<long>(NTL::RandomBnd(Q.size));
@@ -68,11 +69,24 @@ generate_data(core::Attribute P, core::Attribute Q, long N, long slots) {
 		row.at(Q.offset + v) = 1;
 		data.push_back(row);
 	}
-    print(counting);
-	return data;
+    //print(counting);
+	return std::make_pair(data, counting);
 }
 
-void test_CT(const long N) {
+bool check(const std::vector<std::vector<long>> &g, 
+           const std::vector<std::vector<long>> &s, long t) {
+    auto Q = g.front().size();
+    auto P = g.size();
+    for (size_t u = 0; u < P; u++) {
+    	for (size_t v = 0; v < Q; v++) {
+	    if (g[u][v] < t || s[u][v] != 0) return false;
+            if (g[u][v] != s[u][v]) return false;
+	}
+    }
+    return true;
+}
+
+void test_CT(const long N, long sizeP, long sizeQ, long which) {
     long parameters[][2] = {
             {8219, 77933}, // 80-bits
             {16384, 6143}, // 80-bits
@@ -80,24 +94,26 @@ void test_CT(const long N) {
             {16384 * 2, 8191}, // 200+ bits
     };
 
-    long m = parameters[1][0];
-    long p = parameters[1][1];
+    long m = parameters[which][0];
+    long p = parameters[which][1];
 
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
     buildModChain(*context, 10);
-    std::cout << "SLevel " << context->securityLevel() << "\n";
-    std::cout << "Num of Gens " << context->zMStar.numOfGens() << "\n";
+    //std::cout << "SLevel " << context->securityLevel() << "\n";
+    //std::cout << "Num of Gens " << context->zMStar.numOfGens() << "\n";
+    std::cout << "Num of Slots " << context->ea->size() << "\n";
     core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
     sk->GenSecKey(64);
     addSome1DMatrices(*sk);
     core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
 
     auto type = core::Attribute::Type::CATEGORICAL;
-    struct core::Attribute P = { .text = "P", .type = type, .size = 5, .offset = 0};
-    struct core::Attribute Q = { .text = "Q", .type = type, .size = 11, .offset = P.size};
+    struct core::Attribute P = { .text = "P", .type = type, .size = sizeP, .offset = 0};
+    struct core::Attribute Q = { .text = "Q", .type = type, .size = sizeQ, .offset = P.size};
 
     auto ea = context->ea;
-    auto _data = generate_data(P, Q, N, ea->size());
+    auto generated = generate_data(P, Q, N, ea->size());
+    CTable_t &_data = generated.first;
     std::vector<Ctxt> ctxts(N, *pk);
     std::atomic<size_t> counter(0);
     auto encrypt_program = [&]() {
@@ -112,7 +128,7 @@ void test_CT(const long N) {
     for (auto &wr : workers) wr.join();
 
     long threshold = std::max<long>(2L, N / (P.size * Q.size));
-    printf("threshold %ld\n", threshold);
+    //printf("threshold %ld\n", threshold);
     auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */threshold, ea);
     core::PrivateContingencyTable CT(context, helper);
 
@@ -128,13 +144,15 @@ void test_CT(const long N) {
     FHE_NTIMER_STOP(Decryption);
 
     printf("Evaluated %ld records\n", ctxts.size());
-    std::vector<std::vector<int>> ctable(P.size, std::vector<int>(Q.size, 0));
+    std::vector<std::vector<long>> ctable(P.size, std::vector<long>(Q.size, 0));
     for (size_t x = 0; x < counts.size(); x++) {
         auto u = x / Q.size;
         auto v = x % Q.size;
         ctable[u][v] = counts.at(x);
     }
-    print(ctable);
+    bool ok = check(generated.second, ctable, threshold);
+    if (!ok) printf("some wrong in the evaluation!\n");
+    //print(ctable);
 
     //printAllTimers(std::cout);
     printNamedTimer(std::cout, "Conduction");
@@ -192,9 +210,15 @@ void test_repeat() {
 int main(int argc, char *argv[]) {
     ArgMapping mapping;
     long N = 10;
+    long P = 5;
+    long Q = 11;
+    long which = 1;
     mapping.arg("N", N, "number of ciphers");
+    mapping.arg("P", P, "Size of C_p");
+    mapping.arg("Q", Q, "Size of C_q");
+    mapping.arg("w", which, "which FHE parameter");
     mapping.parse(argc, argv);
-    test_CT(N);
+    test_CT(N, P, Q, which);
 //    test_crt();
 //    test_repeat();
     return 0;

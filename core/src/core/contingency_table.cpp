@@ -15,8 +15,8 @@
 #include <NTL/ZZ.h>
 
 #ifdef FHE_THREADS
-#define NR_THREADS 48
-#warning "Using 48 threads"
+#define NR_THREADS 36
+#warning "Using 36 threads"
 #else
 #warning "Using single threads"
 #define NR_THREADS 1
@@ -85,10 +85,13 @@ random_hash_key(size_t block_size,
 
     NTL::ZZ randomness;
     for (size_t b = 0; b < block_size; b++) {
-        NTL::RandomBits(randomness, key_bits);
+	do {
+        	NTL::RandomBits(randomness, key_bits);
+	} while ((NumBytes(randomness) << 3) != key_bits);
+        
         keys.emplace_back(convKey(randomness, bits, partition));
 //        std::cout << "DEBUG " << b % 3 << " " << b % 4 << " generated " << randomness << "\n";
-//        std::cout << "DEBUG location: " << b << " generated " << randomness << "\n";
+       // std::cout << "DEBUG location: " << b << " generated " << randomness << "\n";
     }
     return keys;
 }
@@ -272,7 +275,6 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     FHE_NTIMER_START(Conduction);
     auto contingency_table = compute_table(attributes, P, Q, ea);
     /// Attention! cells[i] is the (i/Q.size, i%Q.size)-th counting
-    auto cells = extract_cells_in_table(contingency_table, P, Q, ea);
     FHE_NTIMER_STOP(Conduction);
 
     FHE_NTIMER_START(GreaterThan);
@@ -280,6 +282,7 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     FHE_NTIMER_STOP(GreaterThan);
 
     FHE_NTIMER_START(Blinding);
+    auto cells = extract_cells_in_table(contingency_table, P, Q, ea);
     /// Attension! keys[i] is for the (i % P'.size, i % Q'.size)-th counting
     auto keys = random_hash_key(helper->block_size(),
                                 helper->repeats_per_cipher(),
@@ -299,6 +302,9 @@ PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
                                           long partition) {
     PrivateContingencyTable::AESKey_t key;
     long nr_bytes = NTL::NumBytes(zz);
+    if (partition != ((nr_bytes << 3) / bit_per)) {
+        printf("%ld %ld %ld\n", nr_bytes, bit_per, partition);
+    }
     assert(partition == ((nr_bytes << 3) / bit_per) && "Bit_per need to be 8-multiple");
 
     std::vector<uint8_t> bytes(nr_bytes);
@@ -313,6 +319,10 @@ PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
         key.push_back(z);
     }
 
+    if (key.size() != partition) {
+        printf("%ld bit_per, %ld nr_bytes, %ld partition\n", 
+        bit_per, nr_bytes, partition);
+    }
     assert(key.size() == partition && "Wrong implementation!");
     return key;
 }

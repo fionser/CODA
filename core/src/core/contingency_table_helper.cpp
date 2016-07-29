@@ -12,7 +12,7 @@
 #include <thread>
 
 #ifdef FHE_THREADS
-#define NR_THREADS 8
+#define NR_THREADS 36
 #else
 #define NR_THREADS 1
 #endif
@@ -115,7 +115,7 @@ PrivateContingencyTableHelper::decryptToGetAESKeys(
     std::vector<PrivateContingencyTable::AESKey_t> keys(zeros.size());
     size_t usable_size = ea->size() / bs * bs;
     std::vector<long> slots;
-
+    //printf("decrypting %zd tilde_gammas\n", tilde_gammas.size());
     for (auto &parts : tilde_gammas) {
         ea->decrypt(*(parts.at(loc)), *sk, slots);
         for (size_t j = 0; j < zeros.size(); j++) {
@@ -136,11 +136,16 @@ final_decrypt(const Type_n_uv &cells,
     const FHEPubKey &pk = *sk;
     Ctxt ctxt(pk);
     std::vector<long> slots(ea->size(), 0);
-    ea->encrypt(ctxt, pk, slots);
     for (auto &p : publishable) {
         AES128 aes(p.aes_key);
         auto idx = p.u * Q.size + p.v;
+        //std::cout << p.j << " " << p.aes_key << "\n";
         std::string decrypt_aes = aes.decrypt(cells.at(idx));
+        if (aes.any_error()) {
+            printf("WARN, skip one decryption\n");
+            continue;
+        }
+
         conv(ctxt, decrypt_aes);
         ea->decrypt(ctxt, *sk, slots);
 
