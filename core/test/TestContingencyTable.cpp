@@ -8,6 +8,7 @@
 #include "HElib/EncryptedArray.h"
 #include <list>
 #include <map>
+#include <thread>
 #ifdef FHE_THREADS
 #define NR_THREADS 36
 #else
@@ -100,7 +101,8 @@ void test_CT(const long N, long sizeP, long sizeQ, long which) {
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
     buildModChain(*context, 10);
     //std::cout << "SLevel " << context->securityLevel() << "\n";
-    //std::cout << "Num of Gens " << context->zMStar.numOfGens() << "\n";
+    std::cout << "Num of Gens " << context->zMStar.numOfGens() << "\n";
+    std::cout << "Same order " << context->zMStar.SameOrd(0) << "\n";
     std::cout << "Num of Slots " << context->ea->size() << "\n";
     core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
     sk->GenSecKey(64);
@@ -137,11 +139,13 @@ void test_CT(const long N, long sizeP, long sizeQ, long which) {
     auto &gamma = encrypted_CT.gamma;
     auto &tilde_gamma = encrypted_CT.tilde_gamma;
 
-    FHE_NTIMER_START(Decryption);
+    FHE_NTIMER_START(open_gamma);
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishable;
     helper->open_gamma(publishable, gamma, tilde_gamma, ea, sk);
+    FHE_NTIMER_STOP(open_gamma);
+    FHE_NTIMER_START(final_decrypt);
     auto counts = helper->final_decrypt(n_uv, publishable, sk, ea);
-    FHE_NTIMER_STOP(Decryption);
+    FHE_NTIMER_STOP(final_decrypt);
 
     printf("Evaluated %ld records\n", ctxts.size());
     std::vector<std::vector<long>> ctable(P.size, std::vector<long>(Q.size, 0));
@@ -155,10 +159,15 @@ void test_CT(const long N, long sizeP, long sizeQ, long which) {
     //print(ctable);
 
     //printAllTimers(std::cout);
+    printNamedTimer(std::cout, "rotation");
+    printNamedTimer(std::cout, "repeat0");
     printNamedTimer(std::cout, "Conduction");
     printNamedTimer(std::cout, "GreaterThan");
-    printNamedTimer(std::cout, "Blinding");
-    printNamedTimer(std::cout, "Decryption");
+    printNamedTimer(std::cout, "extract_cells");
+    printNamedTimer(std::cout, "AES");
+    printNamedTimer(std::cout, "Blind_key");
+    printNamedTimer(std::cout, "open_gamma");
+    printNamedTimer(std::cout, "final_decrypt");
     delete helper;
 }
 

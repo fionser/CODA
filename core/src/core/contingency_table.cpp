@@ -137,6 +137,7 @@ Ctxt PrivateContingencyTable::do_compute(const Ctxt &one_record,
     auto modified_sizes = coprime(p.size, q.size);
     assert(modified_sizes.first * modified_sizes.second <= ea->size() && "Too large domain!");
 
+    FHE_NTIMER_START(do_compute);
     Ctxt attr_i(one_record), attr_j(one_record);
     ea->rotate(attr_i, -static_cast<long>(p.offset));
     ea->rotate(attr_j, -static_cast<long>(q.offset));
@@ -145,6 +146,7 @@ Ctxt PrivateContingencyTable::do_compute(const Ctxt &one_record,
     mask_first(attr_j, modified_sizes.second, *ea);
     attr_i = core::repeat0(attr_i, modified_sizes.first, modified_sizes.second, *ea);
     attr_j = core::repeat0(attr_j, modified_sizes.second, modified_sizes.first, *ea);
+    FHE_NTIMER_STOP(do_compute);
 
     attr_i *= attr_j;
     return attr_i;
