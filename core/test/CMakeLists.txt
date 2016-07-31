@@ -1,4 +1,5 @@
 INCLUDE_DIRECTORIES(../include/)
+INCLUDE_DIRECTORIES(${NTL_INLCUDE_PATH})
 ADD_EXECUTABLE(test_gt TestGreaterThan.cpp)
 ADD_TEST(NAME TestGreaterThan
          COMMAND $<TARGET_FILE:test_gt>
@@ -17,6 +18,11 @@ ADD_TEST(NAME TestContingency
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 TARGET_LINK_LIBRARIES(test_contingency core-imp fhe crypto ${local-ntl} ${local-gmp} pthread docopt)
 
+ADD_EXECUTABLE(test_decode1slot TestDecode1Slot.cpp)
+ADD_TEST(NAME TestDecode1Slot
+        COMMAND $<TARGET_FILE:test_decode1slot>
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+TARGET_LINK_LIBRARIES(test_decode1slot fhe ${local-ntl} ${local-gmp} pthread)
 
 find_package(OpenSSL)
 include_directories(${OPENSSL_INCLUDE_DIR}/)

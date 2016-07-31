@@ -12,7 +12,7 @@
 #include <thread>
 
 #ifdef FHE_THREADS
-#define NR_THREADS 8
+#define NR_THREADS 36
 #else
 #define NR_THREADS 1
 #endif
@@ -55,8 +55,7 @@ open_gamma(std::vector <Publishable> &unsuppression,
            const Type_gamma &gamma,
            const Type_tilde_gamma &tilde_gamma,
            const EncryptedArray *ea, sk_ptr sk) const {
-    size_t bs = block_size();
-    size_t usable_size = ea->size() / bs * bs;
+    size_t bsize = block_size();
     auto modified_sizes = coprime(P.size, Q.size);
     auto bit_per = number_bits(ea->getAlMod().getPPowR());
     std::atomic<size_t> counter(0);
@@ -66,31 +65,14 @@ open_gamma(std::vector <Publishable> &unsuppression,
         size_t i;
         while ((i= counter.fetch_add(1)) < sze) {
             const auto &part = gamma.at(i);
-//            if (!part->isCorrect())
-//                printf("Warnning! might be an invalid cipher\n");
-            std::vector<long> decrypted(ea->size());
-            ea->decrypt(*part, *sk, decrypted);
-            std::vector <size_t> zeros;
-            for (size_t j = 0; j < usable_size; j++) {
-                if (decrypted.at(j) != 0) continue;
-                size_t u = j % modified_sizes.first;
-                size_t v = j % modified_sizes.second;
-                if (u >= P.size || v >= Q.size) {
-                    printf("WARN! position %zd impossible be zero!\n", j);
-                    continue;
-                }
-                zeros.push_back(j);
-            }
-
+            std::vector <long> zeros = get_zero_positions(part, sk, ea);
             if (zeros.empty()) continue;
-
             auto blinding_factors = get_blinding_factor(tilde_gamma, i, zeros, ea, sk);
-
             for (size_t j = 0; j < zeros.size(); j++) {
-                auto crtidx = zeros[j] % bs;
+                long crtidx = zeros[j] % bsize;
                 size_t u = crtidx % modified_sizes.first;
                 size_t v = crtidx % modified_sizes.second;
-                Publishable info = { .u = u, .v = v, .j = crtidx,
+                Publishable info = { .u = u, .v = v, .position = crtidx,
                                      .blinding_factor = blinding_factors.at(j) };
                 tmux.lock();
                 unsuppression.push_back(info);
@@ -106,17 +88,32 @@ open_gamma(std::vector <Publishable> &unsuppression,
 }
 
 std::vector<long> PrivateContingencyTableHelper::
+get_zero_positions(const ctxt_ptr &ctxt, const sk_ptr &sk, const EncryptedArray *ea) const {
+    if (!ctxt->isCorrect())
+        printf("Warnning! might be an invalid cipher\n");
+    size_t bs = block_size();
+    size_t usable_size = ea->size() / bs * bs;
+    std::vector<long> slots;
+    ea->decrypt(*ctxt, *sk, slots);
+    std::vector <long> zeros;
+    for (size_t j = 0; j < usable_size; j++) {
+        if (slots.at(j) != 0) continue;
+        zeros.push_back(static_cast<long>(j));
+    }
+    return zeros;
+}
+
+std::vector<long> PrivateContingencyTableHelper::
 get_blinding_factor(const Type_tilde_gamma &tilde_gamma, long part,
-                    const std::vector <size_t> &positions,
+                    const std::vector <long> &positions,
                     const EncryptedArray *ea, sk_ptr sk) const {
     NTL::ZZX poly;
     sk->Decrypt(poly, *tilde_gamma.at(part));
-    // TODO(riku) to implement decode1Slot for efficency
-    std::vector<long> slots(ea->size());
-    ea->decode(slots, poly);
+    std::vector<long> slots(positions.size());
+    ea->decodeSlots(slots, poly, positions);
     std::vector<long> blind_factor;
-    for (size_t pos : positions) {
-        blind_factor.push_back(slots.at(pos));
+    for (size_t bf : slots) {
+        blind_factor.push_back(bf);
     }
     return blind_factor;
 }
@@ -130,16 +127,23 @@ PrivateContingencyTableHelper::final_decrypt(const Type_n_uv &table,
     auto pr = ea->getAlMod().getPPowR();
     NTL::ZZX poly;
     sk->Decrypt(poly, *table);
-    std::vector<long> blinded_table(ea->size(), 0);
-    // TODO(riku) to implement decode1Slot for efficency
-    ea->decode(blinded_table, poly);
+    std::vector<long> blinded_table;
+    std::vector<long> positions(publishables.size());
+    for (size_t i = 0; i < publishables.size(); i++) {
+        positions[i] = publishables[i].position;
+    }
+
+    ea->decodeSlots(blinded_table, poly, positions);
     std::vector<long> result_table;
 
     CTable_t ctable(getP().size, std::vector<long>(getQ().size, 0));
-    for (const auto &p : publishables) {
-        auto u = p.u;
-        auto v = p.v;
-        ctable.at(u).at(v) = (blinded_table[p.j] - p.blinding_factor) % pr;
+    for (size_t i = 0; i < publishables.size(); i++) {
+        const auto &p = publishables[i];
+        size_t u = p.u;
+        size_t v = p.v;
+        long value = blinded_table[i] - p.blinding_factor;
+        while (value < 0) value += pr;
+        ctable.at(u).at(v) = value;
     }
     return ctable;
 }

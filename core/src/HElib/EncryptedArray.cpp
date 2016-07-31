@@ -332,7 +332,7 @@ void EncryptedArrayDerived<type>::decode(vector< RX >& array, const ZZX& ptxt) c
   FHE_TIMER_START;
   RX pp;
   conv(pp, ptxt);
-  tab.decodePlaintext(array, pp, mappingData); 
+  tab.decodePlaintext(array, pp, mappingData);
   FHE_TIMER_STOP;
 }
 
@@ -516,6 +516,26 @@ EncryptedArrayDerived<type>::buildLinPolyCoeffs(vector<RX>& C,
   convert(C, CC);
 }
 
+template <class type>
+void EncryptedArrayDerived<type>::decodeSlots(std::vector<long> &array, const ZZX& ptxt,
+                                              const std::vector<long> &positions) const
+{
+  RBak bak; bak.save(); tab.restoreContext(); // same in GenericDecode
+  RX pp;
+  conv(pp, ptxt);
+
+  std::vector<RX> slots;
+  tab.decodeSlots(slots, pp, positions, mappingData);
+  convert(array, slots);
+}
+
+template <class type>
+long EncryptedArrayDerived<type>::decode1Slot(const ZZX &ptxt, long i) const
+{
+  std::vector<long> oneSlot, position(1, i);
+  decodeSlots(oneSlot, ptxt, position);
+  return oneSlot.front();
+}
 
 // Apply the same linear transformation to all the slots.
 // C is the output of ea.buildLinPolyCoeffs

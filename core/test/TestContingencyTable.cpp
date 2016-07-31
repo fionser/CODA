@@ -8,8 +8,9 @@
 #include "HElib/EncryptedArray.h"
 #include <list>
 #include <map>
+#include <thread>
 #ifdef FHE_THREADS
-#define NR_THREADS 8
+#define NR_THREADS 36
 #else
 #define NR_THREADS 1
 #endif
@@ -52,61 +53,87 @@ static void print(const std::vector<std::vector<long>> &counting) {
     }
 }
 
-std::list<std::vector<long>>
+typedef std::vector<std::vector<long>> CTable_t;
+std::pair<CTable_t, CTable_t>
 generate_data(core::Attribute P, core::Attribute Q, long N, long slots) {
-	std::list<std::vector<long>> data;
-    std::vector<std::vector<long>> counting(P.size, std::vector<long>(Q.size, 0));
+	CTable_t data;
+	CTable_t counting(P.size, std::vector<long>(Q.size, 0));
 	for (long i = 0; i < N; i++) {
-	   	long u = static_cast<long>(NTL::RandomBnd(P.size));
-	   	long v = static_cast<long>(NTL::RandomBnd(Q.size));
+		long u = static_cast<long>(NTL::RandomBnd(P.size));
+		long v = static_cast<long>(NTL::RandomBnd(Q.size));
 
 		Pair_t pp(u, v);
-        counting.at(u).at(v) += 1;
+		counting.at(u).at(v) += 1;
 
-        std::vector<long> row(slots, 0);
+		std::vector<long> row(slots, 0);
 		row.at(P.offset + u) = 1;
 		row.at(Q.offset + v) = 1;
 		data.push_back(row);
 	}
     print(counting);
-	return data;
+	return std::make_pair(data, counting);
 }
 
-void test_CT(const long N) {
-    long parameters[][2] = {
-            {8219, 77933}, // 80-bits
-            {16384, 6143}, // 80-bits
-            {16384, 8191}, // 80-bits
-            {16384 * 2, 8191}, // 200+ bits
+bool check(const std::vector<std::vector<long>> &g,
+           const std::vector<std::vector<long>> &s, long t) {
+    auto Q = g.front().size();
+    auto P = g.size();
+    for (size_t u = 0; u < P; u++) {
+    	for (size_t v = 0; v < Q; v++) {
+	    if (g[u][v] < t || s[u][v] != 0) return false;
+            if (g[u][v] != s[u][v]) return false;
+	}
+    }
+    return true;
+}
+
+void test_CT(const long N, size_t sizeP, size_t sizeQ, long which) {
+    long parameters[][3] = {
+            // m, p, #slots
+            {8209, 15217, 513}, // 80-bits
+            {8219, 9719, 1174}, // 80-bits
+            {8221, 9127, 1644}, // 80+ bits
+            {8221, 24247, 2740}, // 80+ bits
+            {16384, 8191, 4096}, // 80+ bits
     };
 
-    long m = parameters[2][0];
-    long p = parameters[2][1];
+    long m = parameters[which][0];
+    long p = parameters[which][1];
 
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
     buildModChain(*context, 10);
     std::cout << "SLevel " << context->securityLevel() << "\n";
     std::cout << "Num of Gens " << context->zMStar.numOfGens() << "\n";
+    std::cout << "Same order " << context->zMStar.SameOrd(0) << "\n";
+    std::cout << "Num of Slots " << context->ea->size() << "\n";
     core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
     sk->GenSecKey(64);
     addSome1DMatrices(*sk);
     core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
 
     auto type = core::Attribute::Type::CATEGORICAL;
-    struct core::Attribute P = { .text = "P", .type = type, .size = 2, .offset = 0};
-    struct core::Attribute Q = { .text = "Q", .type = type, .size = 4, .offset = 2};
-    struct core::Attribute R = { .text = "R", .type = type, .size = 4, .offset = 6};
+    struct core::Attribute P = { .text = "P", .type = type, .size = sizeP, .offset = 0};
+    struct core::Attribute Q = { .text = "Q", .type = type, .size = sizeQ, .offset = P.size};
 
     auto ea = context->ea;
-    auto _data = generate_data(P, Q, N, ea->size());
+    auto generated = generate_data(P, Q, N, ea->size());
+    CTable_t &_data = generated.first;
     std::vector<Ctxt> ctxts(N, *pk);
-    size_t idx = 0;
-    for (auto &row : _data) {
-        ea->encrypt(ctxts.at(idx), *pk, row);
-	    idx += 1;
-    }
-    std::cout << "To compute contingency table\n";
-    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */2, ea);
+    std::atomic<size_t> counter(0);
+    auto encrypt_program = [&]() {
+        size_t sze = ctxts.size();
+        size_t next;
+        while ((next = counter.fetch_add(1UL)) < sze) {
+        	ea->encrypt(ctxts.at(next), *pk, _data.at(next));
+        }
+    };
+    std::vector<std::thread> workers;
+    for (size_t wr = 0; wr < NR_THREADS; wr++) workers.push_back(std::thread(encrypt_program));
+    for (auto &wr : workers) wr.join();
+
+    long threshold = std::max<long>(2L, N / (P.size * Q.size));
+    printf("threshold %ld\n", threshold);
+    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */threshold, ea);
     core::PrivateContingencyTable CT(context, helper);
 
     auto encrypted_CT = CT.evaluate(ctxts);
@@ -114,20 +141,24 @@ void test_CT(const long N) {
     auto &gamma = encrypted_CT.gamma;
     auto &tilde_gamma = encrypted_CT.tilde_gamma;
 
-    FHE_NTIMER_START(Decryption);
+    FHE_NTIMER_START(open_gamma);
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishable;
     helper->open_gamma(publishable, gamma, tilde_gamma, ea, sk);
-    auto ctable = helper->final_decrypt(n_uv, publishable, sk, ea);
-    FHE_NTIMER_STOP(Decryption);
+    FHE_NTIMER_STOP(open_gamma);
 
-    printf("Evaluated %ld records\n", ctxts.size());
+    FHE_NTIMER_START(final_decrypt);
+    auto ctable = helper->final_decrypt(n_uv, publishable, sk, ea);
+    FHE_NTIMER_STOP(final_decrypt);
+
     print(ctable);
 
-    //printAllTimers(std::cout);
+//    printAllTimers(std::cout);
+    printNamedTimer(std::cout, "ea_rotate");
     printNamedTimer(std::cout, "Conduction");
     printNamedTimer(std::cout, "GreaterThan");
     printNamedTimer(std::cout, "Blinding");
-    printNamedTimer(std::cout, "Decryption");
+    printNamedTimer(std::cout, "open_gamma");
+    printNamedTimer(std::cout, "final_decrypt");
     delete helper;
 }
 
@@ -179,9 +210,15 @@ void test_repeat() {
 int main(int argc, char *argv[]) {
     ArgMapping mapping;
     long N = 10;
+    long P = 5;
+    long Q = 11;
+    long which = 1;
     mapping.arg("N", N, "number of ciphers");
+    mapping.arg("P", P, "Size of C_p");
+    mapping.arg("Q", Q, "Size of C_q");
+    mapping.arg("w", which, "which FHE parameter");
     mapping.parse(argc, argv);
-    test_CT(N);
+    test_CT(N, P, Q, which);
 //    test_crt();
 //    test_repeat();
     return 0;

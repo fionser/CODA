@@ -18,6 +18,7 @@ AES128::AES128(const NTL::ZZ &init_key)
     std::memset(_key, 0, sizeof(_key));
     for (size_t i = 0; i < nr_bytes; i++)
         _key[i] = static_cast<unsigned char>(bytes.at(i));
+    error = false;
 }
 
 AES128::Ctxt AES128::encrypt(const std::string &message) {
@@ -32,18 +33,24 @@ AES128::Ctxt AES128::encrypt(const std::string &message) {
 
     EVP_CIPHER_CTX ctx;
     EVP_CIPHER_CTX_init(&ctx);
-    if (1 != EVP_EncryptInit_ex(&ctx, _ALG(), NULL, _key, _iv))
+    if (1 != EVP_EncryptInit_ex(&ctx, _ALG(), NULL, _key, _iv)) {
         printf("some wrong in EVP_EncryptInit_ex\n");
+        error = true;
+    }
 
     int len = 0;
     int ctxt_len = AES_BLOCK_SIZE;
-    if (1 != EVP_EncryptUpdate(&ctx, ctxt.data() + ctxt_len, &len, (unsigned char *)message.data(), message.size()))
+    if (1 != EVP_EncryptUpdate(&ctx, ctxt.data() + ctxt_len, &len, (unsigned char *)message.data(), message.size())) {
         printf("some wrong in EVP_EncryptUpdate\n");
+        error = true;
+    }
     ctxt_len += len;
 
     len = 0;
-    if (1 != EVP_EncryptFinal_ex(&ctx, ctxt.data() + ctxt_len, &len))
+    if (1 != EVP_EncryptFinal_ex(&ctx, ctxt.data() + ctxt_len, &len)) {
         printf("some wrong in EVP_EncryptFinal_ex\n");
+        error = true;
+    }
     ctxt_len += len;
 
     EVP_CIPHER_CTX_cleanup(&ctx);
@@ -59,8 +66,10 @@ std::string AES128::decrypt(const AES128::Ctxt &ctxt) {
 
     EVP_CIPHER_CTX ctx;
     EVP_CIPHER_CTX_init(&ctx);
-    if (1 != EVP_DecryptInit_ex(&ctx, _ALG(), NULL, _key, _iv))
+    if (1 != EVP_DecryptInit_ex(&ctx, _ALG(), NULL, _key, _iv)) {
         printf("some wrong in EVP_DecryptInit_ex\n");
+        error = true;
+    }
 
     int len = 0;
     int plain_len = 0;
@@ -68,14 +77,17 @@ std::string AES128::decrypt(const AES128::Ctxt &ctxt) {
 
     if (1 != EVP_DecryptUpdate(&ctx, plain.data(), &len,
                                ctxt.data() + AES_BLOCK_SIZE,
-                               ctxt.size() - AES_BLOCK_SIZE))
+                               ctxt.size() - AES_BLOCK_SIZE)) {
         printf("some wrong in EVP_DecryptUpdate\n");
+        error = true;
+    }
     plain_len = len;
 
     len = 0;
     if (1 != EVP_DecryptFinal_ex(&ctx, plain.data() + plain_len, &len)) {
         ;
         printf("some wrong in EVP_DecryptFinal_ex\n");
+        error = true;
 //        ERR_print_errors_fp(stdout);
     }
     plain_len += len;

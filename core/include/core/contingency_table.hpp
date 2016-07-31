@@ -86,8 +86,8 @@ public:
     typedef typename PrivateContingencyTable::ResultType::Type_tilde_gamma Type_tilde_gamma;
     typedef std::vector<std::vector<long>> CTable_t;
     struct Publishable {
-        size_t u, v;
-        size_t j;
+        size_t u, v; // (u, v)
+        long position; // unzero position in ciphertext
         long blinding_factor;
     };
 
@@ -131,9 +131,13 @@ public:
                            const sk_ptr sk,
                            const EncryptedArray *ea) const;
 private:
+    std::vector<long> get_zero_positions(const ctxt_ptr &ctxt,
+                                         const sk_ptr &sk,
+                                         const EncryptedArray *ea) const;
+
     std::vector<long> get_blinding_factor(const Type_tilde_gamma &tilde_gamma,
                                           long part,
-                                          const std::vector<size_t> &position,
+                                          const std::vector<long> &position,
                                           const EncryptedArray *ea,
                                           sk_ptr sk) const;
 private:

@@ -31,10 +31,13 @@ public:
     Ctxt encrypt(const std::string &message);
 
     std::string decrypt(const Ctxt &ctxt);
+    
+    bool any_error() { return error; }
 
 private:
     AES_KEY _aes;
     unsigned char _key[AES_BLOCK_SIZE];
+    bool error = false;
 };
 
 }

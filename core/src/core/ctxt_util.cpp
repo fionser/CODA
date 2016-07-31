@@ -32,15 +32,18 @@ Ctxt repeat0(const Ctxt &c,
     long offset = n_slots;
     for (size_t i = 0; i < number_bits(rep); i++) {
         if (test_bit(rep, i)) {
+            FHE_NTIMER_START(ea_rotate);
             ea.rotate(res, offset);
+            FHE_NTIMER_STOP(ea_rotate);
             res += repeated;
         }
         Ctxt tmp(repeated);
+        FHE_NTIMER_START(ea_rotate);
         ea.rotate(tmp, offset);
+        FHE_NTIMER_STOP(ea_rotate);
         repeated += tmp;
         offset = offset << 1;
     }
-
     return res;
 }
 

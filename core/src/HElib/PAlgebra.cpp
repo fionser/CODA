@@ -777,6 +777,55 @@ void PAlgebraModDerived<type>::decodePlaintext(
   }
 }
 
+template<class type>
+void PAlgebraModDerived<type>::decodeSlots(std::vector <RX> &alphas,
+                                           const RX &ptxt,
+                                           const std::vector<long> &positions,
+                                           const MappingData <type> &mappingData) const
+{
+  long nSlots = zMStar.getNSlots();
+  for (auto position : positions)
+    assert(position >= 0 && position < nSlots && "Invalid positions");
+
+  if (isDryRun()) {
+    alphas = std::vector<RX>(positions.size(), RX::zero());
+    return;
+  }
+
+  size_t nPos = positions.size();
+  vector<RX> CRTcomps(nPos); // allocate space for CRT component
+  for (size_t i = 0; i < nPos; i++)
+    rem(CRTcomps[i], ptxt, factors[positions[i]]); // CRTcomp = H % factors[i]
+
+  if (mappingData.degG==1) {
+    alphas = CRTcomps;
+    return;
+  }
+
+  alphas.resize(nPos);
+
+  REBak bak; bak.save(); mappingData.contextForG.restore();
+
+  for (size_t i = 0; i < nPos; i++) {
+    REX te;
+    conv(te, CRTcomps[i]);   // lift i'th CRT componnet to mod G(X)
+    te %= mappingData.rmaps[positions[i]];  // reduce CRTcomps[i](Y) mod Qi(Y), over (Z_2[X]/G(X))
+
+    // the free term (no Y component) should be our answer (as a poly(X))
+    alphas[i] = rep(ConstTerm(te));
+  }
+}
+
+template<class type>
+void PAlgebraModDerived<type>::decode1Slot(RX &alpha, const RX &ptxt, const long i,
+                                           const MappingData <type> &mappingData) const
+{
+  std::vector<RX> oneSlot;
+  std::vector<long> position(1, i);
+  decodeSlots(oneSlot, ptxt, position, mappingData);
+  alpha = position.front();
+}
+
 template<class type> 
 void PAlgebraModDerived<type>::
 buildLinPolyCoeffs(vector<RX>& C, const vector<RX>& L,
