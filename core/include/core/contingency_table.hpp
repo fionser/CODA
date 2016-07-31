@@ -13,6 +13,7 @@
 #include "greaterthan.h"
 
 namespace NTL { class ZZX; }
+class EncryptedArray;
 
 namespace core {
 struct Attribute {
@@ -34,10 +35,9 @@ class PrivateContingencyTable {
 public:
     typedef std::shared_ptr<Ctxt> ctxt_ptr;
     struct ResultType {
-        typedef std::vector<AES128::Ctxt> Type_n_uv;
-//        typedef std::vector<ctxt_ptr> Type_n_uv;
+        typedef ctxt_ptr Type_n_uv;
         typedef std::vector<ctxt_ptr> Type_gamma;
-        typedef std::vector<Type_gamma> Type_tilde_gamma;
+        typedef Type_gamma Type_tilde_gamma;
         Type_n_uv n_uv;
         Type_gamma gamma;
         Type_tilde_gamma tilde_gamma;
@@ -56,24 +56,23 @@ private:
                            Attribute p, Attribute q,
                            const EncryptedArray *ea) const;
 
+    std::vector<long> sample_blinding_factor(Attribute p, Attribute q,
+                                             const EncryptedArray *ea) const;
+
     Ctxt do_compute(const Ctxt &one_record, const Attribute &p,
                     const Attribute &q, const EncryptedArray *ea) const;
-
-    std::vector<ctxt_ptr> extract_cells_in_table(const ctxt_ptr& CT,
-                                                 Attribute p, Attribute q,
-                                                 const EncryptedArray *ea) const;
 
     ResultType::Type_gamma special_greater_than(ctxt_ptr CT, long domain_size,
                                                 const EncryptedArray *ea) const;
 
-    ResultType::Type_tilde_gamma add_key_to_gamma(const ResultType::Type_gamma &gamma,
-                                                  const std::vector<AESKey_t> &keys,
-                                                  long domain_size,
-                                                  const EncryptedArray *ea) const;
+    ResultType::Type_tilde_gamma blind_GT(const ResultType::Type_gamma &gamma,
+                                          const std::vector<long> &blind_factor,
+                                          long domain_size,
+                                          const EncryptedArray *ea) const;
 
-    ResultType::Type_n_uv aes_encrypt_cells(const std::vector<ctxt_ptr> &cells,
-                                            const std::vector<AESKey_t> &keys,
-                                            const EncryptedArray *ea) const;
+    ResultType::Type_n_uv blind_table(const ctxt_ptr &ct,
+                                      const std::vector<long> &blind_factor,
+                                      const EncryptedArray *ea) const;
 
 private:
     context_ptr context = nullptr;
@@ -85,10 +84,11 @@ public:
     typedef typename PrivateContingencyTable::ResultType::Type_n_uv Type_n_uv;
     typedef typename PrivateContingencyTable::ResultType::Type_gamma Type_gamma;
     typedef typename PrivateContingencyTable::ResultType::Type_tilde_gamma Type_tilde_gamma;
+    typedef std::vector<std::vector<long>> CTable_t;
     struct Publishable {
         size_t u, v;
         size_t j;
-        NTL::ZZ aes_key;
+        long blinding_factor;
     };
 
     PrivateContingencyTableHelper(const Attribute P,
@@ -113,9 +113,9 @@ public:
 
     void setKeyLength(long s) {key_bits = s;}
 
-    Attribute getP() const { return P;}
+    Attribute getP() const { return P; }
 
-    Attribute getQ() const { return Q;}
+    Attribute getQ() const { return Q; }
 
     long getThreshold() const { return threshold;}
 
@@ -126,17 +126,16 @@ public:
                     const Type_tilde_gamma  &tilde_gamma,
                     const EncryptedArray *ea, sk_ptr sk) const;
 
-    std::vector<long> final_decrypt(const Type_n_uv &cells,
-                                    const std::vector<Publishable> &publishable,
-                                    const sk_ptr sk,
-                                    const EncryptedArray *ea) const;
+    CTable_t final_decrypt(const Type_n_uv &cells,
+                           const std::vector<Publishable> &publishable,
+                           const sk_ptr sk,
+                           const EncryptedArray *ea) const;
 private:
-    std::vector<PrivateContingencyTable::AESKey_t>
-        decryptToGetAESKeys(const Type_tilde_gamma &tilde_gamma,
-                            const size_t loc,
-                            const std::vector<size_t> &zeros,
-                            const EncryptedArray *ea, sk_ptr sk) const;
-
+    std::vector<long> get_blinding_factor(const Type_tilde_gamma &tilde_gamma,
+                                          long part,
+                                          const std::vector<size_t> &position,
+                                          const EncryptedArray *ea,
+                                          sk_ptr sk) const;
 private:
     Attribute P, Q;
     const long threshold;

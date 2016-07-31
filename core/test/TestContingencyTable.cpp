@@ -37,7 +37,7 @@ struct Pair_t {
 	}
 };
 
-static void print(const std::vector<std::vector<int>> &counting) {
+static void print(const std::vector<std::vector<long>> &counting) {
     printf("   ");
     auto Q = counting.front().size();
     for (size_t v = 0; v < Q; v++)
@@ -47,7 +47,7 @@ static void print(const std::vector<std::vector<int>> &counting) {
     for (size_t u = 0; u < P; u++) {
         printf("%3ld", u);
         for (size_t v = 0; v < Q; v++)
-            printf("%3d", counting[u][v]);
+            printf("%3ld", counting[u][v]);
         printf("\n");
     }
 }
@@ -55,7 +55,7 @@ static void print(const std::vector<std::vector<int>> &counting) {
 std::list<std::vector<long>>
 generate_data(core::Attribute P, core::Attribute Q, long N, long slots) {
 	std::list<std::vector<long>> data;
-    std::vector<std::vector<int>> counting(P.size, std::vector<int>(Q.size, 0));
+    std::vector<std::vector<long>> counting(P.size, std::vector<long>(Q.size, 0));
 	for (long i = 0; i < N; i++) {
 	   	long u = static_cast<long>(NTL::RandomBnd(P.size));
 	   	long v = static_cast<long>(NTL::RandomBnd(Q.size));
@@ -80,8 +80,8 @@ void test_CT(const long N) {
             {16384 * 2, 8191}, // 200+ bits
     };
 
-    long m = parameters[1][0];
-    long p = parameters[1][1];
+    long m = parameters[2][0];
+    long p = parameters[2][1];
 
     core::context_ptr context = std::make_shared<FHEcontext>(m, p, 1);
     buildModChain(*context, 10);
@@ -106,7 +106,7 @@ void test_CT(const long N) {
 	    idx += 1;
     }
     std::cout << "To compute contingency table\n";
-    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */10, ea);
+    auto helper = new core::PrivateContingencyTableHelper(P, Q, /*threshold = */2, ea);
     core::PrivateContingencyTable CT(context, helper);
 
     auto encrypted_CT = CT.evaluate(ctxts);
@@ -117,16 +117,10 @@ void test_CT(const long N) {
     FHE_NTIMER_START(Decryption);
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishable;
     helper->open_gamma(publishable, gamma, tilde_gamma, ea, sk);
-    auto counts = helper->final_decrypt(n_uv, publishable, sk, ea);
+    auto ctable = helper->final_decrypt(n_uv, publishable, sk, ea);
     FHE_NTIMER_STOP(Decryption);
 
     printf("Evaluated %ld records\n", ctxts.size());
-    std::vector<std::vector<int>> ctable(P.size, std::vector<int>(Q.size, 0));
-    for (size_t x = 0; x < counts.size(); x++) {
-        auto u = x / Q.size;
-        auto v = x % Q.size;
-        ctable[u][v] = counts.at(x);
-    }
     print(ctable);
 
     //printAllTimers(std::cout);

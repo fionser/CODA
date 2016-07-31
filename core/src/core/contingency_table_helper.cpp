@@ -84,14 +84,14 @@ open_gamma(std::vector <Publishable> &unsuppression,
 
             if (zeros.empty()) continue;
 
-            auto aesKeys = decryptToGetAESKeys(tilde_gamma, i, zeros, ea, sk);
+            auto blinding_factors = get_blinding_factor(tilde_gamma, i, zeros, ea, sk);
 
             for (size_t j = 0; j < zeros.size(); j++) {
                 auto crtidx = zeros[j] % bs;
                 size_t u = crtidx % modified_sizes.first;
                 size_t v = crtidx % modified_sizes.second;
-                Publishable info = {.u = u, .v = v, .j = crtidx,
-                        .aes_key = convKey(aesKeys.at(j), bit_per)};
+                Publishable info = { .u = u, .v = v, .j = crtidx,
+                                     .blinding_factor = blinding_factors.at(j) };
                 tmux.lock();
                 unsuppression.push_back(info);
                 tmux.unlock();
@@ -105,56 +105,43 @@ open_gamma(std::vector <Publishable> &unsuppression,
     for (auto &wr : workers) wr.join();
 }
 
-std::vector <PrivateContingencyTable::AESKey_t>
-PrivateContingencyTableHelper::decryptToGetAESKeys(
-        const Type_tilde_gamma &tilde_gammas,
-        const size_t loc,
-        const std::vector <size_t> &zeros,
-        const EncryptedArray *ea, sk_ptr sk) const {
-    size_t bs = block_size();
-    std::vector<PrivateContingencyTable::AESKey_t> keys(zeros.size());
-    size_t usable_size = ea->size() / bs * bs;
-    std::vector<long> slots;
-
-    for (auto &parts : tilde_gammas) {
-        ea->decrypt(*(parts.at(loc)), *sk, slots);
-        for (size_t j = 0; j < zeros.size(); j++) {
-            keys.at(j).push_back(slots.at(zeros[j]));
-        }
+std::vector<long> PrivateContingencyTableHelper::
+get_blinding_factor(const Type_tilde_gamma &tilde_gamma, long part,
+                    const std::vector <size_t> &positions,
+                    const EncryptedArray *ea, sk_ptr sk) const {
+    NTL::ZZX poly;
+    sk->Decrypt(poly, *tilde_gamma.at(part));
+    // TODO(riku) to implement decode1Slot for efficency
+    std::vector<long> slots(ea->size());
+    ea->decode(slots, poly);
+    std::vector<long> blind_factor;
+    for (size_t pos : positions) {
+        blind_factor.push_back(slots.at(pos));
     }
-    return keys;
+    return blind_factor;
 }
 
+PrivateContingencyTableHelper::CTable_t
+PrivateContingencyTableHelper::final_decrypt(const Type_n_uv &table,
+                                             const std::vector <Publishable> &publishables,
+                                             const sk_ptr sk,
+                                             const EncryptedArray *ea) const
+{
+    auto pr = ea->getAlMod().getPPowR();
+    NTL::ZZX poly;
+    sk->Decrypt(poly, *table);
+    std::vector<long> blinded_table(ea->size(), 0);
+    // TODO(riku) to implement decode1Slot for efficency
+    ea->decode(blinded_table, poly);
+    std::vector<long> result_table;
 
-std::vector<long> PrivateContingencyTableHelper::
-final_decrypt(const Type_n_uv &cells,
-              const std::vector<struct PrivateContingencyTableHelper::Publishable> &publishable,
-              const sk_ptr sk, const EncryptedArray *ea) const {
-    assert(cells.size() >= publishable.size() && "Mismatch size!");
-    std::vector<long> plain_cells(cells.size(), 0);
-    auto modified = coprime(P.size, Q.size);
-    const FHEPubKey &pk = *sk;
-    Ctxt ctxt(pk);
-    std::vector<long> slots(ea->size(), 0);
-    ea->encrypt(ctxt, pk, slots);
-    for (auto &p : publishable) {
-        AES128 aes(p.aes_key);
-        auto idx = p.u * Q.size + p.v;
-        std::string decrypt_aes = aes.decrypt(cells.at(idx));
-        conv(ctxt, decrypt_aes);
-        ea->decrypt(ctxt, *sk, slots);
-
-        long count = 0;
-        for (auto ss : slots) {
-            if (ss != 0) {
-                assert(count == 0 && "Should only one zero!");
-                count = ss;
-            }
-        }
-        plain_cells.at(idx) = count;
+    CTable_t ctable(getP().size, std::vector<long>(getQ().size, 0));
+    for (const auto &p : publishables) {
+        auto u = p.u;
+        auto v = p.v;
+        ctable.at(u).at(v) = (blinded_table[p.j] - p.blinding_factor) % pr;
     }
-
-    return plain_cells;
+    return ctable;
 }
 
 } // namespace core

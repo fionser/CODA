@@ -73,26 +73,6 @@ random_permutation_for_GT(size_t block_size, size_t copies,
     return rets;
 }
 
-static std::vector<PrivateContingencyTable::AESKey_t>
-random_hash_key(size_t block_size,
-                size_t repeats,
-                long key_bits,
-                const EncryptedArray *ea) {
-    size_t usable_size = ea->size() / block_size * block_size;
-    long bits = (number_bits(ea->getAlMod().getPPowR()) / 8UL) << 3;
-    long partition = (key_bits + bits - 1) / bits;
-    std::vector<PrivateContingencyTable::AESKey_t> keys;
-
-    NTL::ZZ randomness;
-    for (size_t b = 0; b < block_size; b++) {
-        NTL::RandomBits(randomness, key_bits);
-        keys.emplace_back(convKey(randomness, bits, partition));
-//        std::cout << "DEBUG " << b % 3 << " " << b % 4 << " generated " << randomness << "\n";
-//        std::cout << "DEBUG location: " << b << " generated " << randomness << "\n";
-    }
-    return keys;
-}
-
 static std::vector<NTL::ZZX>
 randomness_for_GT(size_t copies, const EncryptedArray *ea) {
     auto random_sample = [](std::vector<long> &r, long pr) {
@@ -198,60 +178,61 @@ PrivateContingencyTable::special_greater_than(ctxt_ptr CT, long domain_size,
     return gamma;
 }
 
+std::vector<long> PrivateContingencyTable::
+sample_blinding_factor(Attribute p,
+                       Attribute q,
+                       const EncryptedArray *ea) const
+{
+    auto modified_sizes = coprime(p.size, q.size);
+    size_t bsize = helper->block_size();
+    assert(bsize <= ea->size() && "Can't encode the whole contingenct table!");
+
+    long pr = ea->getAlMod().getPPowR();
+    std::vector<long> delta(ea->size(), 0);
+    for (size_t b = 0; b < bsize; b++)
+        delta.at(b) = NTL::RandomBnd(pr);
+
+    return delta;
+}
+
 PrivateContingencyTable::ResultType::Type_tilde_gamma
-PrivateContingencyTable::add_key_to_gamma(const ResultType::Type_gamma &gamma,
-                                          const std::vector<AESKey_t> &keys,
-                                          long domain_size,
-                                          const EncryptedArray *ea) const {
-    size_t partition = keys.front().size();
-    size_t repeats = gamma.size();
-    /// vector of Type_gamma
-    ResultType::Type_tilde_gamma tilde_gammas(partition, ResultType::Type_gamma(repeats));
-    for (size_t p = 0; p < partition; p++) {
-        auto key_poly = convKey(keys, p, ea);
-        for (size_t i = 0; i < repeats; i++) {
-            tilde_gammas[p].at(i) = std::make_shared<Ctxt>(*gamma.at(i));
-            tilde_gammas[p][i]->addConstant(key_poly);
+PrivateContingencyTable::blind_GT(const ResultType::Type_gamma &gamma,
+                                  const std::vector<long> &blind_factor,
+                                  long domain_size,
+                                  const EncryptedArray *ea) const
+{
+    size_t bsize = helper->block_size();
+    size_t usable_size = ea->size() / bsize * bsize;
+
+    std::vector<std::vector<long>> parts(gamma.size(), std::vector<long>(ea->size(), 0));
+    for (size_t b = 0; b < bsize; b++) {
+        for (size_t i = 0; i < domain_size; i++) {
+            auto ii = i * bsize + b;
+            auto idx_of_part = ii / usable_size;
+            auto idx_in_part = ii % usable_size;
+            parts.at(idx_of_part).at(idx_in_part) = blind_factor.at(b);
         }
     }
-    return tilde_gammas;
+
+    NTL::ZZX poly;
+    ResultType::Type_tilde_gamma tilde_gamma(gamma.size());
+    for (size_t i = 0; i < gamma.size(); i++) {
+        tilde_gamma[i] = std::make_shared<Ctxt>(*gamma[i]);
+        ea->encode(poly, parts[i]);
+        tilde_gamma[i]->addConstant(poly);
+    }
+    return tilde_gamma;
 }
 
 PrivateContingencyTable::ResultType::Type_n_uv
-PrivateContingencyTable::aes_encrypt_cells(const std::vector<ctxt_ptr> &cells,
-                                           const std::vector<AESKey_t> &keys,
-                                           const EncryptedArray *ea) const {
-    ResultType::Type_n_uv n_uv(cells.size());
-    auto bits = number_bits(ea->getAlMod().getPPowR());
-    for (size_t i = 0; i < cells.size(); i++) {
-        auto raw_str = conv(*cells.at(i));
-        auto x = toCRTIndex(i, helper->getP().size, helper->getQ().size);
-        auto aes_key = convKey(keys.at(x), bits);
-        AES128 aes(aes_key);
-        n_uv.at(i) = aes.encrypt(raw_str);
-    }
-    return n_uv;
-}
-
-std::vector<ctxt_ptr>
-PrivateContingencyTable::extract_cells_in_table(const ctxt_ptr& CT,
-                                                Attribute p, Attribute q,
-                                                const EncryptedArray *ea) const {
-    std::vector<ctxt_ptr> cells(p.size * q.size);
-    for (size_t i = 0; i < cells.size(); i++) {
-        cells.at(i) = std::make_shared<Ctxt>(*CT);
-    }
-
-    auto modified_size = coprime(p.size, q.size);
-    for (size_t u = 0; u < p.size; u++) {
-        for (size_t v = 0; v < q.size; v++) {
-            auto x = CRT(u, v, modified_size.first, modified_size.second);
-            auto Ix = make_I_x(u, v, modified_size.first, modified_size.second, ea);
-            cells.at(u * q.size + v)->multByConstant(Ix);
-        }
-    }
-
-    return cells;
+PrivateContingencyTable::blind_table(const ctxt_ptr &ct,
+                                     const std::vector<long> &blind_factor,
+                                     const EncryptedArray *ea) const {
+    ctxt_ptr blinded_ct = std::make_shared<Ctxt>(*ct);
+    NTL::ZZX poly;
+    ea->encode(poly, blind_factor);
+    blinded_ct->addConstant(poly);
+    return blinded_ct;
 }
 
 PrivateContingencyTable::ResultType
@@ -271,8 +252,6 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
 
     FHE_NTIMER_START(Conduction);
     auto contingency_table = compute_table(attributes, P, Q, ea);
-    /// Attention! cells[i] is the (i/Q.size, i%Q.size)-th counting
-    auto cells = extract_cells_in_table(contingency_table, P, Q, ea);
     FHE_NTIMER_STOP(Conduction);
 
     FHE_NTIMER_START(GreaterThan);
@@ -280,17 +259,14 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     FHE_NTIMER_STOP(GreaterThan);
 
     FHE_NTIMER_START(Blinding);
-    /// Attension! keys[i] is for the (i % P'.size, i % Q'.size)-th counting
-    auto keys = random_hash_key(helper->block_size(),
-                                helper->repeats_per_cipher(),
-                                helper->aesKeyLength(), ea);
-    /// n_uv[i] is stored the same way with cells[i]
-    auto n_uv = aes_encrypt_cells(cells, keys, ea);
-    auto tilde_gamma = add_key_to_gamma(gamma, keys, domain_size, ea);
+    auto blinding_factor = sample_blinding_factor(P, Q, ea);
+    auto tilde_gamma = blind_GT(gamma, blinding_factor, domain_size, ea);
+    auto n_uv = blind_table(contingency_table, blinding_factor, ea);
     FHE_NTIMER_STOP(Blinding);
 
-    return {.n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
+    return { .n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
 }
+
 
 //// Some helper functions
 /// bit_per must be 8-multiple
