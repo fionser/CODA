@@ -10,6 +10,18 @@ long numOfSlots(long m, long p) {
     return phi_N(m) / multOrd(p, m);
 }
 
+void testIt() {
+    long ps[] = {4139, 5657, 6091, 15797, 4231, 6323, 7321, 6791, 7459};
+    long m = 27893;
+    for (auto p : ps) {
+        PAlgebra zMStar(m, p);
+        std::cout << p << ": ";
+        for (long i = 0; i < zMStar.numOfGens(); i++)
+            std::cout << zMStar.SameOrd(i) << " " ;
+        std::cout << "\n" << zMStar.getNSlots() << "\n";
+    }
+}
+
 //long FindM(long k, long L, long c, long p, long d, long s, long chosen_m, bool verbose=false);
 int main(int argc, char *argv[]) {
     ArgMapping mapping;
@@ -22,28 +34,27 @@ int main(int argc, char *argv[]) {
     mapping.arg("k", security, "security level");
     mapping.arg("S", slots, "how many slots?");
     mapping.parse(argc, argv);
-
-    long m = 16384 * 2;
-    long p = 1 << 8;//8191;
-    long max_slots = 0;
-    printf("m(%ld) = %ld\n", m, phi_N(m));
-    for (long t = 0; t < 10000; t++) {
-        p = NTL::NextPrime(p + 2);
-        PAlgebra zMStar(m, p);
-        if (zMStar.numOfGens() == 1 && zMStar.getNSlots() > max_slots) {
-            max_slots = zMStar.getNSlots();
-            plain = p;
-            printf("%ld %ld\n", plain, max_slots);
+    
+    long m = 27893;
+    std::cout << "m\tp\t#slot\tSameOrd\n";
+    for (long t = 0; t < 10; t++) {
+        long p = NTL::NextPrime(1 << 12);
+        while (p < m) {
+            PAlgebra zMStar(m, p);
+            if (zMStar.numOfGens() == 1 && zMStar.getNSlots() >= 36) {
+                printf("%ld\t%ld\t%ld\t%d\n", m, p, zMStar.getNSlots(), zMStar.SameOrd(0));
+            }
+            p = NTL::NextPrime(p + 2);
         }
+        m = NTL::NextPrime(m + 2);
     }
-//    long m = 16384;
-//    plain = 8191;
-    FHEcontext context(m, plain, 1);
-    buildModChain(context, level);
-    std::cout << "SL " << context.securityLevel() << "\n";
-    std::cout << "Slots " << context.ea->size() << "\n";
-    std::cout << "Num Gens " << context.zMStar.numOfGens() << "\n";
-    printf("m = %ld, p = %ld, level = %ld security = %ld\n", m, plain, level, security);
+
+    // FHEcontext context(m, plain, 1);
+    // buildModChain(context, level);
+    // std::cout << "SL " << context.securityLevel() << "\n";
+    // std::cout << "Slots " << context.ea->size() << "\n";
+    // std::cout << "Num Gens " << context.zMStar.numOfGens() << "\n";
+    // printf("m = %ld, p = %ld, level = %ld security = %ld\n", m, plain, level, security);
     return 0;
 }
 

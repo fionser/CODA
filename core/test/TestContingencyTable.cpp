@@ -82,7 +82,7 @@ bool check(const std::vector<std::vector<long>> &g,
     	for (size_t v = 0; v < Q; v++) {
 	    if (g[u][v] < t || s[u][v] != 0) return false;
             if (g[u][v] != s[u][v]) return false;
-	}
+	    }
     }
     return true;
 }
