@@ -2,6 +2,30 @@
 #define core_PROTOCOL_PROTOCOL_H
 #include "coda.hpp"
 #include <vector>
+#include <string>
+class Protocol {
+public:
+    Protocol(const std::string &description) : description(description) {}
+    ~Protocol() {}
+    std::string which() const { return description; }
+
+    virtual bool encrypt(const std::string &inputFilePath,
+                         const std::string &outputDirPath,
+                         core::pk_ptr pk) = 0;
+
+    virtual bool decrypt(const std::string &inputFilePath,
+                         const std::string &outputDirPath,
+                         core::pk_ptr pk,
+                         core::sk_ptr sk) = 0;
+
+    virtual bool evaluate(const std::vector<std::string> &inputDirs,
+                          const std::string &outputDir,
+                          core::pk_ptr pk,
+                          core::context_ptr context) = 0;
+private:
+    std::string description;
+};
+
 namespace protocol {
 bool genKeypair(core::Protocol protocol,
                 std::fstream &skStream,
