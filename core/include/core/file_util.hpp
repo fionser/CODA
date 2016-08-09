@@ -24,5 +24,6 @@ enum class flag_t {
 };
 
 std::vector<std::string> listDir(const std::string &dir, flag_t f);
+
 } // namespace util
 #endif // CORE_FILE_UTILITY_H

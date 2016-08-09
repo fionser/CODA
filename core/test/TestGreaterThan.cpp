@@ -14,18 +14,30 @@ int test(core::sk_ptr sk, core::context_ptr &context) {
     const FHEPubKey &pk = *sk;
     Ctxt ca(pk), cb(pk);
     greaterthan gt(100, context);
-
+    NTL::ZZX poly;
     for (int i = 0; i < 5; i++) {
         std::vector<long> poly_a(slots, __a[i]);
         std::vector<long> poly_b(slots, __b[i]);
         context->ea->encrypt(ca, pk, poly_a);
         context->ea->encrypt(cb, pk, poly_b);
+        context->ea->encode(poly, poly_b);
         auto ciphers = gt.compare(&ca, &cb);
+        auto ciphers2 = gt.compare(&ca, poly);
         auto res = gt.open_result(ciphers, sk);
-
-        if (res == greaterthan::Result::ERROR) return -1;
-        if (__a[i] > __b[i] && res != greaterthan::Result::GREATER) return -1;
-        if (__a[i] <= __b[i] && res != greaterthan::Result::LESS_OR_EQUAL) return -1;
+        auto res2 = gt.open_result(ciphers2, sk);
+        assert(res == res2);
+        if (res == greaterthan::Result::ERROR) {
+            printf("greaterthan::Result::ERROR\n");
+            return -1;
+        }
+        if (__a[i] >= __b[i] && res != greaterthan::Result::GREATER_OR_EQUAL) {
+            printf("__a[i]: %ld > __b[i] %ld\n", __a[i], __b[i]);
+            return -1;
+        }
+        if (__a[i] < __b[i] && res != greaterthan::Result::LESS) {
+            printf("__a[i]: %ld < __b[i] %ld\n", __a[i], __b[i]);
+            return -1;
+        }
     }
     return 0;
 }

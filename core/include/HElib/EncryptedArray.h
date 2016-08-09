@@ -145,9 +145,9 @@ public:
   virtual void random(vector< long >& array) const = 0;
   virtual void random(vector< ZZX >& array) const = 0;
 
-  // FIXME: Inefficient implementation, calls usual decode and returns one slot
-  long decode1Slot(const ZZX& ptxt, long i) const
-  { vector< long > v; decode(v, ptxt); return v.at(i); }
+  virtual long decode1Slot(const ZZX& ptxt, long i) const = 0;
+  virtual void decodeSlots(std::vector<long> &array, const ZZX& ptxt, const std::vector<long> &positions) const = 0;
+
   void decode1Slot(ZZX& slot, const ZZX& ptxt, long i) const
   { vector< ZZX > v; decode(v, ptxt); slot=v.at(i); }
 
@@ -354,6 +354,11 @@ public:
     { genericDecode(array, ptxt); }
 
   virtual void decode(NewPlaintextArray& array, const ZZX& ptxt) const;
+
+  virtual void decodeSlots(std::vector<long> &array, const ZZX& ptxt,
+                           const std::vector<long> &positions) const;
+
+  virtual long decode1Slot(const ZZX &ptxt, long i) const;
 
   virtual void random(vector< long  >& array) const
     { genericRandom(array); } // choose at random and convert to vector<long>
@@ -623,7 +628,10 @@ NTL_FOREACH_ARG(FHE_DEFINE_UPPER_DISPATCH)
     { rep->decode(array, ptxt); }
   void decode(NewPlaintextArray& array, const ZZX& ptxt) const 
     { rep->decode(array, ptxt); }
-
+  void decodeSlots(vector<long> &array, const ZZX &ptxt, const std::vector<long> &positions) const
+    { rep->decodeSlots(array, ptxt, positions); }
+  long decode1Slot(const ZZX& ptxt, long i) const
+    { return rep->decode1Slot(ptxt, i); }
   void random(vector< long  >& array) const
     { rep->random(array); }
   void random(vector< ZZX  >& array) const

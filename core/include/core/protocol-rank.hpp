@@ -3,6 +3,8 @@
 //
 #ifndef CODA_CLION_PROTOCOL_RANK_HPP
 #define CODA_CLION_PROTOCOL_RANK_HPP
+#include <vector>
+class Ctxt;
 namespace rank {
 /// Given a collection of encrypted records,
 /// to evaluate the rank-K of the specific attribute.

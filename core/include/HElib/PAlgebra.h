@@ -589,6 +589,12 @@ public:
   void decodePlaintext(vector<RX>& alphas, const RX& ptxt,
 		       const MappingData<type>& mappingData) const;
 
+  void decodeSlots(std::vector<RX> &alphas, const RX& ptxt,
+                   const std::vector<long> &positions,
+                   const MappingData<type>& mappingData) const;
+
+  void decode1Slot(RX &alpha, const RX& ptxt, const long i,
+                   const MappingData<type>& mappingData) const;
   //! @brief Returns a coefficient vector C for the linearized polynomial
   //! representing M.
   //!
