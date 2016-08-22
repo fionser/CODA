@@ -1,5 +1,24 @@
 #include "core/protocol.hpp"
 #include "HElib/FHE.h"
+#include <thread>
+namespace core {
+ProtocolFactory* ProtocolFactory::__instance = nullptr;
+
+ProtocolFactory * ProtocolFactory::instance() {
+    static std::mutex lock;
+    lock.lock();
+    if (!__instance)
+        __instance = new ProtocolFactory();
+    lock.unlock();
+    return __instance;
+}
+
+void ProtocolFactory::register_builder(const std::string &type,
+                                       const Builder &builder)
+{
+
+}
+} // namespace core
 namespace protocol {
 bool genKeypair(core::Protocol protocol,
 		std::fstream &skStream,

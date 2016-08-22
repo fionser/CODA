@@ -26,7 +26,6 @@ public:
                   core::context_ptr context);
 private:
     std::vector<core::Attribute> parseHeader(std::istream &in);
-       2
     const core::Attribute _P, _Q;
 };
 
@@ -57,29 +56,7 @@ bool ProtocolImp::evaluate(const std::vector <std::string> &inputDirs,
 {
     return false;
 }
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif // CT_ON_DEMAND
 
 } // namespace contingency_table
 

@@ -272,8 +272,7 @@ bool evaluate(const std::string &sessionDirPath,
     case core::Protocol::PROT_CI2:
         return protocol::chi2::evaluate(userDirs, outputDirPath, pk);
     case core::Protocol::PROT_CON:
-        return protocol::contingency::evaluate(userDirs, outputDirPath, pk,
-                                               context);
+        return protocol::contingency::evaluate(userDirs, outputDirPath, pk, context);
     case core::Protocol::PROT_MEAN:
         return protocol::mean::evaluate(userDirs, outputDirPath, pk, context);
     default:

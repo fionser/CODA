@@ -33,7 +33,7 @@ public:
     bool evaluate(const std::vector<std::string> &inputDirs,
                   const std::string &outputDir,
                   core::pk_ptr pk,
-                  core::context_ptr context) override ;
+                  core::context_ptr context) override;
 private:
     std::shared_ptr<contingency_table::ProtocolImp> imp;
 };

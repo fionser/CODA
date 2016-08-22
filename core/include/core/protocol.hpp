@@ -3,6 +3,8 @@
 #include "coda.hpp"
 #include <vector>
 #include <string>
+#include <memory>
+#include <map>
 class Protocol {
 public:
     Protocol(const std::string &description) : description(description) {}
@@ -25,6 +27,30 @@ public:
 private:
     std::string description;
 };
+
+namespace core {
+class ProtocolBuilder;
+
+class ProtocolFactory {
+public:
+    typedef std::shared_ptr<ProtocolBuilder> Builder;
+    std::shared_ptr<Protocol> create(const std::string &type);
+
+    void register_builder(const std::string &type,
+                                 const Builder &builder);
+
+    ProtocolFactory *instance();
+
+private:
+    ProtocolFactory() {}
+    ProtocolFactory& operator=(const ProtocolFactory &) = delete;
+    ProtocolFactory(const ProtocolFactory &) = delete;
+    ProtocolFactory(ProtocolFactory &&) = delete;
+
+    static ProtocolFactory *__instance;
+    static std::map<std::string, Builder> builders;
+};
+} // namespace core
 
 namespace protocol {
 bool genKeypair(core::Protocol protocol,

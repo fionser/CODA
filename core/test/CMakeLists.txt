@@ -38,3 +38,5 @@ ADD_TEST(NAME BenchmarkMatMul
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 TARGET_LINK_LIBRARIES(BenchmarkMatMul fhe ${local-ntl} ${local-gmp} pthread)
 
+ADD_EXECUTABLE(test_docopt TestDocopt.cpp)
+TARGET_LINK_LIBRARIES(test_docopt docopt)

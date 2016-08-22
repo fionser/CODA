@@ -11,12 +11,6 @@
 #include <algorithm>
 #include <thread>
 
-#ifdef FHE_THREADS
-#define NR_THREADS 36
-#else
-#define NR_THREADS 1
-#endif
-
 namespace core {
 size_t PrivateContingencyTableHelper::repeats_per_cipher() const {
     auto cont_table_size = block_size();

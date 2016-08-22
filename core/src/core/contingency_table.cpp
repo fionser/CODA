@@ -15,11 +15,9 @@
 #include <NTL/ZZ.h>
 
 #ifdef FHE_THREADS
-#define NR_THREADS 36
-#warning "Using 36 threads"
+#warning "Using #NR_THREADS threads"
 #else
 #warning "Using single threads"
-#define NR_THREADS 1
 #endif
 
 namespace core {

@@ -1,5 +1,6 @@
 #include "HELib/FHE.h"
 #include "HELib/NumbTh.h"
+#include "HELib/EncryptedArray.h"
 #include <iostream>
 
 void Test(long m, long p, long r, long L)
@@ -27,7 +28,7 @@ int main(int argc, char *argv[]) {
     long k = 80;
     amap.arg("k", k);
     amap.parse(argc, argv);
-
+    printf("FindM = %ld\n", FindM(80, L, 3, p, 1, 100, 0, true));
     printf("#slot %ld\n", phi_N(m) / multOrd(p, m));
     Test(m, p, r, L);
     return 0;

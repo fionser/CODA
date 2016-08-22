@@ -12,12 +12,13 @@ static const char USAGE[] =
 
    Usage:
      core gen <meta file path>
-     core encrypt <input file path> <output dir path> <meta file path>
-     core decrypt <input file path> <output dir path> <meta file path>
-     core eval <session dir path> <output dir path> <meta file path>
+     core enc [-l type] <input file path> <output dir path> <meta file path>
+     core dec <input file path> <output dir path> <meta file path>
+     core eva <session dir path> <output dir path> <meta file path>
 
    Options:
      -h --help  Show Help.
+     -l --local Set Local Computation
      --version  Show Version.
 )";
 
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]) {
             L_ERROR(_console, "Something went wrong in the key-generation");
             return -1;
         }
-    } else if (args["encrypt"].asBool()) {
+    } else if (args["enc"].asBool()) {
         auto inputFilePath = args["<input file path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
             L_ERROR(_console, "Something went wrong in the encryption");
             return -1;
         }
-    } else if (args["decrypt"].asBool()) {
+    } else if (args["dec"].asBool()) {
         auto inputFilePath = args["<input file path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
@@ -85,7 +86,7 @@ int main(int argc, char *argv[]) {
             L_ERROR(_console, "Something went wrong in the decryption");
             return -1;
         }
-    } else if (args["eval"].asBool()) {
+    } else if (args["eva"].asBool()) {
         auto sessionDirPath = args["<session dir path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
