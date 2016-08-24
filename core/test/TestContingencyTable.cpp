@@ -9,11 +9,6 @@
 #include <list>
 #include <map>
 #include <thread>
-#ifdef FHE_THREADS
-#define NR_THREADS 36
-#else
-#define NR_THREADS 1
-#endif
 struct Pair_t {
 	long u;
 	long v;

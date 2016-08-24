@@ -13,6 +13,9 @@ namespace core {
 typedef std::shared_ptr<FHEcontext> context_ptr;
 typedef std::shared_ptr<FHEPubKey> pk_ptr;
 typedef std::shared_ptr<FHESecKey> sk_ptr;
+struct {
+    const int CTX_PER_FILE = 50;
+} core_setting;
 
 struct ContextPk {
     context_ptr context;

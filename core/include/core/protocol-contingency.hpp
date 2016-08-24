@@ -17,18 +17,20 @@ class ProtocolImp;
 
 class ContingencyTableProtocol : Protocol {
 public:
-    ContingencyTableProtocol(core::Attribute P, core::Attribute Q);
+    ContingencyTableProtocol(int p = 0, int q = 0);
 
     ~ContingencyTableProtocol() {}
 
     bool encrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
-                 core::pk_ptr pk) override;
+                 core::pk_ptr pk,
+                 core::context_ptr context) override;
 
     bool decrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
                  core::pk_ptr pk,
-                 core::sk_ptr sk) override;
+                 core::sk_ptr sk,
+                 core::context_ptr context) override;
 
     bool evaluate(const std::vector<std::string> &inputDirs,
                   const std::string &outputDir,

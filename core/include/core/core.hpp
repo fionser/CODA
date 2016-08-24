@@ -21,12 +21,12 @@ bool dumpCiphers(const std::list<Ctxt>& ciphers, const std::string &file);
 bool dumpCiphers(const std::vector<Ctxt *>& ciphers, const std::string &file);
 
 bool encrypt(const std::string &inputFilePath,
-			 const std::string &outputFilePath,
-			 const std::string &metaFilePath);
+             const std::string &outputFilePath,
+             const std::string &metaFilePath);
 
 bool decrypt(const std::string &inputFilePath,
-			 const std::string &outputFilePath,
-			 const std::string &metaFilePath);
+             const std::string &outputFilePath,
+             const std::string &metaFilePath);
 
 bool evaluate(const std::string &sessionDirPath,
               const std::string &outputDirPath,

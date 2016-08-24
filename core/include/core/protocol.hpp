@@ -13,12 +13,14 @@ public:
 
     virtual bool encrypt(const std::string &inputFilePath,
                          const std::string &outputDirPath,
-                         core::pk_ptr pk) = 0;
+                         core::pk_ptr pk,
+                         core::context_ptr context) = 0;
 
     virtual bool decrypt(const std::string &inputFilePath,
                          const std::string &outputDirPath,
                          core::pk_ptr pk,
-                         core::sk_ptr sk) = 0;
+                         core::sk_ptr sk,
+                         core::context_ptr context) = 0;
 
     virtual bool evaluate(const std::vector<std::string> &inputDirs,
                           const std::string &outputDir,
@@ -29,27 +31,7 @@ private:
 };
 
 namespace core {
-class ProtocolBuilder;
-
-class ProtocolFactory {
-public:
-    typedef std::shared_ptr<ProtocolBuilder> Builder;
-    std::shared_ptr<Protocol> create(const std::string &type);
-
-    void register_builder(const std::string &type,
-                                 const Builder &builder);
-
-    ProtocolFactory *instance();
-
-private:
-    ProtocolFactory() {}
-    ProtocolFactory& operator=(const ProtocolFactory &) = delete;
-    ProtocolFactory(const ProtocolFactory &) = delete;
-    ProtocolFactory(ProtocolFactory &&) = delete;
-
-    static ProtocolFactory *__instance;
-    static std::map<std::string, Builder> builders;
-};
+static std::shared_ptr<Protocol> __currentProtocol = nullptr;
 } // namespace core
 
 namespace protocol {

@@ -8,6 +8,7 @@
 #include "core/coda.hpp"
 #include "core/contingency_table.hpp"
 #include "core/greaterthan.h"
+
 #include <vector>
 #include <thread>
 #include <algorithm>
@@ -268,69 +269,6 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     FHE_NTIMER_STOP(Blinding);
 
     return { .n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
-}
-
-
-//// Some helper functions
-/// bit_per must be 8-multiple
-PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
-                                          long bit_per,
-                                          long partition) {
-    PrivateContingencyTable::AESKey_t key;
-    long nr_bytes = NTL::NumBytes(zz);
-    if (partition != ((nr_bytes << 3) / bit_per)) {
-        printf("%ld %ld %ld\n", nr_bytes, bit_per, partition);
-    }
-    assert(partition == ((nr_bytes << 3) / bit_per) && "Bit_per need to be 8-multiple");
-
-    std::vector<uint8_t> bytes(nr_bytes);
-    NTL::BytesFromZZ(bytes.data(), zz, nr_bytes);
-
-    long byte_per = bit_per >> 3;
-    for (size_t i = 0; i < nr_bytes; i += byte_per) {
-        long z = 0;
-        for (size_t j = 0; j < byte_per; j++) {
-            z = (z << 3) + bytes.at(i + j);
-        }
-        key.push_back(z);
-    }
-
-    if (key.size() != partition) {
-        printf("%ld bit_per, %ld nr_bytes, %ld partition\n",
-        bit_per, nr_bytes, partition);
-    }
-    assert(key.size() == partition && "Wrong implementation!");
-    return key;
-}
-
-NTL::ZZX convKey(const std::vector<PrivateContingencyTable::AESKey_t> &keys,
-                 long partition,
-                 const EncryptedArray *ea) {
-    auto bs = keys.size();
-    std::vector<long> poly(ea->size(), 0);
-    size_t usable_size = ea->size() / bs * bs;
-    for (auto b = 0; b < bs; b++) {
-        assert(partition < keys.at(b).size());
-        long k = keys[b][partition];
-        for (auto i = b; i < usable_size; i += bs)
-            poly[i] = k;
-    }
-
-    NTL::ZZX zzx;
-    ea->encode(zzx, poly);
-    return zzx;
-}
-
-NTL::ZZ convKey(PrivateContingencyTable::AESKey_t aes, long bit_per) {
-    long nr_bytes = (bit_per>> 3) * aes.size();
-    std::vector<uint8_t> bytes;
-    for (auto v : aes) {
-        while (v> 0) {
-            bytes.push_back(v & 0xFF);
-            v = v >> 8;
-        }
-    }
-    return NTL::ZZFromBytes(bytes.data(), nr_bytes);
 }
 
 std::pair<size_t, size_t> coprime(size_t i, size_t j) {
