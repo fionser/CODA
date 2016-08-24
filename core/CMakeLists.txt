@@ -49,8 +49,8 @@ endif(${BUILD_lib})
 if(${BUILD_core})
 SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")
 include_directories(${NTL_INCLUDE_PATH})
-add_definitions(-DFHE_THREADS)
-add_definitions(-DNR_THREADS=2)
+add_definitions(-DNFHE_THREADS)
+add_definitions(-DNR_THREADS=1)
 add_subdirectory(src/core core-imp)
 add_subdirectory(src/doctopt.cpp doctopt)
 add_subdirectory(src/HElib fhe)
@@ -66,7 +66,6 @@ find_library(local-ntl
 find_library(local-gmp
              NAMES libgmp.a gmp
 	     HINTS "${PROJECT_BINARY_DIR}/lib")
-MESSAGE(STATUS ${OPENSSL_INCLUDE_DIR})
 MESSAGE(STATUS ${local-ntl})
 MESSAGE(STATUS ${local-gmp})
 target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)

@@ -250,7 +250,7 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
     auto table = helper.final_decrypt(results.n_uv, publishables, sk, ea);
 
     std::ofstream fout(util::concatenate(outputDirPath, "FILE_1"), std::ios::binary);
-    if (fout.is_open()) {
+    if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create new file under {0}", outputDirPath);
         return false;
     }
