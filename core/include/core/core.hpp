@@ -4,6 +4,8 @@
 #include <list>
 #include "coda.hpp"
 namespace core {
+bool setCurrentProtocol(std::string description);
+
 bool genKeypair(Protocol protocol, const std::string &meta_file_path);
 
 context_ptr loadContext(bool *ok, const std::string &contextFile);
@@ -30,6 +32,7 @@ bool decrypt(const std::string &inputFilePath,
 
 bool evaluate(const std::string &sessionDirPath,
               const std::string &outputDirPath,
-              const std::string &metaFilePath);
+              const std::string &metaFilePath,
+              const std::vector<std::string> &params);
 } // namespace core
 #endif // CORE_CORE_H

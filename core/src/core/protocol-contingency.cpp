@@ -338,3 +338,48 @@ bool ContingencyTableProtocol::evaluate(const std::vector <std::string> &inputDi
 {
     return imp->evaluate(inputDirs, outputDir, pk, context);
 }
+
+core::FHEArg ContingencyTableProtocol::parameters() const {
+    core::FHEArg args;
+    args.L = 10;
+    args.m = 16384;
+    args.p = 8191;
+    args.r = 1;
+    return args;
+}
+
+namespace protocol {
+namespace contingency {
+extern const core::FHEArg _fheArgs = {.m = 5227, .p = 67499, .r = 1, .L = 10};
+
+bool encrypt(const std::string &inputFilePath,
+             const std::string &outputDirPath,
+             core::pk_ptr pk,
+             core::context_ptr context) {
+    ContingencyTableProtocol ct;
+    return ct.encrypt(inputFilePath, outputDirPath, pk, context);
+}
+
+bool decrypt(const std::string &inputFilePath,
+             const std::string &outputFilePath,
+             core::pk_ptr pk,
+             core::sk_ptr sk,
+             core::context_ptr context) {
+    ContingencyTableProtocol ct;
+    return ct.decrypt(inputFilePath, outputFilePath, pk, sk, context);
+}
+
+bool evaluate(const std::vector <std::string> &inputDirs,
+              const std::string &outputDir,
+              const std::vector<std::string> &params,
+              core::pk_ptr pk,
+              core::context_ptr context) {
+    if (params.size() != 2) return false;
+    int p = literal::stol(params[0]);
+    int q = literal::stol(params[1]);
+    printf("Evaluating %d %d attributes\n", p, q);
+    ContingencyTableProtocol ct(p, q);
+    return ct.evaluate(inputDirs, outputDir, pk, context);
+}
+} // namespace protocol
+} // namespace core

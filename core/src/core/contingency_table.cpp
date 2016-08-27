@@ -22,7 +22,6 @@
 #endif
 
 namespace core {
-
 static long toCRTIndex(long i, long p1, long p2) {
     auto u = i / p2;
     auto v = i % p2;

@@ -14,11 +14,12 @@ static const char USAGE[] =
      core gen <meta file path>
      core enc [-l type] <input file path> <output dir path> <meta file path>
      core dec <input file path> <output dir path> <meta file path>
-     core eva <session dir path> <output dir path> <meta file path>
+     core eva <session dir path> <output dir path> <meta file path> -p <protocol> [<data> ...]
 
    Options:
      -h --help  Show Help.
      -l --local Set Local Computation
+     -p --protocol Set Protocol
      --version  Show Version.
 )";
 
@@ -90,7 +91,11 @@ int main(int argc, char *argv[]) {
         auto sessionDirPath = args["<session dir path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
-        if (!core::evaluate(sessionDirPath, outputFilePath, metaFilePath)) {
+        std::vector<std::string> params;
+        if (args["<data>"]) {
+           params = args["<data>"].asStringList();
+        }
+        if (!core::evaluate(sessionDirPath, outputFilePath, metaFilePath, params)) {
             L_ERROR(_console, "Somthing went wrong in the evaluataion");
             return -1;
         }

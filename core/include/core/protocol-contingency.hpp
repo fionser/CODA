@@ -36,6 +36,8 @@ public:
                   const std::string &outputDir,
                   core::pk_ptr pk,
                   core::context_ptr context) override;
+protected:
+    core::FHEArg parameters() const override;
 private:
     std::shared_ptr<contingency_table::ProtocolImp> imp;
 };

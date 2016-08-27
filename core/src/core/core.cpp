@@ -3,18 +3,16 @@
 #include <core/global.hpp>
 
 #include "HElib/FHE.h"
+#include "HElib/FHEcontext.h"
 #include "core/core.hpp"
 #include "core/file_util.hpp"
 #include "core/protocol.hpp"
 namespace core {
 bool genKeypair(Protocol protocol, const std::string &metaFilePath) {
     std::string dirPath = util::getDirPath(metaFilePath);
-    std::fstream skStream(util::concatenate(dirPath, "fhe_key.sk"),
-                          std::ios::binary | std::ios::out);
-    std::fstream ctxtStream(util::concatenate(dirPath, "fhe_key.ctxt"),
-                            std::ios::binary | std::ios::out);
-    std::fstream pkStream(util::concatenate(dirPath, "fhe_key.pk"),
-                          std::ios::binary | std::ios::out);
+    std::ofstream skStream(util::concatenate(dirPath, "fhe_key.sk"), std::ios::binary);
+    std::ofstream ctxtStream(util::concatenate(dirPath, "fhe_key.ctxt"), std::ios::binary);
+    std::ofstream pkStream(util::concatenate(dirPath, "fhe_key.pk"), std::ios::binary);
     if (!skStream.is_open() || !ctxtStream.is_open() || !pkStream.is_open())
         return false;
     bool ok = protocol::genKeypair(protocol, skStream, ctxtStream, pkStream);
@@ -25,25 +23,26 @@ bool genKeypair(Protocol protocol, const std::string &metaFilePath) {
 }
 
 context_ptr loadContext(bool *ok, const std::string &contextFile) {
-    std::fstream in(contextFile, std::ios::binary | std::ios::in);
+    std::ifstream in(contextFile, std::ios::binary);
     if (!in.is_open()) {
         if (ok) *ok = false;
         return nullptr;
     }
-
-    FHEArg args;
-    in >> args;
-    auto context = std::make_shared<FHEcontext>(args.m, args.p, args.r);
+    unsigned long m, p, r;
+    std::vector<long> gens, ords;
+    readContextBase(in, m, p, r, gens, ords);
+    auto context = std::make_shared<FHEcontext>(m, p, r, gens, ords);
     if (context == nullptr) {
         if (ok) *ok = false;
         return nullptr;
     }
-    buildModChain(*context, args.L);
+    in >> *context;
+    std::cout << "Load context " << contextFile << " SL " << context->securityLevel() << "\n";
     return context;
 }
 
 pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile) {
-    std::fstream in(pkFile, std::ios::binary | std::ios::in);
+    std::ifstream in(pkFile, std::ios::binary);
     if (!in.is_open()) {
         if (ok) *ok = false;
         return nullptr;
@@ -59,6 +58,8 @@ pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile) {
     in.close();
 
     if (ok) *ok = true;
+
+    std::cout << "Load pk " << pkFile << "\n";
     return pk;
 }
 
@@ -84,6 +85,7 @@ sk_ptr loadSK(bool *ok, const context_ptr &context, const std::string &skFile) {
     in >> *sk;
     in.close();
     if (ok) *ok = true;
+    std::cout << "Load sk " << skFile << "\n";
     return sk;
 }
 
@@ -143,51 +145,6 @@ static bool loadFromMetaFile(const std::string &metaFilePath,
     return true;
 }
 
-bool encrypt(const std::string &inputFilePath,
-             const std::string &outputFilePath,
-             const std::string &metaFilePath) {
-    util::Meta meta;
-    core::context_ptr context = nullptr;
-    core::pk_ptr pk = nullptr;
-    if(!loadFromMetaFile(metaFilePath, context, pk, meta))
-        return false;
-
-    auto protocol = core::getProtocol(meta["protocol"].front());
-    switch (protocol) {
-    case core::Protocol::PROT_CI2:
-        return protocol::chi2::encrypt(inputFilePath, outputFilePath, pk);
-    case core::Protocol::PROT_CON:
-        return protocol::contingency::encrypt(inputFilePath, outputFilePath, pk, context);
-    case core::Protocol::PROT_MEAN:
-        return protocol::mean::encrypt(inputFilePath, outputFilePath, pk, context);
-    default:
-        L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
-        return false;
-    }
-}
-
-bool decrypt(const std::string &inputFilePath,
-             const std::string &outputDir,
-             const std::string &metaFilePath) {
-    util::Meta meta;
-    core::context_ptr context = nullptr;
-    core::pk_ptr pk = nullptr;
-    core::sk_ptr sk = nullptr;
-    if (!loadFromMetaFile(metaFilePath, context, pk, sk, meta))
-        return false;
-    auto protocol = getProtocol(meta["protocol"].front());
-    switch (protocol) {
-    case core::Protocol::PROT_CI2:
-        return protocol::chi2::decrypt(inputFilePath, outputDir, pk, sk);
-    case core::Protocol::PROT_CON:
-        return protocol::contingency::decrypt(inputFilePath, outputDir, pk, sk, context);
-    case core::Protocol::PROT_MEAN:
-        return protocol::mean::decrypt(inputFilePath, outputDir, pk, sk, context);
-    default:
-        L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
-        return false;
-    }
-}
 
 bool loadCiphers(std::vector<Ctxt> &out, const pk_ptr &pk, const std::string &file) {
     std::ifstream in(file);
@@ -248,9 +205,55 @@ bool dumpCiphers(std::vector<Ctxt *> const& ciphers, std::string const& file) {
     return true;
 }
 
+bool encrypt(const std::string &inputFilePath,
+             const std::string &outputFilePath,
+             const std::string &metaFilePath) {
+    util::Meta meta;
+    core::context_ptr context = nullptr;
+    core::pk_ptr pk = nullptr;
+    if(!loadFromMetaFile(metaFilePath, context, pk, meta))
+        return false;
+
+    auto protocol = core::getProtocol(meta["protocol"].front());
+    switch (protocol) {
+    case core::Protocol::PROT_CI2:
+        return protocol::chi2::encrypt(inputFilePath, outputFilePath, pk, context);
+    case core::Protocol::PROT_CON:
+        return protocol::contingency::encrypt(inputFilePath, outputFilePath, pk, context);
+    case core::Protocol::PROT_MEAN:
+        return protocol::mean::encrypt(inputFilePath, outputFilePath, pk, context);
+    default:
+        L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
+        return false;
+    }
+}
+
+bool decrypt(const std::string &inputFilePath,
+             const std::string &outputDir,
+             const std::string &metaFilePath) {
+    util::Meta meta;
+    core::context_ptr context = nullptr;
+    core::pk_ptr pk = nullptr;
+    core::sk_ptr sk = nullptr;
+    if (!loadFromMetaFile(metaFilePath, context, pk, sk, meta))
+        return false;
+    auto protocol = getProtocol(meta["protocol"].front());
+    switch (protocol) {
+    case core::Protocol::PROT_CI2:
+        return protocol::chi2::decrypt(inputFilePath, outputDir, pk, sk, context);
+    case core::Protocol::PROT_CON:
+        return protocol::contingency::decrypt(inputFilePath, outputDir, pk, sk, context);
+    case core::Protocol::PROT_MEAN:
+        return protocol::mean::decrypt(inputFilePath, outputDir, pk, sk, context);
+    default:
+        L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
+        return false;
+    }
+}
 bool evaluate(const std::string &sessionDirPath,
               const std::string &outputDirPath,
-              const std::string &metaFilePath) {
+              const std::string &metaFilePath,
+              const std::vector<std::string> &params) {
     auto dirs = util::listDir(sessionDirPath, util::flag_t::DIR_ONLY);
     std::vector<std::string> userDirs;
     for (auto dir : dirs) {
@@ -270,11 +273,11 @@ bool evaluate(const std::string &sessionDirPath,
     auto protocol = core::getProtocol(meta["protocol"].front());
     switch (protocol) {
     case core::Protocol::PROT_CI2:
-        return protocol::chi2::evaluate(userDirs, outputDirPath, pk);
+        return protocol::chi2::evaluate(userDirs, outputDirPath, params, pk, context);
     case core::Protocol::PROT_CON:
-        return protocol::contingency::evaluate(userDirs, outputDirPath, pk, context);
+        return protocol::contingency::evaluate(userDirs, outputDirPath, params, pk, context);
     case core::Protocol::PROT_MEAN:
-        return protocol::mean::evaluate(userDirs, outputDirPath, pk, context);
+        return protocol::mean::evaluate(userDirs, outputDirPath, params, pk, context);
     default:
         L_ERROR(global::_console, "Unknown protocol was set in {0}", metaFilePath);
         return false;
