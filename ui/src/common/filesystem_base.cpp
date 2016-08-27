@@ -117,6 +117,35 @@ std::vector<std::string> FileSystemBase::get_file_list(const char *dir_path)
     return files;
 }
 
+int FileSystemBase::copy_file(const char* src, const char* dst)
+{
+    // open source file
+    std::ifstream ifs(src);
+    if (!ifs) {
+        L_ERROR(_console, "file open error: {0}", src);
+        return -1;
+    }
+    // open copy file
+    std::ofstream ofs(dst);
+    if (!ofs) {
+        L_ERROR(_console, "file open error: {0}", dst);
+        return -1;
+    }
+    // copy
+    ofs << ifs.rdbuf() << std::flush;
+    // check error
+    if (!ifs) {
+        L_ERROR(_console, "I/O error");
+        return -1;
+    }
+    if (!ofs) {
+        L_ERROR(_console, "I/O error");
+        return -1;
+    }
+
+    return 0;
+}
+
 FileSystemBase::FileSystemBase()
 {
     analyst_name_ = "";

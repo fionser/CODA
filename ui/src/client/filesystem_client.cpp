@@ -2,10 +2,12 @@
 
 int FileSystemClient::make_analyst_info(std::vector<std::string> argv)
 {
-    if(argv.size() < 4){
+    if(argv.size() < 5){
         L_ERROR(_console, "analyst info incorrect.");
         return -1;
     } else if(int flg=make_directory(argv[0].c_str())!=0) {
+        return flg;
+    } else if(int flg=make_meta_file(argv)!=0) {
         return flg;
     } else if(int flg=make_meta_file(argv)!=0) {
         return flg;
@@ -47,6 +49,12 @@ int FileSystemClient::make_meta_file(std::vector<std::string> argv)
     }
     meta_file << (CConst::META_KEY_USER_NAMES + user_names + CConst::CH_CRLF);
     meta_file.close();
+    return 0;
+}
+
+int FileSystemClient::store_schema_file(std::string file_path)
+{
+    
     return 0;
 }
 

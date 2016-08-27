@@ -2,6 +2,7 @@
 #include "filesystem_client.hpp"
 #include "network_client.hpp"
 #include <cstring> // for Windows
+#include "utest_client.hpp"
 
 class Driver {
     private:

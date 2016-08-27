@@ -3,7 +3,7 @@
 void Driver::error_usage(char *cmd)
 {
     fprintf(stderr, "usage :\n");
-    fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <protocol> <user_name ...>\n", cmd, CConst::C_MAIN_CMD_INIT);
+    fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>\n", cmd, CConst::C_MAIN_CMD_INIT);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name>\n", cmd, CConst::C_MAIN_CMD_SEND_KEY);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_JOIN);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_SEND_DATA);
@@ -15,11 +15,11 @@ void Driver::error_usage(char *cmd)
 int Driver::init_session(int argc, char *argv[])
 {
     /*
-     * argc = 8
-     * argv  : 0  1     2          3        4              5              6          7
-     * usage : ui init <hostname> <portno> <session_name> <analyst_name> <protocol> <user_name ...>
+     * argc = 9
+     * argv  : 0  1     2          3        4              5              6          7                  8
+     * usage : ui init <hostname> <portno> <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>
      */
-    if( argc < 8) {
+    if( argc < 9) {
         error_usage(argv[0]);
         return -1;
     }
@@ -239,6 +239,8 @@ int Driver::drive(int argc, char *argv[])
         net_start(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_SUB_CMD_DEBUG) {
         debug_m(argc, argv);
+    } else if (std::string(argv[1]) == "test") {
+        UTC::test();
     } else {
         error_usage(argv[0]);
         return -1;
