@@ -12,11 +12,11 @@ int main () {
 
     ContingencyTableProtocol ct(1, 2);
     FHE_NTIMER_START(ENCRYPT);
-    ct.encrypt("test-ct-1", "test-dir-1/", false, pk, context);
-    ct.encrypt("test-ct-2", "test-dir-2/", false, pk, context);
+    ct.encrypt("test-ct-1", "test-dir-1/", true, pk, context);
+    ct.encrypt("test-ct-2", "test-dir-2/", true, pk, context);
     FHE_NTIMER_STOP(ENCRYPT);
     printNamedTimer(std::cout, "ENCRYPT");
-
+//
     std::vector<std::string> inputDirs;
     inputDirs.push_back("./test-dir-1");
     inputDirs.push_back("./test-dir-2");
@@ -24,7 +24,7 @@ int main () {
     ct.evaluate(inputDirs, "./test-out", pk, context);
     FHE_NTIMER_STOP(EVA);
     printNamedTimer(std::cout, "EVA");
-
+//
     FHE_NTIMER_START(DEC);
     ct.decrypt("./test-out/File_result", "./", pk, sk, context);
     FHE_NTIMER_STOP(DEC);

@@ -284,4 +284,26 @@ bool evaluate(const std::string &sessionDirPath,
         return false;
     }
 }
+
+long apply_crt(long a, long b, long p1, long p2) {
+    auto InvMod = [](long a, long p) -> long {
+        long x0, x1, p0, t, q;
+        p0 = p;
+        x0 = 0; x1 = 1;
+        if (p == 1) return 1;
+        while (a > 1) {
+            q = a / p;
+            t = p; p = a % p; a = t;
+            t = x0; x0 = x1 - q * x0; x1 = t;
+        }
+        if (x1 < 0) x1 += p0;
+        return  x1;
+    };
+    long P = p1 * p2;
+    long x = 0;
+    x += a * InvMod(p2, p1) * p2;
+    x += b * InvMod(p1, p2) * p1;
+    return x % P;
+}
+
 } // nammespae core

@@ -8,9 +8,12 @@
 #include "../../include/core/literal.hpp"
 #include "../../include/HElib/EncryptedArray.h"
 #include "../../include/core/core.hpp"
+#include "../../include/core/ctxt_util.hpp"
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <functional>
+long __THRESHOLD = 2;
 class UserCipherLoader {
 public:
     typedef std::function<bool(const std::string &dir)> doneFileChecker;
@@ -20,6 +23,8 @@ public:
 
     template<class Container>
         bool loadCiphers(Container &out, const std::string &path, const core::pk_ptr &pk);
+
+    bool loadLocalComputedCipher(Ctxt &out, int32_t &nr, const std::string &path, const core::pk_ptr &pk);
 private:
     doneFileChecker checker;
 };
@@ -29,19 +34,83 @@ bool UserCipherLoader::loadCiphers(Container &out,
                                    const std::string &path,
                                    const core::pk_ptr &pk)
 {
-    if (!checker(path)) return false;
     auto files = util::listDir(path, util::flag_t::FILE_ONLY);
     for (const std::string &file : files) {
-        if (file.find("FILE_") != 0) continue;
+        if (!checker(file)) continue;
         std::string cipher_file = util::concatenate(path, file);
         core::loadCiphers(out, pk, cipher_file);
     }
     return true;
 }
 
+bool UserCipherLoader::loadLocalComputedCipher(Ctxt &out, int32_t &nr,
+                                               const std::string &path, const core::pk_ptr &pk)
+{
+    auto files = util::listDir(path, util::flag_t::FILE_ONLY);
+    for (const std::string &file : files) {
+        if (checker(file)) {
+            std::string cipher_file = util::concatenate(path, file);
+            std::ifstream fin(cipher_file, std::ios::binary);
+            fin >> nr;
+            std::cout << file << " " << nr << "\n";
+            fin >> out;
+            fin.close();
+            return true;
+        }
+    }
+    return false;
+}
+
 namespace contingency_table {
 /// the index of attributes starts from 1.
 #define ATTR_INDEX(d) (d - 1)
+
+class CTable {
+public:
+    CTable() {}
+
+    ~CTable() {}
+
+    void setSize(size_t p, size_t q) {
+        assert(p >= 0 && q >= 0);
+        std::vector<std::vector<long>> (p, std::vector<long>(q, 0)).swap(_data);
+
+    }
+
+    void add(int pp, int qq) {
+       if (pp == 0 || qq == 0) return;
+        _data[ATTR_INDEX(pp)][ATTR_INDEX(qq)] += 1;
+    }
+
+    void print() const {
+        for (auto &row : _data) {
+            for (auto d : row)
+                std::cout << d << " ";
+            std::cout << "\n";
+        }
+    }
+
+    NTL::ZZX encode(const EncryptedArray *ea) const {
+        size_t p = _data.size();
+        size_t q = _data.front().size();
+        auto modified = core::coprime(p, q);
+        std::vector<long> poly(ea->size(), 0);
+        for (size_t i = 0; i < p; i++) {
+            for (size_t j = 0; j < q; j++) {
+                auto crtIdx = core::apply_crt(i, j, modified.first, modified.second);
+                poly.at(crtIdx) = _data[i][j];
+            }
+        }
+
+        NTL::ZZX zzx;
+        ea->encode(zzx, poly);
+        return zzx;
+    }
+
+private:
+    std::vector<std::vector<long>> _data;
+};
+
 class ProtocolImp {
 public:
     ProtocolImp(int p, int q) : _p(p), _q(q) {
@@ -73,7 +142,24 @@ private:
                    core::pk_ptr pk,
                    const EncryptedArray *ea);
 
+    bool localEncrypt(std::ifstream &fin,
+                      const std::string &outputDirPath,
+                      const std::vector<core::Attribute> &attributes,
+                      core::pk_ptr pk,
+                      const EncryptedArray *ea);
+
+    bool doEvaluate(const std::vector<std::string> &inputDirs,
+                    const std::string &outputDir,
+                    const std::vector<core::Attribute> &attributes,
+                    core::pk_ptr pk, core::context_ptr context);
+
+    bool localEvaluate(const std::vector<std::string> &inputDirs,
+                       const std::string &outputDir,
+                       const std::vector<core::Attribute> &attributes,
+                       core::pk_ptr pk, core::context_ptr context);
+
     bool createDoneFile(const std::string &path,
+                        bool local_computed,
                         const std::vector<core::Attribute> &attributes);
 
     void encode(NTL::ZZX &poy,
@@ -110,12 +196,91 @@ bool ProtocolImp::encrypt(const std::string &inputFilePath,
         L_ERROR(global::_console, "Not enough CRT-packing slots for those attributes");
         return false;
     }
-    
-    bool ok = doEncrypt(fin, outputDirPath, attributes, pk, ea);
+
+    bool ok;
+    if (!local_compute)
+        ok = doEncrypt(fin, outputDirPath, attributes, pk, ea);
+    else
+        ok = localEncrypt(fin, outputDirPath, attributes, pk, ea);
     fin.close();
-    if (ok)
-        ok &= createDoneFile(outputDirPath, attributes);
     return ok;
+}
+
+static std::vector<long> parseRow(const std::string &line,
+                                  const std::vector<core::Attribute> &attributes)
+{
+    std::vector<long> numbers;
+    auto fields = util::splitBySpace(line);
+    if (fields.size() != attributes.size()) {
+        L_WARN(global::_console, "Mismatch the number of attributes: {0} and {1}",
+               fields.size(), attributes.size());
+        return numbers;
+    }
+    numbers.resize(attributes.size());
+    size_t pos = 0;
+    for (size_t i = 0; i < attributes.size(); i++) {
+        numbers[i] = literal::stol(fields[i], &pos, 10);
+        if (pos != fields[i].size()) {
+            L_WARN(global::_console, "Invalid field: {0}", fields[i]);
+            return std::vector<long>();
+        }
+    }
+    return numbers;
+}
+
+bool ProtocolImp::localEncrypt(std::ifstream &fin,
+                               const std::string &outputDirPath,
+                               const std::vector <core::Attribute> &attributes,
+                               core::pk_ptr pk,
+                               const EncryptedArray *ea)
+{
+    size_t nr_attributes = attributes.size();
+
+
+    std::vector<CTable> ctables((nr_attributes * (nr_attributes - 1)) / 2);
+    size_t idx = 0;
+    for (size_t i  = 0; i < nr_attributes; i++) {
+        for (size_t j = i + 1; j < nr_attributes; j++) {
+            ctables.at(idx).setSize(attributes[i].size, attributes[j].size);
+            idx += 1;
+        }
+    }
+
+    long nr_records = 0;
+    for (std::string line; std::getline(fin, line); ) {
+        std::vector<long> numbers = parseRow(line, attributes);
+        if (numbers.size() != nr_attributes) continue;
+        nr_records += 1;
+        size_t idx = 0;
+        for (size_t i  = 0; i < nr_attributes; i++) {
+            for (size_t j = i + 1; j < nr_attributes; j++) {
+                ctables.at(idx).add(numbers.at(i), numbers.at(j));
+                idx += 1;
+            }
+        }
+    }
+
+    auto makePath = [](std::string const& path, const long count) -> std::string {
+        return path + literal::separator + "FILE_" + std::to_string(count);
+    };
+
+    long file_nr = 1;
+    Ctxt ctx(*pk);
+    for (auto &ctable : ctables) {
+        auto poly = ctable.encode(ea);
+        std::ofstream fout(makePath(outputDirPath, file_nr), std::ios::binary);
+        if (!fout.is_open()) {
+            L_WARN(global::_console, "Can not create new files under {0}", outputDirPath);
+            continue;
+        }
+
+        fout << nr_records;
+        pk->Encrypt(ctx, poly);
+        fout << ctx;
+        file_nr += 1;
+    }
+
+    return createDoneFile(outputDirPath, true, attributes);
 }
 
 bool ProtocolImp::doEncrypt(std::ifstream &fin,
@@ -161,7 +326,7 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
         }
     }
     fout.close();
-    return true;
+    return createDoneFile(outputDirPath, false, attributes);
 }
 
 void ProtocolImp::encode(NTL::ZZX &poly,
@@ -209,8 +374,8 @@ std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) {
     return attributes;
 }
 
-
 bool ProtocolImp::createDoneFile(const std::string &path,
+                                 bool local_computed,
                                  const std::vector<core::Attribute> &attributes) {
     auto fd = util::createDoneFile(path);
     if (!fd) {
@@ -223,7 +388,8 @@ bool ProtocolImp::createDoneFile(const std::string &path,
     auto nr = attributes.size();
     for (size_t i = 0; i + 1 < nr; i++)
         sstream << std::to_string(attributes[i].size) << " ";
-    sstream << std::to_string(attributes.back().size);
+    sstream << std::to_string(attributes.back().size) << '\n';
+    sstream << local_computed;
     auto header = sstream.str();
     fwrite(header.c_str(), header.size(), 1UL, fd);
     fclose(fd);
@@ -267,12 +433,80 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
 
 bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
                            const std::string &outputDir, core::pk_ptr pk,
-                           core::context_ptr context)
-{
-    //TODO(riku) might check the done file
-    auto checker = [](const std::string &) -> bool { return true; };
-    auto attributes = parseHeader(util::concatenate(inputDirs.front(), global::_doneFileName));
+                           core::context_ptr context) {
+    std::ifstream fin(util::concatenate(inputDirs.front(), global::_doneFileName));
+    if (!fin.is_open()) {
+        L_WARN(global::_console, "Can not open {0}", global::_doneFileName);
+        return false;
+    }
+    auto attributes = parseHeader(fin);
+    bool local_compute;
+    fin >> local_compute;
+    fin.close();
 
+    if (local_compute)
+        return localEvaluate(inputDirs, outputDir, attributes, pk, context);
+    else
+        return doEvaluate(inputDirs, outputDir, attributes, pk, context);
+}
+
+bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
+                                const std::string &outputDir,
+                                const std::vector<core::Attribute> &attributes,
+                                core::pk_ptr pk, core::context_ptr context) {
+    size_t nr_attribute = attributes.size();
+    long pIndex = ATTR_INDEX(_p);
+    long qIndex = ATTR_INDEX(_q);
+    if (pIndex >= nr_attribute || pIndex < 0 || qIndex >= nr_attribute || qIndex < 0) {
+        L_ERROR(global::_console, "Invalid attribute index {0} and {1} (total {2} attri.)", _p, _q, nr_attribute);
+        return false;
+    }
+
+    long specific_file_nr = 1;
+    std::string specific_file = "FILE_" + std::to_string(specific_file_nr);
+    FHE_NTIMER_START(LOAD_FILES);
+    // load specific file
+    auto checker = [&specific_file](const std::string &fileName) -> bool {
+        return fileName.compare(specific_file) == 0;
+    };
+
+    std::shared_ptr<Ctxt> ct = std::make_shared<Ctxt>(*pk);
+    Ctxt ctxt(*pk);
+    UserCipherLoader loader(checker);
+    int32_t nr_records = 0;
+    for (auto dir : inputDirs) {
+        int32_t records;
+        if (loader.loadLocalComputedCipher(ctxt, records, dir, pk)) {
+            ct->operator+=(ctxt);
+            nr_records += records;
+        }
+    }
+    FHE_NTIMER_STOP(LOAD_FILES);
+    printNamedTimer(std::cout, "LOAD_FILES");
+
+    core::Attribute P = attributes[pIndex];
+    core::Attribute Q = attributes[qIndex];
+    const EncryptedArray *ea = context->ea;
+    core::PrivateContingencyTableHelper helper(P, Q, __THRESHOLD, ea);
+    core::PrivateContingencyTable privateContingencyTable(context, &helper);
+    auto results = privateContingencyTable.evaluate(ct, static_cast<long>(nr_records));
+    auto outputFile = util::concatenate(outputDir, "File_result");
+    bool ok = helper.dump(results, outputFile);
+    if (ok) {
+        std::vector<core::Attribute> attrs;
+        attrs.push_back(P);
+        attrs.push_back(Q);
+        createDoneFile(outputDir, true, attrs);
+    } else {
+        L_WARN(global::_console, "Some went wrong when to dump ciphers to {0}", outputFile);
+    }
+    return ok;
+}
+
+bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
+                             const std::string &outputDir,
+                             const std::vector<core::Attribute> &attributes,
+                             core::pk_ptr pk, core::context_ptr context) {
     size_t nr_attribute = attributes.size();
     long pIndex = ATTR_INDEX(_p);
     long qIndex = ATTR_INDEX(_q);
@@ -285,6 +519,8 @@ bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
     core::Attribute Q = attributes[qIndex];
 
     FHE_NTIMER_START(LOAD_FILES);
+    // Load all FILE_* files
+    auto checker = [](const std::string &fileName) -> bool { return fileName.find("FILE_") == 0; };
     std::vector<Ctxt> ctxts;
     UserCipherLoader loader(checker);
     for (auto dir : inputDirs)
@@ -293,7 +529,7 @@ bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
     printNamedTimer(std::cout, "LOAD_FILES");
 
     const EncryptedArray *ea = context->ea;
-    core::PrivateContingencyTableHelper helper(P, Q, 2, ea);
+    core::PrivateContingencyTableHelper helper(P, Q, __THRESHOLD, ea);
     core::PrivateContingencyTable privateContingencyTable(context, &helper);
     auto results = privateContingencyTable.evaluate(ctxts);
 
@@ -303,7 +539,7 @@ bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
         std::vector<core::Attribute> attrs;
         attrs.push_back(P);
         attrs.push_back(Q);
-        createDoneFile(outputDir, attrs);
+        createDoneFile(outputDir, false, attrs);
     } else {
         L_WARN(global::_console, "Some went wrong when to dump ciphers to {0}", outputFile);
     }

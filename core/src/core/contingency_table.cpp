@@ -257,6 +257,30 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     auto contingency_table = compute_table(attributes, P, Q, ea);
     FHE_NTIMER_STOP(Conduction);
 
+    return evaluate(contingency_table, attributes.size());
+//    FHE_NTIMER_START(GreaterThan);
+//    auto gamma = special_greater_than(contingency_table, domain_size, ea);
+//    FHE_NTIMER_STOP(GreaterThan);
+//
+//    FHE_NTIMER_START(Blinding);
+//    auto blinding_factor = sample_blinding_factor(P, Q, ea);
+//    auto tilde_gamma = blind_GT(gamma, blinding_factor, domain_size, ea);
+//    auto n_uv = blind_table(contingency_table, blinding_factor, ea);
+//    FHE_NTIMER_STOP(Blinding);
+//
+//    return { .n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
+}
+
+PrivateContingencyTable::ResultType
+PrivateContingencyTable::evaluate(const ctxt_ptr &contingency_table,
+                                  long nr_records) const {
+    const auto &pk = contingency_table->getPubKey();
+    auto ea = context->ea;
+
+    Attribute P = helper->getP();
+    Attribute Q = helper->getQ();
+    long domain_size = nr_records - helper->getThreshold();
+
     FHE_NTIMER_START(GreaterThan);
     auto gamma = special_greater_than(contingency_table, domain_size, ea);
     FHE_NTIMER_STOP(GreaterThan);
@@ -269,7 +293,6 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
 
     return { .n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
 }
-
 std::pair<size_t, size_t> coprime(size_t i, size_t j) {
     while (NTL::GCD(i, j) != 1) {
         if (i> j) j += 1;

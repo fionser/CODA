@@ -49,6 +49,7 @@ public:
 
     ResultType evaluate(const std::vector<Ctxt> &attributes) const;
 
+    ResultType evaluate(const ctxt_ptr &ct, long nr_records) const;
 private:
     ctxt_ptr compute_table(const std::vector<Ctxt> &attributes,
                            Attribute p, Attribute q,
