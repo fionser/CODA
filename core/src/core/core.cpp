@@ -207,7 +207,8 @@ bool dumpCiphers(std::vector<Ctxt *> const& ciphers, std::string const& file) {
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
-             const std::string &metaFilePath) {
+             const std::string &metaFilePath,
+             bool local_compute) {
     util::Meta meta;
     core::context_ptr context = nullptr;
     core::pk_ptr pk = nullptr;
@@ -217,11 +218,11 @@ bool encrypt(const std::string &inputFilePath,
     auto protocol = core::getProtocol(meta["protocol"].front());
     switch (protocol) {
     case core::Protocol::PROT_CI2:
-        return protocol::chi2::encrypt(inputFilePath, outputFilePath, pk, context);
+        return protocol::chi2::encrypt(inputFilePath, outputFilePath, local_compute, pk, context);
     case core::Protocol::PROT_CON:
-        return protocol::contingency::encrypt(inputFilePath, outputFilePath, pk, context);
+        return protocol::contingency::encrypt(inputFilePath, outputFilePath, local_compute, pk, context);
     case core::Protocol::PROT_MEAN:
-        return protocol::mean::encrypt(inputFilePath, outputFilePath, pk, context);
+        return protocol::mean::encrypt(inputFilePath, outputFilePath, local_compute, pk, context);
     default:
         L_ERROR(global::_console, "Unkonwn protocol was set in {0}", metaFilePath);
         return false;

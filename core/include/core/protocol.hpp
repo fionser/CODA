@@ -15,6 +15,7 @@ public:
 
     virtual bool encrypt(const std::string &inputFilePath,
                          const std::string &outputDirPath,
+                         bool local_compute,
                          core::pk_ptr pk,
                          core::context_ptr context) = 0;
 
@@ -54,6 +55,7 @@ extern const core::FHEArg _fheArgs;
 /// @param pk The public encryption key.
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
+             bool local_compute,
              core::pk_ptr pk,
              core::context_ptr context);
 
@@ -83,6 +85,7 @@ extern const core::FHEArg _fheArgs;
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
+             bool local_compute,
              core::pk_ptr pk,
              core::context_ptr context);
 
@@ -107,6 +110,7 @@ extern const core::FHEArg _fheArgs;
 /// @param pk The public encryption key.
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
+             bool local_compute,
              core::pk_ptr pk,
              core::context_ptr context);
 
@@ -139,6 +143,7 @@ extern const core::FHEArg _fheArgs;
 /// @param pk The public encryption key.
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
+             bool local_compute,
              core::pk_ptr pk,
              core::context_ptr context);
 

@@ -12,8 +12,8 @@ int main () {
 
     ContingencyTableProtocol ct(1, 2);
     FHE_NTIMER_START(ENCRYPT);
-    ct.encrypt("test-ct-1", "test-dir-1/", pk, context);
-    ct.encrypt("test-ct-2", "test-dir-2/", pk, context);
+    ct.encrypt("test-ct-1", "test-dir-1/", false, pk, context);
+    ct.encrypt("test-ct-2", "test-dir-2/", false, pk, context);
     FHE_NTIMER_STOP(ENCRYPT);
     printNamedTimer(std::cout, "ENCRYPT");
 

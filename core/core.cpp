@@ -75,7 +75,10 @@ int main(int argc, char *argv[]) {
         auto inputFilePath = args["<input file path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
-        if (!core::encrypt(inputFilePath, outputFilePath, metaFilePath)) {
+        bool local_compute = false;
+        if (args["-local"]) local_compute = true;
+
+        if (!core::encrypt(inputFilePath, outputFilePath, metaFilePath, local_compute)) {
             L_ERROR(_console, "Something went wrong in the encryption");
             return -1;
         }
@@ -91,10 +94,11 @@ int main(int argc, char *argv[]) {
         auto sessionDirPath = args["<session dir path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
+
         std::vector<std::string> params;
-        if (args["<data>"]) {
+        if (args["<data>"])
            params = args["<data>"].asStringList();
-        }
+
         if (!core::evaluate(sessionDirPath, outputFilePath, metaFilePath, params)) {
             L_ERROR(_console, "Somthing went wrong in the evaluataion");
             return -1;

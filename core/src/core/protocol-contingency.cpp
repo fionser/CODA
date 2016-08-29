@@ -52,6 +52,7 @@ public:
 
     bool encrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
+                 bool local_compute,
                  core::pk_ptr pk,
                  core::context_ptr context);
 
@@ -86,7 +87,8 @@ private:
 };
 
 bool ProtocolImp::encrypt(const std::string &inputFilePath,
-                          const std::string &outputDirPath, 
+                          const std::string &outputDirPath,
+                          bool local_compute,
                           core::pk_ptr pk,
                           core::context_ptr context)
 {
@@ -318,10 +320,11 @@ ContingencyTableProtocol::ContingencyTableProtocol(int p, int q)
 
 bool ContingencyTableProtocol::encrypt(const std::string &inputFilePath,
                                        const std::string &outputDirPath,
+                                       bool local_compute,
                                        core::pk_ptr pk,
                                        core::context_ptr context)
 {
-    return imp->encrypt(inputFilePath, outputDirPath, pk, context);
+    return imp->encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
 }
 
 bool ContingencyTableProtocol::decrypt(const std::string &inputFilePath,
@@ -354,10 +357,11 @@ extern const core::FHEArg _fheArgs = {.m = 5227, .p = 67499, .r = 1, .L = 10};
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
+             bool local_compute,
              core::pk_ptr pk,
              core::context_ptr context) {
     ContingencyTableProtocol ct;
-    return ct.encrypt(inputFilePath, outputDirPath, pk, context);
+    return ct.encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
 }
 
 bool decrypt(const std::string &inputFilePath,

@@ -187,6 +187,7 @@ static bool encryptGenotype(std::fstream &fin,
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
+             bool local_compute,
              core::pk_ptr pk,
              core::context_ptr /*dummy*/) {
     std::fstream fin(inputFilePath);

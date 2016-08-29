@@ -23,6 +23,7 @@ public:
 
     bool encrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
+                 bool local_compute,
                  core::pk_ptr pk,
                  core::context_ptr context) override;
 

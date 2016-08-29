@@ -24,7 +24,8 @@ bool dumpCiphers(const std::vector<Ctxt *>& ciphers, const std::string &file);
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
-             const std::string &metaFilePath);
+             const std::string &metaFilePath,
+             bool local_compute);
 
 bool decrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
