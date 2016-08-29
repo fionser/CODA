@@ -2,12 +2,17 @@
 
 int FileSystemClient::make_analyst_info(std::vector<std::string> argv)
 {
+    /*
+     * argc >= 5
+     * argv  : 0              1              2          3                   4...
+     * usage : <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>
+     */
     if(argv.size() < 5){
         L_ERROR(_console, "analyst info incorrect.");
         return -1;
     } else if(int flg=make_directory(argv[0].c_str())!=0) {
         return flg;
-    } else if(int flg=make_meta_file(argv)!=0) {
+    } else if(int flg=copy_file(argv[3].c_str(), std::string(argv[0] + CConst::SEP_CH_FILE + CConst::D_NAMES[0] + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME).c_str())!=0) {
         return flg;
     } else if(int flg=make_meta_file(argv)!=0) {
         return flg;
@@ -44,7 +49,7 @@ int FileSystemClient::make_meta_file(std::vector<std::string> argv)
     meta_file << (CConst::META_KEY_SESSION_NAME + argv[0] + CConst::CH_CRLF);
     meta_file << (CConst::META_KEY_PROTOCOL + argv[2] + CConst::CH_CRLF);
     std::string user_names;
-    for(int i=3; i<argv.size(); i++) {
+    for(int i=4; i<argv.size(); i++) {
         user_names += argv[i] + std::string(" ");
     }
     meta_file << (CConst::META_KEY_USER_NAMES + user_names + CConst::CH_CRLF);

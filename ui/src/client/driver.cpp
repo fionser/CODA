@@ -29,6 +29,9 @@ int Driver::init_session(int argc, char *argv[])
     }
     if(dir_ini(args) != 0){
         L_ERROR(_console, "init session directory.");
+        if(d_rm_session_dir(argv[4]) != 0) {
+            L_ERROR(_console, "remove directory NG.");
+        }
         return -1;
     }
     NetworkClient c;
@@ -172,9 +175,9 @@ int Driver::net_start(int argc, char *argv[])
 int Driver::dir_ini(std::vector<std::string> argv)
 {
     /*
-     * argc >= 4
-     * argv  : 0              1              2          3 ...
-     * usage : <session_name> <analyst_name> <protocol> <user_name ...>
+     * argc >= 5
+     * argv  : 0              1              2          3                   4...
+     * usage : <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>
      */
     FileSystemClient d;
     return d.make_analyst_info(argv);
