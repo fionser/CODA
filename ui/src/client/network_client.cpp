@@ -388,6 +388,7 @@ int NetworkClient::join_session(const char* hostname, const int port_no, const s
     FileSystemClient fs(info[1], info[0], info[2]);
     std::vector<std::string> key_file_path;
     key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::META_FILE_NAME));
+    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME));
     key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::PUBLIC_KEY));
     key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::PUBLIC_KEY_CTEXT));
     // send meta file
