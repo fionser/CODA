@@ -8,6 +8,7 @@
 #include "core/coda.hpp"
 #include "core/contingency_table.hpp"
 #include "core/greaterthan.h"
+
 #include <vector>
 #include <thread>
 #include <algorithm>
@@ -15,15 +16,12 @@
 #include <NTL/ZZ.h>
 
 #ifdef FHE_THREADS
-#define NR_THREADS 36
-#warning "Using 36 threads"
+#warning "Using #NR_THREADS threads"
 #else
 #warning "Using single threads"
-#define NR_THREADS 1
 #endif
 
 namespace core {
-
 static long toCRTIndex(long i, long p1, long p2) {
     auto u = i / p2;
     auto v = i % p2;
@@ -250,14 +248,27 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
     Attribute P = helper->getP();
     Attribute Q = helper->getQ();
     long domain_size = attributes.size() - helper->getThreshold();
-    printf("Block Size %zd; Repeating %zd; Copies %zd\n",
-           helper->block_size(),
-           helper->repeats_per_cipher(),
-           helper->how_many_copies(domain_size));
+//    printf("Block Size %zd; Repeating %zd; Copies %zd\n",
+//           helper->block_size(),
+//           helper->repeats_per_cipher(),
+//           helper->how_many_copies(domain_size));
 
     FHE_NTIMER_START(Conduction);
     auto contingency_table = compute_table(attributes, P, Q, ea);
     FHE_NTIMER_STOP(Conduction);
+
+    return evaluate(contingency_table, attributes.size());
+}
+
+PrivateContingencyTable::ResultType
+PrivateContingencyTable::evaluate(const ctxt_ptr &contingency_table,
+                                  long nr_records) const {
+    const auto &pk = contingency_table->getPubKey();
+    auto ea = context->ea;
+
+    Attribute P = helper->getP();
+    Attribute Q = helper->getQ();
+    long domain_size = nr_records - helper->getThreshold();
 
     FHE_NTIMER_START(GreaterThan);
     auto gamma = special_greater_than(contingency_table, domain_size, ea);
@@ -271,70 +282,6 @@ PrivateContingencyTable::evaluate(const std::vector <Ctxt> &attributes) const {
 
     return { .n_uv = n_uv, .gamma = gamma, .tilde_gamma = tilde_gamma};
 }
-
-
-//// Some helper functions
-/// bit_per must be 8-multiple
-PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz,
-                                          long bit_per,
-                                          long partition) {
-    PrivateContingencyTable::AESKey_t key;
-    long nr_bytes = NTL::NumBytes(zz);
-    if (partition != ((nr_bytes << 3) / bit_per)) {
-        printf("%ld %ld %ld\n", nr_bytes, bit_per, partition);
-    }
-    assert(partition == ((nr_bytes << 3) / bit_per) && "Bit_per need to be 8-multiple");
-
-    std::vector<uint8_t> bytes(nr_bytes);
-    NTL::BytesFromZZ(bytes.data(), zz, nr_bytes);
-
-    long byte_per = bit_per >> 3;
-    for (size_t i = 0; i < nr_bytes; i += byte_per) {
-        long z = 0;
-        for (size_t j = 0; j < byte_per; j++) {
-            z = (z << 3) + bytes.at(i + j);
-        }
-        key.push_back(z);
-    }
-
-    if (key.size() != partition) {
-        printf("%ld bit_per, %ld nr_bytes, %ld partition\n",
-        bit_per, nr_bytes, partition);
-    }
-    assert(key.size() == partition && "Wrong implementation!");
-    return key;
-}
-
-NTL::ZZX convKey(const std::vector<PrivateContingencyTable::AESKey_t> &keys,
-                 long partition,
-                 const EncryptedArray *ea) {
-    auto bs = keys.size();
-    std::vector<long> poly(ea->size(), 0);
-    size_t usable_size = ea->size() / bs * bs;
-    for (auto b = 0; b < bs; b++) {
-        assert(partition < keys.at(b).size());
-        long k = keys[b][partition];
-        for (auto i = b; i < usable_size; i += bs)
-            poly[i] = k;
-    }
-
-    NTL::ZZX zzx;
-    ea->encode(zzx, poly);
-    return zzx;
-}
-
-NTL::ZZ convKey(PrivateContingencyTable::AESKey_t aes, long bit_per) {
-    long nr_bytes = (bit_per>> 3) * aes.size();
-    std::vector<uint8_t> bytes;
-    for (auto v : aes) {
-        while (v> 0) {
-            bytes.push_back(v & 0xFF);
-            v = v >> 8;
-        }
-    }
-    return NTL::ZZFromBytes(bytes.data(), nr_bytes);
-}
-
 std::pair<size_t, size_t> coprime(size_t i, size_t j) {
     while (NTL::GCD(i, j) != 1) {
         if (i> j) j += 1;

@@ -26,6 +26,8 @@ std::vector<std::vector<long>> randomness(long D, const EncryptedArray &ea);
 
 size_t number_bits(long a);
 
+/// return x s.t. x = a \mod p1, x = b \mod p2
+long apply_crt(long a, long b, long p1, long p2);
 template<class HELibObj>
 std::string conv(const HELibObj &obj);
 

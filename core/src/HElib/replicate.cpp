@@ -32,16 +32,57 @@ void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos)
 {
   long nSlots = ea.size();
   assert(pos >= 0 && pos < nSlots); 
+  replicate(ea, ctxt, pos, nSlots);
+}
+
+void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first_k)
+{
+  long nSlots = ea.size();
+  assert(pos >= 0 && pos < nSlots); 
 
   ZZX mask;
   ea.encodeUnitSelector(mask, pos);
   ctxt.multByConstant(mask);
-  replicate0(ea, ctxt, pos);
+  replicate0(ea, ctxt, pos, first_k);
 }
 
+void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first_k)
+{
+  long dim = ea.dimension();
+
+  for (long d = 0; d < dim; d++) {
+    if (!ea.nativeDimension(d)) {
+      long shamt = -ea.coordinate(d, pos);
+      ea.rotate1D(ctxt, d, shamt, true); // "don't care"
+    }
+
+    Ctxt ctxt_orig = ctxt; 
+
+    long sz = ea.sizeOfDimension(d);
+    assert(first_k > 0 && sz >= first_k);
+    long k = NumBits(first_k);
+    long e = 1;
+
+    // now process bits k-2 down to 0
+    for (long j = k-2; j >= 0; j--) {
+      // e -> 2*e
+      Ctxt tmp = ctxt;
+      ea.rotate1D(tmp, d, e, true); // "don't care"
+      ctxt += tmp;
+      e = 2*e;
+      
+      long b = bit(sz, j); // bit j of sz
+      // e -> e+b
+      if (b) {
+        ea.rotate1D(ctxt, d, 1, true); // "don't care"
+        ctxt += ctxt_orig;
+        e++;
+      }
+    }
+  }
+}
 // Assumes all slots are zero except slot #pos,
 // which is duplicated in all other slots
-
 void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos)
 {
   long dim = ea.dimension();
@@ -76,7 +117,6 @@ void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos)
     }
   }
 }
-
 
 // The following code implements a recursive, O(1)-amortized
 // algorithm for replications

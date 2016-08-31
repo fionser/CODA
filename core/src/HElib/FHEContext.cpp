@@ -446,7 +446,6 @@ istream& operator>> (istream &str, FHEcontext& context)
 
   IndexSet s;
   str >> s; // read the special set
-
   context.moduli.clear();
   context.specialPrimes.clear();
   context.ctxtPrimes.clear();

@@ -9,7 +9,6 @@
 #include <memory>
 #include "coda.hpp"
 #include "../HElib/Ctxt.h"
-#include "AES.hpp"
 #include "greaterthan.h"
 
 namespace NTL { class ZZX; }
@@ -42,7 +41,6 @@ public:
         Type_gamma gamma;
         Type_tilde_gamma tilde_gamma;
     };
-    typedef std::vector<long> AESKey_t;
 
     PrivateContingencyTable(context_ptr context,
                             PrivateContingencyTableHelper *helper);
@@ -51,6 +49,7 @@ public:
 
     ResultType evaluate(const std::vector<Ctxt> &attributes) const;
 
+    ResultType evaluate(const ctxt_ptr &ct, long nr_records) const;
 private:
     ctxt_ptr compute_table(const std::vector<Ctxt> &attributes,
                            Attribute p, Attribute q,
@@ -95,31 +94,32 @@ public:
                                   const Attribute Q,
                                   const long threshold,
                                   const EncryptedArray *ea)
-            : P(P), Q(Q), threshold(threshold), ea(ea), key_bits(128L) {}
+            : P(P), Q(Q), threshold(threshold), ea(ea) {}
 
     virtual ~PrivateContingencyTableHelper() {}
+
+    bool dump(const PrivateContingencyTable::ResultType &ct_result,
+              const std::string &file_path) const;
+
+    bool restore(PrivateContingencyTable::ResultType &out,
+                 const std::string &result_file,
+                 const core::pk_ptr &pk) const;
 
     std::shared_ptr<Ctxt> repeat(size_t R) const;
 
     size_t how_many_copies(long domain_size) const;
 
-    size_t how_many_copies_for_bits(const EncryptedArray *ea) const;
-
     size_t repeats_per_cipher() const;
 
     size_t block_size() const;
 
-    void setCT(const Ctxt *ctxt) {this->CT = ctxt; }
-
-    void setKeyLength(long s) {key_bits = s;}
+    void setCT(const Ctxt *ctxt) { this->CT = ctxt; }
 
     Attribute getP() const { return P; }
 
     Attribute getQ() const { return Q; }
 
     long getThreshold() const { return threshold;}
-
-    long aesKeyLength() const { return key_bits;}
 
     void open_gamma(std::vector<Publishable> &no_suppression,
                     const Type_gamma  &gamma,
@@ -143,7 +143,6 @@ private:
 private:
     Attribute P, Q;
     const long threshold;
-    long key_bits;
     const Ctxt *CT = nullptr;
     const EncryptedArray *ea;
 };
@@ -152,11 +151,5 @@ long CRT(long u, long v, long k1, long k2);
 
 std::pair<size_t, size_t> coprime(size_t i, size_t j);
 
-
-PrivateContingencyTable::AESKey_t convKey(const NTL::ZZ &zz, long bit_per, long partition);
-
-NTL::ZZX convKey(const std::vector<PrivateContingencyTable::AESKey_t> &keys, long p, const EncryptedArray *ea);
-
-NTL::ZZ convKey(PrivateContingencyTable::AESKey_t aes, long bit_per);
 } // namespace core
 #endif //CODA_CLION_CONTINGENCY_TABLE_HPP

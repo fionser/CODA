@@ -29,24 +29,30 @@ int main(int argc, char *argv[]) {
     long security = 80;
     long level = 8;
     long plain = 2;
+    long m = 5227;
     mapping.arg("p", plain, "plaintext");
     mapping.arg("L", level, "level");
     mapping.arg("k", security, "security level");
     mapping.arg("S", slots, "how many slots?");
+    mapping.arg("m", m, "Phi(m)");
     mapping.parse(argc, argv);
     
-    long m = 27893;
     std::cout << "m\tp\t#slot\tSameOrd\n";
+    long MAXP = 1 << 20;
     for (long t = 0; t < 10; t++) {
         long p = NTL::NextPrime(1 << 12);
-        while (p < m) {
-            PAlgebra zMStar(m, p);
-            if (zMStar.numOfGens() == 1 && zMStar.getNSlots() >= 36) {
-                printf("%ld\t%ld\t%ld\t%d\n", m, p, zMStar.getNSlots(), zMStar.SameOrd(0));
+        while (p < MAXP) {
+            if (p != m) {
+                PAlgebra zMStar(m, p);
+                if (zMStar.numOfGens() == 1 && zMStar.getNSlots() >= 1000 && zMStar.SameOrd(0)) {
+                    printf("%ld\t%ld\t%ld\t%d\n", m, p, zMStar.getNSlots(), zMStar.SameOrd(0));
+                }
             }
             p = NTL::NextPrime(p + 2);
         }
         m = NTL::NextPrime(m + 2);
+        printf("\n");
+        while (m >= 27893) break;
     }
 
     // FHEcontext context(m, plain, 1);

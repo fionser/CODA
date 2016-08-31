@@ -10,12 +10,7 @@
 #include <vector>
 #include <algorithm>
 #include <thread>
-
-#ifdef FHE_THREADS
-#define NR_THREADS 36
-#else
-#define NR_THREADS 1
-#endif
+#include <fstream>
 
 namespace core {
 size_t PrivateContingencyTableHelper::repeats_per_cipher() const {
@@ -28,12 +23,6 @@ size_t PrivateContingencyTableHelper::repeats_per_cipher() const {
 size_t PrivateContingencyTableHelper::how_many_copies(long domain_size) const {
     size_t repeats = repeats_per_cipher();
     return (domain_size + repeats - 1UL) / repeats;
-}
-
-size_t PrivateContingencyTableHelper::
-how_many_copies_for_bits(const EncryptedArray *ea) const {
-    auto bit_per = (number_bits(ea->getAlMod().getPPowR()) / 8UL) << 3;
-    return (aesKeyLength() + bit_per - 1) / bit_per;
 }
 
 size_t PrivateContingencyTableHelper::block_size() const {
@@ -72,6 +61,7 @@ open_gamma(std::vector <Publishable> &unsuppression,
                 long crtidx = zeros[j] % bsize;
                 size_t u = crtidx % modified_sizes.first;
                 size_t v = crtidx % modified_sizes.second;
+                if (u >= P.size || v >= Q.size) { continue; }
                 Publishable info = { .u = u, .v = v, .position = crtidx,
                                      .blinding_factor = blinding_factors.at(j) };
                 tmux.lock();
@@ -148,4 +138,44 @@ PrivateContingencyTableHelper::final_decrypt(const Type_n_uv &table,
     return ctable;
 }
 
+bool PrivateContingencyTableHelper::dump(const PrivateContingencyTable::ResultType &results,
+                                         const std::string &file) const {
+    std::ofstream fout(file, std::ios::binary);
+    if (!fout.is_open())
+        return false;
+    fout << *(results.n_uv);
+    fout << static_cast<int32_t>(results.gamma.size());
+    for (auto &g : results.gamma)
+        fout << *g;
+    fout << static_cast<int32_t>(results.tilde_gamma.size());
+    for (auto &g : results.tilde_gamma)
+        fout << *g;
+    fout.close();
+    return true;
+}
+
+bool PrivateContingencyTableHelper::restore(PrivateContingencyTable::ResultType &out,
+                                            const std::string &result_file,
+                                            const core::pk_ptr &pk) const
+{
+    std::ifstream fin(result_file, std::ios::binary);
+    if (!fin.is_open()) return false;
+    out.n_uv = std::make_shared<Ctxt>(*pk);
+    fin >> *out.n_uv;
+    int32_t gamma_size;
+    fin >> gamma_size;
+    out.gamma.resize(gamma_size);
+    for (int32_t i = 0; i < gamma_size; i++) {
+        out.gamma[i] = std::make_shared<Ctxt>(*pk);
+        fin >> *(out.gamma[i]);
+    }
+
+    fin >> gamma_size;
+    out.tilde_gamma.resize(gamma_size);
+    for (int32_t i = 0; i < gamma_size; i++) {
+        out.tilde_gamma[i] = std::make_shared<Ctxt>(*pk);
+        fin >> *(out.tilde_gamma[i]);
+    }
+    return true;
+}
 } // namespace core
