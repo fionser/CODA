@@ -52,7 +52,6 @@ bool UserCipherLoader::loadLocalComputedCipher(Ctxt &out, int32_t &nr,
             std::string cipher_file = util::concatenate(path, file);
             std::ifstream fin(cipher_file, std::ios::binary);
             fin >> nr;
-            std::cout << file << " " << nr << "\n";
             fin >> out;
             fin.close();
             return true;
@@ -160,7 +159,8 @@ private:
 
     bool createDoneFile(const std::string &path,
                         bool local_computed,
-                        const std::vector<core::Attribute> &attributes);
+                        const std::vector<core::Attribute> &attributes,
+                        const std::vector<std::pair<int32_t, int32_t>> &pairs);
 
     void encode(NTL::ZZX &poy,
                 const std::vector<std::string> &values,
@@ -280,7 +280,7 @@ bool ProtocolImp::localEncrypt(std::ifstream &fin,
         file_nr += 1;
     }
 
-    return createDoneFile(outputDirPath, true, attributes);
+    return createDoneFile(outputDirPath, true, attributes, {});
 }
 
 bool ProtocolImp::doEncrypt(std::ifstream &fin,
@@ -326,7 +326,7 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
         }
     }
     fout.close();
-    return createDoneFile(outputDirPath, false, attributes);
+    return createDoneFile(outputDirPath, false, attributes, {});
 }
 
 void ProtocolImp::encode(NTL::ZZX &poly,
@@ -376,7 +376,8 @@ std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) {
 
 bool ProtocolImp::createDoneFile(const std::string &path,
                                  bool local_computed,
-                                 const std::vector<core::Attribute> &attributes) {
+                                 const std::vector<core::Attribute> &attributes,
+                                 const std::vector<std::pair<int32_t, int32_t>> &pairs) {
     auto fd = util::createDoneFile(path);
     if (!fd) {
         L_WARN(global::_console, "Can not create done file under {0}", path);
@@ -384,12 +385,16 @@ bool ProtocolImp::createDoneFile(const std::string &path,
     }
 
     std::stringstream sstream;
-    sstream << "#";
+    sstream << '#';
     auto nr = attributes.size();
     for (size_t i = 0; i + 1 < nr; i++)
         sstream << std::to_string(attributes[i].size) << " ";
     sstream << std::to_string(attributes.back().size) << '\n';
     sstream << local_computed;
+
+    for (auto &pair : pairs)
+        sstream << '\n' << pair.first << " " << pair.second;
+
     auto header = sstream.str();
     fwrite(header.c_str(), header.size(), 1UL, fd);
     fclose(fd);
@@ -402,27 +407,33 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
                           core::context_ptr context)
 {
     std::string doneFile = util::concatenate(util::getDirPath(inputFilePath), global::_doneFileName);
-    auto attributes = parseHeader(doneFile);
-    if (attributes.size() != 2) {
-        L_WARN(global::_console, "Invalid done file under {0}", inputFilePath);
+    std::ifstream fin(doneFile, std::ios::binary);
+    if (!fin.is_open()) {
+        L_WARN(global::_console, "Can not open {0}", doneFile);
         return false;
     }
+    auto attributes = parseHeader(fin);
+    bool localComputed;
+    fin >> localComputed;
+    int32_t p, q;
+    fin >> p >> q;
 
     core::PrivateContingencyTable::ResultType results;
     const EncryptedArray *ea = context->ea;
-    core::PrivateContingencyTableHelper helper(attributes[0], attributes[1], 10, ea);
+    core::PrivateContingencyTableHelper helper(attributes.at(ATTR_INDEX(p)),
+                                               attributes.at(ATTR_INDEX(q)), __THRESHOLD, ea);
     helper.restore(results, inputFilePath, pk);
 
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishables;
     helper.open_gamma(publishables, results.gamma, results.tilde_gamma, ea, sk);
     auto table = helper.final_decrypt(results.n_uv, publishables, sk, ea);
-
     std::ofstream fout(util::concatenate(outputDirPath, "FILE_1"), std::ios::binary);
     if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create new file under {0}", outputDirPath);
         return false;
     }
-    fout << "#" << attributes[0].size << " " << attributes[1].size << "\n";
+
+    fout << p << " " << q << '\n';
     for (auto &row : table)
         for (auto c : row)
             fout << c << " ";
@@ -450,6 +461,17 @@ bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
         return doEvaluate(inputDirs, outputDir, attributes, pk, context);
 }
 
+static size_t get_index(int p, int q, int nr_attr) {
+    size_t idx = 1;
+    for (size_t i = 0; i < nr_attr; i++) {
+        for (size_t j = i + 1; j < nr_attr; j++) {
+            if (i == p && j == q) return idx;
+            idx += 1;
+        }
+    }
+    assert(0);
+}
+
 bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
                                 const std::string &outputDir,
                                 const std::vector<core::Attribute> &attributes,
@@ -462,9 +484,12 @@ bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
         return false;
     }
 
-    long specific_file_nr = 1;
+    if (pIndex > qIndex) std::swap(pIndex, qIndex);
+
+    long specific_file_nr = get_index(pIndex, qIndex, attributes.size());
+
     std::string specific_file = "FILE_" + std::to_string(specific_file_nr);
-    FHE_NTIMER_START(LOAD_FILES);
+
     // load specific file
     auto checker = [&specific_file](const std::string &fileName) -> bool {
         return fileName.compare(specific_file) == 0;
@@ -481,22 +506,22 @@ bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
             nr_records += records;
         }
     }
-    FHE_NTIMER_STOP(LOAD_FILES);
-    printNamedTimer(std::cout, "LOAD_FILES");
 
-    core::Attribute P = attributes[pIndex];
-    core::Attribute Q = attributes[qIndex];
+    core::Attribute P = attributes[ATTR_INDEX(_p)];
+    core::Attribute Q = attributes[ATTR_INDEX(_q)];
     const EncryptedArray *ea = context->ea;
     core::PrivateContingencyTableHelper helper(P, Q, __THRESHOLD, ea);
     core::PrivateContingencyTable privateContingencyTable(context, &helper);
     auto results = privateContingencyTable.evaluate(ct, static_cast<long>(nr_records));
+
     auto outputFile = util::concatenate(outputDir, "File_result");
     bool ok = helper.dump(results, outputFile);
     if (ok) {
-        std::vector<core::Attribute> attrs;
-        attrs.push_back(P);
-        attrs.push_back(Q);
-        createDoneFile(outputDir, true, attrs);
+        int32_t pp = static_cast<int32_t>(_p);
+        int32_t qq = static_cast<int32_t>(_q);
+        auto pair = std::make_pair(pp, qq);
+        std::vector<std::pair<int32_t, int32_t>> pairs(1, pair);
+        ok &= createDoneFile(outputDir, true, attributes, pairs);
     } else {
         L_WARN(global::_console, "Some went wrong when to dump ciphers to {0}", outputFile);
     }
@@ -518,15 +543,12 @@ bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
     core::Attribute P = attributes[pIndex];
     core::Attribute Q = attributes[qIndex];
 
-    FHE_NTIMER_START(LOAD_FILES);
     // Load all FILE_* files
     auto checker = [](const std::string &fileName) -> bool { return fileName.find("FILE_") == 0; };
     std::vector<Ctxt> ctxts;
     UserCipherLoader loader(checker);
     for (auto dir : inputDirs)
         loader.loadCiphers(ctxts, dir, pk);
-    FHE_NTIMER_STOP(LOAD_FILES);
-    printNamedTimer(std::cout, "LOAD_FILES");
 
     const EncryptedArray *ea = context->ea;
     core::PrivateContingencyTableHelper helper(P, Q, __THRESHOLD, ea);
@@ -536,10 +558,11 @@ bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
     auto outputFile = util::concatenate(outputDir, "File_result");
     bool ok = helper.dump(results, outputFile);
     if (ok) {
-        std::vector<core::Attribute> attrs;
-        attrs.push_back(P);
-        attrs.push_back(Q);
-        createDoneFile(outputDir, false, attrs);
+        int32_t pp = static_cast<int32_t>(_p);
+        int32_t qq = static_cast<int32_t>(_q);
+        auto pair = std::make_pair(pp, qq);
+        std::vector<std::pair<int32_t, int32_t>> pairs(1, pair);
+        ok = createDoneFile(outputDir, false, attributes, pairs);
     } else {
         L_WARN(global::_console, "Some went wrong when to dump ciphers to {0}", outputFile);
     }
@@ -617,7 +640,6 @@ bool evaluate(const std::vector <std::string> &inputDirs,
     if (params.size() != 2) return false;
     int p = literal::stol(params[0]);
     int q = literal::stol(params[1]);
-    printf("Evaluating %d %d attributes\n", p, q);
     ContingencyTableProtocol ct(p, q);
     return ct.evaluate(inputDirs, outputDir, pk, context);
 }

@@ -37,7 +37,6 @@ context_ptr loadContext(bool *ok, const std::string &contextFile) {
         return nullptr;
     }
     in >> *context;
-    std::cout << "Load context " << contextFile << " SL " << context->securityLevel() << "\n";
     return context;
 }
 
@@ -59,7 +58,6 @@ pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile) {
 
     if (ok) *ok = true;
 
-    std::cout << "Load pk " << pkFile << "\n";
     return pk;
 }
 
@@ -85,7 +83,6 @@ sk_ptr loadSK(bool *ok, const context_ptr &context, const std::string &skFile) {
     in >> *sk;
     in.close();
     if (ok) *ok = true;
-    std::cout << "Load sk " << skFile << "\n";
     return sk;
 }
 

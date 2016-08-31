@@ -61,6 +61,7 @@ open_gamma(std::vector <Publishable> &unsuppression,
                 long crtidx = zeros[j] % bsize;
                 size_t u = crtidx % modified_sizes.first;
                 size_t v = crtidx % modified_sizes.second;
+                if (u >= P.size || v >= Q.size) { continue; }
                 Publishable info = { .u = u, .v = v, .position = crtidx,
                                      .blinding_factor = blinding_factors.at(j) };
                 tmux.lock();

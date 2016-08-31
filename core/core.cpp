@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
         bool local_compute = false;
-        if (args["-local"]) local_compute = true;
+        if (args["--local"]) local_compute = true;
 
         if (!core::encrypt(inputFilePath, outputFilePath, metaFilePath, local_compute)) {
             L_ERROR(_console, "Something went wrong in the encryption");
