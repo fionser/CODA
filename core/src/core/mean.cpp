@@ -84,6 +84,7 @@ static bool __encrypt(std::fstream &fin, core::pk_ptr pk, core::context_ptr cont
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
+             bool local_compupte,
              core::pk_ptr pk,
              core::context_ptr context) {
     std::fstream fin(inputFilePath);
@@ -190,6 +191,7 @@ static void __sumDir(std::string const &dir,
 
 bool evaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,
+              const std::vector<std::string> &params,
               core::pk_ptr pk,
               core::context_ptr context) {
     Ctxt* result = nullptr;

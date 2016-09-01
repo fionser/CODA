@@ -187,7 +187,9 @@ static bool encryptGenotype(std::fstream &fin,
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,
-             core::pk_ptr pk) {
+             bool local_compute,
+             core::pk_ptr pk,
+             core::context_ptr /*dummy*/) {
     std::fstream fin(inputFilePath);
     if (!fin.is_open()) {
         L_ERROR(global::_console, "Can not open file {0}", inputFilePath);
@@ -251,7 +253,8 @@ static void __output_chi2(std::fstream &fd,
 bool decrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,
              core::pk_ptr pk,
-             core::sk_ptr sk) {
+             core::sk_ptr sk,
+             core::context_ptr /*dummy*/) {
     util::Meta doneFile;
     bool ok;
     auto dir = util::getDirPath(inputFilePath);
@@ -384,7 +387,9 @@ static ssize_t __loadCiphers(std::list<Ctxt> &gs, std::list<Ctxt> &ps,
 
 bool evaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,
-              core::pk_ptr pk) {
+              const std::vector<std::string> &,
+              core::pk_ptr pk,
+              core::context_ptr /*dummy*/) {
     std::list<Ctxt> genotype, phenotype;
     ssize_t nr_patients;
     nr_patients = __loadCiphers(genotype, phenotype, pk, inputDirs);
