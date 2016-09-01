@@ -103,6 +103,13 @@ FileSystemClient::FileSystemClient()
     user_name_ = "";
 }
 
+FileSystemClient::FileSystemClient(std::string session_name)
+{
+    analyst_name_ = "";
+    session_name_ = session_name;
+    user_name_ = "";
+}
+
 FileSystemClient::FileSystemClient(std::string analyst_name, std::string session_name, std::string user_name)
 {
     analyst_name_ = analyst_name;

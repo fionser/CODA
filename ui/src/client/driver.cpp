@@ -8,6 +8,8 @@ void Driver::error_usage(char *cmd)
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_JOIN);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_SEND_DATA);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name>\n", cmd, CConst::C_MAIN_CMD_RECEIVE_RESULT);
+    fprintf(stderr, "      : %s %s [-e] <session_name> <csv_data_file_path>\n", cmd, "conv");
+    fprintf(stderr, "      : %s %s [-d] <session_name>\n", cmd, "conv");
     fprintf(stderr, "      : %s %s <hostname> <port_no>\n", cmd, CConst::C_SUB_CMD_NET);
     fprintf(stderr, "      : %s %s \n", cmd, CConst::C_SUB_CMD_DEBUG);
 }
@@ -102,6 +104,44 @@ int Driver::join_session(int argc, char *argv[])
         }
         return -1;
     }
+}
+
+int Driver::convert(int argc, char *argv[])
+{
+    /*
+     * argc = 5
+     * argv  : 0  1    2   3              4
+     * usage : ui conv -e <session_name> <data_xxx.csv>
+     */
+    /*
+     * argc = 5
+     * argv  : 0  1    2   3              4
+     * usage : ui conv -d <session_name> <data_xxx.csv>
+     */
+    if( argc < 3) {
+        error_usage(argv[0]);
+        return -1;
+    }
+    if(std::string(argv[2]) == "-e") {
+        if( argc < 5) {
+            error_usage(argv[0]);
+            return -1;
+        }
+        FileSystemClient fc(argv[3]);
+        std::string schema_path = fc.get_filepath(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME));
+        Schema schema = Schema(schema_path);
+        schema.convert_csv(argv[4], "conveted_file.txt");
+    } else if(std::string(argv[2]) == "-d") {
+        if( argc < 5) {
+            error_usage(argv[0]);
+            return -1;
+        }
+        Schema schema = Schema(argv[5]);
+    } else {
+        error_usage(argv[0]);
+        return -1;
+    }
+    return 0;
 }
 
 int Driver::send_data(int argc, char *argv[])
@@ -236,6 +276,8 @@ int Driver::drive(int argc, char *argv[])
         join_session(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_MAIN_CMD_SEND_DATA) {
         send_data(argc, argv);
+    } else if (std::string(argv[1]) == "conv") {
+        convert(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_MAIN_CMD_RECEIVE_RESULT) {
         receive_result(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_SUB_CMD_NET) {

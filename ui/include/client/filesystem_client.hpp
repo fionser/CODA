@@ -23,6 +23,7 @@ class FileSystemClient : public FileSystemBase {
         int store_schema_file(std::string file_path);
         std::string get_filepath(std::string keyword_filename);
         FileSystemClient();
+        FileSystemClient(std::string session_name);
         FileSystemClient(std::string analyst_name, std::string session_name, std::string user_name);
 };
 
