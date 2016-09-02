@@ -612,7 +612,7 @@ core::FHEArg ContingencyTableProtocol::parameters() const {
 
 namespace protocol {
 namespace contingency {
-extern const core::FHEArg _fheArgs = {.m = 5227, .p = 67499, .r = 1, .L = 10};
+extern const core::FHEArg _fheArgs = {.m = 16384, .p = 8191, .r = 1, .L = 10};
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputDirPath,

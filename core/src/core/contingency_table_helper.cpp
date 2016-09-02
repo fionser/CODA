@@ -33,10 +33,9 @@ size_t PrivateContingencyTableHelper::block_size() const {
 std::shared_ptr <Ctxt> PrivateContingencyTableHelper::repeat(size_t R) const {
     assert(CT != nullptr && "the CT haven't been set");
     size_t repeats = std::min(R, repeats_per_cipher());
-    if (repeats != R)
-        printf("Warning! hope to repeat %zd times but only get %zd\n", R, repeats);
-    return std::make_shared<Ctxt>(
-            core::repeat0(*CT, block_size(), repeats, *ea));
+    //if (repeats != R)
+    //    printf("Warning! hope to repeat %zd times but only get %zd\n", R, repeats);
+    return std::make_shared<Ctxt>(core::repeat0(*CT, block_size(), repeats, *ea));
 }
 
 void PrivateContingencyTableHelper::
