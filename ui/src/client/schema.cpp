@@ -88,6 +88,72 @@ int Schema::convert_csv(std::string in_file_path, std::string out_file_path)
     return 0;
 }
 
+std::string Schema::search_key(int rule_num, std::string value)
+{
+    std::string key = "";
+    std::map<std::string, std::string> mp = rule_[rule_num];
+    for(auto itr = mp.begin(); itr != mp.end(); ++itr) {
+        if(itr->second == value) {
+            key = itr->first;
+            break;
+        }
+    }
+    return key;
+}
+
+std::vector<std::string> Schema::get_label(int num)
+{
+    std::vector<std::string> labels;
+    int size = item_size_[num];
+    for (int i = 1; i < item_size_[num]+1; ++i) {
+        std::string a = std::to_string(i);
+    }
+    return labels;
+}
+
+int Schema::deconvert(std::string file_path, std::string output_file_path)
+{
+    std::string sep_coma = ",";
+    std::string sep_space = " ";
+    std::vector<std::string> result;
+    std::ifstream ifs(file_path);
+    if(ifs.fail()) return -1;
+    std::string str;
+    // item
+    std::getline(ifs, str);
+    std::vector<std::string> item_num = Utils::split(str, sep_space);
+    int x = std::stoi(item_num[0])-1;
+    int y = std::stoi(item_num[1])-1;
+    result.push_back(item_name_[x] + "-" + item_name_[y]);
+    // label
+    std::vector<std::string> x_label;
+    for (int i = 1; i < item_size_[x]+1; ++i) {
+        x_label.push_back(search_key(x,std::to_string(i)));
+    }
+    std::vector<std::string> y_label;
+    for (int i = 1; i < item_size_[y]+1; ++i) {
+        y_label.push_back(search_key(y,std::to_string(i)));
+    }
+    // hyo
+    result.push_back(sep_coma + Utils::join(y_label, sep_coma));
+    std::getline(ifs, str);
+    std::vector<std::string> values = Utils::split(str, sep_space);
+    for (int i = 0; i < item_size_[x]; ++i) {
+        std::string line = x_label[i];
+        for (int j = 0; j < item_size_[y]; ++j) {
+            line += sep_coma + values[(i*item_size_[y]) + j];
+        }
+        result.push_back(line);
+    }
+    // write to output_file
+    std::ofstream ofs(output_file_path);
+    if(ofs.fail()) return -1;
+    for (int i = 0; i < result.size(); ++i) {
+        ofs << result[i] << std::endl;
+    }
+    return 0;
+}
+
 void Schema::debug_display()
 {
     // debug start
