@@ -22,6 +22,7 @@ namespace CConst {
     extern const int D_SIZE;
     extern const char* D_NAMES[];
     extern const char* META_FILE_NAME;
+    extern const char* SCHEMA_FILE_NAME;
     extern const char* FLAG_FILE_NAME;
     extern const std::string RESULT_FILE_NAME;
     extern const std::string PUBLIC_KEY;

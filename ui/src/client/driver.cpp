@@ -3,11 +3,13 @@
 void Driver::error_usage(char *cmd)
 {
     fprintf(stderr, "usage :\n");
-    fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <protocol> <user_name ...>\n", cmd, CConst::C_MAIN_CMD_INIT);
+    fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>\n", cmd, CConst::C_MAIN_CMD_INIT);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name>\n", cmd, CConst::C_MAIN_CMD_SEND_KEY);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_JOIN);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_SEND_DATA);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name>\n", cmd, CConst::C_MAIN_CMD_RECEIVE_RESULT);
+    fprintf(stderr, "      : %s %s [-e] <session_name> <csv_data_file_path>\n", cmd, "conv");
+    fprintf(stderr, "      : %s %s [-d] <session_name>\n", cmd, "conv");
     fprintf(stderr, "      : %s %s <hostname> <port_no>\n", cmd, CConst::C_SUB_CMD_NET);
     fprintf(stderr, "      : %s %s \n", cmd, CConst::C_SUB_CMD_DEBUG);
 }
@@ -15,11 +17,11 @@ void Driver::error_usage(char *cmd)
 int Driver::init_session(int argc, char *argv[])
 {
     /*
-     * argc = 8
-     * argv  : 0  1     2          3        4              5              6          7
-     * usage : ui init <hostname> <portno> <session_name> <analyst_name> <protocol> <user_name ...>
+     * argc = 9
+     * argv  : 0  1     2          3        4              5              6          7                  8
+     * usage : ui init <hostname> <portno> <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>
      */
-    if( argc < 8) {
+    if( argc < 9) {
         error_usage(argv[0]);
         return -1;
     }
@@ -29,6 +31,9 @@ int Driver::init_session(int argc, char *argv[])
     }
     if(dir_ini(args) != 0){
         L_ERROR(_console, "init session directory.");
+        if(d_rm_session_dir(argv[4]) != 0) {
+            L_ERROR(_console, "remove directory NG.");
+        }
         return -1;
     }
     NetworkClient c;
@@ -99,6 +104,44 @@ int Driver::join_session(int argc, char *argv[])
         }
         return -1;
     }
+}
+
+int Driver::convert(int argc, char *argv[])
+{
+    /*
+     * argc = 5
+     * argv  : 0  1    2   3              4
+     * usage : ui conv -e <session_name> <data_xxx.csv>
+     */
+    /*
+     * argc = 5
+     * argv  : 0  1    2   3              4
+     * usage : ui conv -d <session_name> <data_xxx.csv>
+     */
+    if( argc < 3) {
+        error_usage(argv[0]);
+        return -1;
+    }
+    if(std::string(argv[2]) == "-e") {
+        if( argc < 5) {
+            error_usage(argv[0]);
+            return -1;
+        }
+        FileSystemClient fc(argv[3]);
+        std::string schema_path = fc.get_filepath(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME));
+        Schema schema = Schema(schema_path);
+        schema.convert_csv(argv[4], "conveted_file.txt");
+    } else if(std::string(argv[2]) == "-d") {
+        if( argc < 5) {
+            error_usage(argv[0]);
+            return -1;
+        }
+        Schema schema = Schema(argv[5]);
+    } else {
+        error_usage(argv[0]);
+        return -1;
+    }
+    return 0;
 }
 
 int Driver::send_data(int argc, char *argv[])
@@ -172,9 +215,9 @@ int Driver::net_start(int argc, char *argv[])
 int Driver::dir_ini(std::vector<std::string> argv)
 {
     /*
-     * argc >= 4
-     * argv  : 0              1              2          3 ...
-     * usage : <session_name> <analyst_name> <protocol> <user_name ...>
+     * argc >= 5
+     * argv  : 0              1              2          3                   4...
+     * usage : <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>
      */
     FileSystemClient d;
     return d.make_analyst_info(argv);
@@ -233,12 +276,16 @@ int Driver::drive(int argc, char *argv[])
         join_session(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_MAIN_CMD_SEND_DATA) {
         send_data(argc, argv);
+    } else if (std::string(argv[1]) == "conv") {
+        convert(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_MAIN_CMD_RECEIVE_RESULT) {
         receive_result(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_SUB_CMD_NET) {
         net_start(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_SUB_CMD_DEBUG) {
         debug_m(argc, argv);
+    } else if (std::string(argv[1]) == "test") {
+        UTC::test();
     } else {
         error_usage(argv[0]);
         return -1;

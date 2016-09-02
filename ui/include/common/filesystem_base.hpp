@@ -28,6 +28,7 @@ class FileSystemBase {
     public:
         int remove_directory(const char* dir_name);
         std::vector<std::string> get_file_list(const char *dir_path);
+        int copy_file(const char* src, const char* dst);
         FileSystemBase();
         FileSystemBase(std::string analyst_name, std::string session_name, std::string user_name);
 };

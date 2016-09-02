@@ -25,6 +25,7 @@ namespace CConst {
         "Data/Enc/Receive" // 7
     };
     const char* META_FILE_NAME = "meta.ini";
+    const char* SCHEMA_FILE_NAME = "schema.csv";
     const char* FLAG_FILE_NAME = ".done.lock";
     const std::string RESULT_FILE_NAME = "File_result";
     const std::string PUBLIC_KEY = "fhe_key.pk";

@@ -2,6 +2,9 @@
 #include "filesystem_client.hpp"
 #include "network_client.hpp"
 #include <cstring> // for Windows
+#include "utest_client.hpp"
+#include "utils.h"
+#include "schema.hpp"
 
 class Driver {
     private:
@@ -10,6 +13,7 @@ class Driver {
         int send_key(int argc, char *argv[]);
         int join_session(int argc, char *argv[]);
         int send_data(int argc, char *argv[]);
+        int convert(int argc, char *argv[]);
         int receive_result(int argc, char *argv[]);
         int net_start(int argc, char *argv[]);
         int dir_ini(std::vector<std::string> argv);

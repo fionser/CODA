@@ -20,8 +20,10 @@ class FileSystemClient : public FileSystemBase {
         int make_analyst_info(std::vector<std::string> argv);
         int make_directory(const char* dir_name);
         int make_meta_file(std::vector<std::string> argv);
+        int store_schema_file(std::string file_path);
         std::string get_filepath(std::string keyword_filename);
         FileSystemClient();
+        FileSystemClient(std::string session_name);
         FileSystemClient(std::string analyst_name, std::string session_name, std::string user_name);
 };
 
