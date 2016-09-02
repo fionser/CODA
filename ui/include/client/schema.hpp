@@ -22,6 +22,8 @@ class Schema {
         std::vector<int> item_size_;
         std::vector<std::string> item_size_str_;
         std::vector< std::map<std::string, std::string> > rule_;
+        std::string search_key(int rule_num, std::string value);
+        std::vector<std::string> get_label(int num);
     public:
         Schema();
         Schema(std::string file_path);
@@ -29,6 +31,7 @@ class Schema {
         int get_schema(std::string file_path);
         std::string convert(std::string key_string, int rule_no);
         int convert_csv(std::string in_file_path, std::string out_file_path);
+        int deconvert(std::string file_path, std::string output_file_path);
         void debug_display();
 };
 
