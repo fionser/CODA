@@ -17,7 +17,7 @@ class ProtocolImp;
 
 class ContingencyTableProtocol : Protocol {
 public:
-    ContingencyTableProtocol(int p = 0, int q = 0);
+    ContingencyTableProtocol(int p = 0, int q = 0, long threshold = 2);
 
     ~ContingencyTableProtocol() {}
 

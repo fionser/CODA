@@ -1,7 +1,7 @@
 #include "core/protocol.hpp"
 #include "core/file_util.hpp"
 #include "HElib/FHE.h"
-#include "HElib/FHEcontext.h"
+#include "HElib/FHEContext.h"
 
 #include <fstream>
 bool Protocol::genKeypair(const std::string &metaPath) const {

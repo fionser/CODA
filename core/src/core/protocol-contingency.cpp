@@ -13,7 +13,6 @@
 #include <memory>
 #include <sstream>
 #include <functional>
-long __THRESHOLD = 2;
 class UserCipherLoader {
 public:
     typedef std::function<bool(const std::string &dir)> doneFileChecker;
@@ -112,7 +111,7 @@ private:
 
 class ProtocolImp {
 public:
-    ProtocolImp(int p, int q) : _p(p), _q(q) {
+    ProtocolImp(int p, int q, long threshold) : _p(p), _q(q), _threshold(threshold) {
         assert(_p >= 0 && _q >= 0 && "Invaild attributes index");
     }
 
@@ -170,6 +169,7 @@ private:
     std::vector<core::Attribute> parseHeader(const std::string &file_path);
     std::vector<core::Attribute> parseHeader(std::istream &in);
     const int _p, _q;
+    const long _threshold;
 };
 
 bool ProtocolImp::encrypt(const std::string &inputFilePath,
@@ -421,7 +421,7 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
     core::PrivateContingencyTable::ResultType results;
     const EncryptedArray *ea = context->ea;
     core::PrivateContingencyTableHelper helper(attributes.at(ATTR_INDEX(p)),
-                                               attributes.at(ATTR_INDEX(q)), __THRESHOLD, ea);
+                                               attributes.at(ATTR_INDEX(q)), _threshold, ea);
     helper.restore(results, inputFilePath, pk);
 
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishables;
@@ -510,7 +510,7 @@ bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
     core::Attribute P = attributes[ATTR_INDEX(_p)];
     core::Attribute Q = attributes[ATTR_INDEX(_q)];
     const EncryptedArray *ea = context->ea;
-    core::PrivateContingencyTableHelper helper(P, Q, __THRESHOLD, ea);
+    core::PrivateContingencyTableHelper helper(P, Q, _threshold, ea);
     core::PrivateContingencyTable privateContingencyTable(context, &helper);
     auto results = privateContingencyTable.evaluate(ct, static_cast<long>(nr_records));
 
@@ -551,7 +551,7 @@ bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
         loader.loadCiphers(ctxts, dir, pk);
 
     const EncryptedArray *ea = context->ea;
-    core::PrivateContingencyTableHelper helper(P, Q, __THRESHOLD, ea);
+    core::PrivateContingencyTableHelper helper(P, Q, _threshold, ea);
     core::PrivateContingencyTable privateContingencyTable(context, &helper);
     auto results = privateContingencyTable.evaluate(ctxts);
 
@@ -571,10 +571,10 @@ bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
 
 } // namespace contingency_table
 
-ContingencyTableProtocol::ContingencyTableProtocol(int p, int q)
+ContingencyTableProtocol::ContingencyTableProtocol(int p, int q, long T)
         : Protocol(std::string("Contingency Table"))
 {
-    imp = std::make_shared<contingency_table::ProtocolImp>(p, q);
+    imp = std::make_shared<contingency_table::ProtocolImp>(p, q, T);
 }
 
 bool ContingencyTableProtocol::encrypt(const std::string &inputFilePath,
@@ -637,10 +637,12 @@ bool evaluate(const std::vector <std::string> &inputDirs,
               const std::vector<std::string> &params,
               core::pk_ptr pk,
               core::context_ptr context) {
-    if (params.size() != 2) return false;
+    if (params.size() < 2) return false;
     int p = literal::stol(params[0]);
     int q = literal::stol(params[1]);
-    ContingencyTableProtocol ct(p, q);
+    long T = 2;
+    if (params.size() == 3) T = literal::stol(params[2]);
+    ContingencyTableProtocol ct(p, q, T);
     return ct.evaluate(inputDirs, outputDir, pk, context);
 }
 } // namespace protocol
