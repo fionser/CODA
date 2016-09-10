@@ -36,5 +36,8 @@ TARGET_LINK_LIBRARIES(test_docopt docopt)
 ADD_EXECUTABLE(test_protocol_ct TestProtocol-contingencytable.cpp)
 TARGET_LINK_LIBRARIES(test_protocol_ct core-imp fhe ${local-ntl} ${local-gmp} pthread)
 
+ADD_EXECUTABLE(test_protocol_mean TestProtocol-mean.cpp)
+TARGET_LINK_LIBRARIES(test_protocol_mean core-imp fhe ${local-ntl} ${local-gmp} pthread)
+
 ADD_EXECUTABLE(test_dumpkeys TestDumpKeys.cpp)
 TARGET_LINK_LIBRARIES(test_dumpkeys fhe ${local-ntl} ${local-gmp} pthread)
