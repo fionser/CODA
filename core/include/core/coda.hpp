@@ -15,6 +15,7 @@ typedef std::shared_ptr<FHEPubKey> pk_ptr;
 typedef std::shared_ptr<FHESecKey> sk_ptr;
 struct {
     const int CTX_PER_FILE = 50;
+    const std::string decrypted_file = "File_result";
 } core_setting;
 
 struct ContextPk {

@@ -431,7 +431,7 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishables;
     helper.open_gamma(publishables, results.gamma, results.tilde_gamma, ea, sk);
     auto table = helper.final_decrypt(results.n_uv, publishables, sk, ea);
-    std::ofstream fout(util::concatenate(outputDirPath, "FILE_1"), std::ios::binary);
+    std::ofstream fout(util::concatenate(outputDirPath, core::core_setting.decrypted_file), std::ios::binary);
     if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create new file under {0}", outputDirPath);
         return false;
