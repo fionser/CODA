@@ -26,7 +26,6 @@ do
     LIBS_TO_BUILD=${LIBS_TO_BUILD}" "-D${NEWNAME}=${!NEWNAME}
 done
 
-echo "Runinng...."
 if [ -e CMakeCache.txt ]; then
     rm CMakeCache.txt
 fi
