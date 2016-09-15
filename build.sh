@@ -1,8 +1,10 @@
+#!/bin/bash
 ARGS=""
 NR_THREADS=2
-if [[ $OSTYPE == "linux-gnu" ]]; then
+platform=`uname`
+if [[ $platform == 'Linux' ]]; then
    ARGS="-DMULT_THREADS=on -DNR_THREADS=$NR_THREADS"
-elif [[ $OSTYPE == "darwin"* ]]; then
+elif [[ $platform == 'Darwin' ]]; then
    ARGS="-DMULT_THREADS=off"
 fi
 

@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <thread>
 #include <fstream>
+#include <mutex>
+#include <atomic>
 
 namespace core {
 size_t PrivateContingencyTableHelper::repeats_per_cipher() const {
@@ -46,7 +48,7 @@ open_gamma(std::vector <Publishable> &unsuppression,
     size_t bsize = block_size();
     auto modified_sizes = coprime(P.size, Q.size);
     auto bit_per = number_bits(ea->getAlMod().getPPowR());
-    std::atomic<size_t> counter(0);
+    std::atomic<size_t> counter(size_t(0));
     std::mutex tmux;
     auto program = [&]() {
         size_t sze = gamma.size();

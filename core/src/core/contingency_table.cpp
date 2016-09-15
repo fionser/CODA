@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <thread>
+#include <atomic>
 #include <algorithm>
 
 #include <NTL/ZZ.h>
