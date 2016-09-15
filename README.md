@@ -15,12 +15,8 @@ Cryptographically secure Of statistical Data Analaysis.
 * Mac OSX (llvm 6.1+, cmake 3.2+, gnu make 3.8+, perl v5.18.2+, m4 v1.4.6+)
 
 ## Install
-        mkdir build
-	cd build
-	./build.script
-	./build.script -DBUILD_core=on
-	./build.script -DBUILD_ui=on
-	cd bin
+	bash build.sh
+	cd build/bin
 
 ## Licence
 CODA is distributed under the terms of the [GNU General Public License ](https://www.gnu.org/licenses/gpl.html) (GPL).  
