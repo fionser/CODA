@@ -19,6 +19,7 @@ endif(${BUILD_gmp} OR ${BUILD_lib})
 
 
 set(NTL_PATH ${PROJECT_BINARY_DIR}/tmp/ntl)
+string(TOLOWER ${MULT_THREADS} NTL_THREADS)
 if(${BUILD_lib})
 ExternalProject_Add(NTL
     DEPENDS GMP
@@ -28,7 +29,7 @@ ExternalProject_Add(NTL
     DOWNLOAD_DIR ${NTL_PATH}/download
     URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.10.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
-    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
+    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=${NTL_THREADS} PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
@@ -40,7 +41,7 @@ ExternalProject_Add(NTL
     DOWNLOAD_DIR ${NTL_PATH}/download
     URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.10.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
-    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=on PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
+    CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=${NTL_THREADS} PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
     BINARY_DIR ${NTL_PATH}/source/src/
     BUILD_COMMAND make
     INSTALL_COMMAND make install)
@@ -49,8 +50,16 @@ endif(${BUILD_lib})
 if(${BUILD_core})
 SET(NTL_INCLUDE_PATH "${PROJECT_BINARY_DIR}/include" CACHE INTERNAL "")
 include_directories(${NTL_INCLUDE_PATH})
+
+if (${MULT_THREADS})
+add_definitions(-DFHE_THREADS)
+add_definitions(-DNR_THREADS=${NR_THREADS})
+MESSAGE(STATUS "Using ${NR_THREADS} threads")
+else(${MULT_THREADS})
 add_definitions(-DNFHE_THREADS)
 add_definitions(-DNR_THREADS=1)
+endif(${MULT_THREADS})
+
 add_subdirectory(src/core core-imp)
 add_subdirectory(src/doctopt.cpp doctopt)
 add_subdirectory(src/HElib fhe)
@@ -64,8 +73,8 @@ find_library(local-ntl
 find_library(local-gmp
              NAMES libgmp.a gmp
 	     HINTS "${PROJECT_BINARY_DIR}/lib")
-MESSAGE(STATUS ${local-ntl})
-MESSAGE(STATUS ${local-gmp})
+     #MESSAGE(STATUS ${local-ntl})
+     #MESSAGE(STATUS ${local-gmp})
 target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
 target_link_libraries(search_FHE_parameter fhe ${local-ntl} ${local-gmp} pthread)
 
@@ -73,7 +82,7 @@ if (${BUILD_test})
 add_subdirectory(test test)
 add_executable(test_slot test_slot.cpp)
 target_link_libraries(test_slot fhe ${local-ntl} ${local-gmp} pthread)
-endif({${BUILD_test}})
+endif(${BUILD_test})
 
 
 endif(${BUILD_core})

@@ -11,13 +11,13 @@ Cryptographically secure Of statistical Data Analaysis.
 * ui/server - server is an manager to comunicate, resources like filesystem, on the server. written in c++.
 
 ## Requirement
-* Linux (g++ 3.6+, cmake 3.2+, perl v5.18.2+, m4 v1.4.6+)
-* Mac OSX (g++ 3.6+, cmake 3.2+, perl v5.18.2+, m4 v1.4.6+)
+* Linux (g++ 4.9+, cmake 3.2+, gnu make 3.8+, perl v5.18.2+, m4 v1.4.6+)
+* Mac OSX (llvm 6.1+, cmake 3.2+, gnu make 3.8+, perl v5.18.2+, m4 v1.4.6+)
 
 ## Install
+        mkdir build
 	cd build
 	./build.script
-	./build.script -DBUILD_lib=on
 	./build.script -DBUILD_core=on
 	./build.script -DBUILD_ui=on
 	cd bin
