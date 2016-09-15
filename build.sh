@@ -3,7 +3,7 @@ ARGS=""
 NR_THREADS=1
 platform=`uname`
 if [[ $platform == 'Linux' ]]; then
-   echo "This platform can use mult-threads. Please set the number of threads: "
+   echo "This platform can use multi-threads. Please set the number of threads: "
    read NR_THREADS
    ARGS="-DMULT_THREADS=on -DNR_THREADS=$NR_THREADS"
 elif [[ $platform == 'Darwin' ]]; then

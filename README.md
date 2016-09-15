@@ -19,8 +19,9 @@ Cryptographically secure Of statistical Data Analaysis.
 	cd build/bin
 
 For Linux platforms, we can use multi-threads programming to speed up the evaluation.
-`bash build.sh` will ask you to determine the number of threads to use. It writes as
-`This platform can use mult-threads. Please set the number of threads:` and then type into a positive number.
+`bash build.sh` will ask you to determine the number of threads to use. It writes as  
+`This platform can use multi-threads. Please set the number of threads:` 
+and then type into a positive number.
 
 ## Licence
 CODA is distributed under the terms of the [GNU General Public License ](https://www.gnu.org/licenses/gpl.html) (GPL).  
