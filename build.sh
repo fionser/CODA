@@ -16,5 +16,5 @@ mkdir -p build && cd build
 cp ../script.sh .
 chmod +x script.sh
 ./script.sh ${ARGS}
-./script.sh -DBUILD_core=on -DBUILD_test=$BUILD_test
+./script.sh ${ARGS} -DBUILD_core=on -DBUILD_test=$BUILD_test
 ./script.sh -DBUILD_ui=on
