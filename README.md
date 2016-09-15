@@ -1,42 +1,29 @@
 CODA
 ====
+---
 
-Overview
-Cryptographically secure Of statistical Data Analaysis
+## Overview  
+Cryptographically secure Of statistical Data Analaysis.
 
 ## Description
 * core - core is an engine to encrypt decrypt eval, written in c++.
 * ui/client - client is an manager to comunicate, resources like filesystem on the client computer.  written in c++.
 * ui/server - server is an manager to comunicate, resources like filesystem, on the server. written in c++.
 
-
-
-## Demo
-
-## VS. 
-
 ## Requirement
-* Linux (cmake 3.2+)
-* Mac OSX (cmake 3.2+)
+* Linux (g++ 3.6+, cmake 3.2+, perl v5.18.2+, m4 v1.4.6+)
+* Mac OSX (g++ 3.6+, cmake 3.2+, perl v5.18.2+, m4 v1.4.6+)
 
 ## Install
 	cd build
+	./build.script
 	./build.script -DBUILD_lib=on
 	./build.script -DBUILD_core=on
 	./build.script -DBUILD_ui=on
 	cd bin
 
-
-## Contribution
-
-
 ## Licence
 CODA is distributed under the terms of the [GNU General Public License ](https://www.gnu.org/licenses/gpl.html) (GPL).  
-
-## Author
-
-[tcnksm](https://github.com/tcnksm)
-
 
 
 ## Usage
@@ -66,9 +53,6 @@ This sample data is the following.
 	ANALYST NAME : analyst  
 	USER NAME : user_a user_b  
 	PROTOCOL : PROT_CON
-	INPUT FILE PATH : data_xxxx.csv
-	OUTPUT DIR PATH : session_name/Data/Enc/Send
-	META FILE PATH : session_name/Meta/meta.ini
 
 You can execute sample by the following command.
 	

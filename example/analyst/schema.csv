@@ -1,0 +1,11 @@
+sex,age,smoke,lung_cancer,hiv
+category,category,category,category,category
+2,8,2,2,2
+m:1,10s:1,yes:1,yes:1,yes:1
+f:2,20s:2,no:2,no:2,no:2
+male:1,30s:3,smoker:1,,
+female:2,40s:4,nonsmoker:2,,
+,50s:5,,,
+,60s:6,,,
+,70s:7,,,
+,80s:8,,,
