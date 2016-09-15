@@ -32,9 +32,9 @@ if [ -e CMakeCache.txt ]; then
 fi
 
 if [[ ${BUILD_LIB} == "on" ]]; then
-    echo "cmake .. -DBUILD_lib=on $1"
-    cmake .. -DBUILDLID=on $1 && make -j
+    echo "cmake .. -DBUILD_lib=on $1 $2 $3"
+    cmake .. -DBUILD_lib=on $1 $2 $3 && make -j 3
 else
-    echo "cmake .. ${LIBS_TO_BUILD} $1"
-    cmake .. ${LIBS_TO_BUILD} $1 && make -j
+    echo "cmake .. ${LIBS_TO_BUILD} $1 $2 $3"
+    cmake .. ${LIBS_TO_BUILD} $1 $2 $3 && make -j 3
 fi
