@@ -8,7 +8,9 @@
 class Protocol {
 public:
     Protocol(const std::string &description) : description(description) {}
+
     ~Protocol() {}
+
     std::string which() const { return description; }
 
     bool genKeypair(const std::string &metaPath) const;
@@ -17,18 +19,18 @@ public:
                          const std::string &outputDirPath,
                          bool local_compute,
                          core::pk_ptr pk,
-                         core::context_ptr context) = 0;
+                         core::context_ptr context) const = 0;
 
     virtual bool decrypt(const std::string &inputFilePath,
                          const std::string &outputDirPath,
                          core::pk_ptr pk,
                          core::sk_ptr sk,
-                         core::context_ptr context) = 0;
+                         core::context_ptr context) const = 0;
 
     virtual bool evaluate(const std::vector<std::string> &inputDirs,
                           const std::string &outputDir,
                           core::pk_ptr pk,
-                          core::context_ptr context) = 0;
+                          core::context_ptr context) const = 0;
 
 protected:
     virtual core::FHEArg parameters() const = 0;

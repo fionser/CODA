@@ -1,6 +1,6 @@
-#include "HELib/FHE.h"
-#include "HELib/NumbTh.h"
-#include "HELib/EncryptedArray.h"
+#include "HElib/FHE.h"
+#include "HElib/NumbTh.h"
+#include "HElib/EncryptedArray.h"
 #include <iostream>
 
 void Test(long m, long p, long r, long L)

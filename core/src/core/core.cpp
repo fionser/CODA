@@ -3,7 +3,7 @@
 #include <core/global.hpp>
 
 #include "HElib/FHE.h"
-#include "HElib/FHEcontext.h"
+#include "HElib/FHEContext.h"
 #include "core/core.hpp"
 #include "core/file_util.hpp"
 #include "core/protocol.hpp"

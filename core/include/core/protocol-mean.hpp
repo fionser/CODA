@@ -1,25 +1,14 @@
-//
-// Created by riku on 2016/08/09.
-//
-
-#ifndef CODA_CLION_PROTOCOL_CONTINGENCY_HPP
-#define CODA_CLION_PROTOCOL_CONTINGENCY_HPP
+#ifndef CORE_PROTOCOL_MEAN_HPP
+#define CORE_PROTOCOL_MEAN_HPP
 #include "protocol.hpp"
-#include "contingency_table.hpp"
 
 #include <string>
 #include <memory>
 
-#define CT_ON_DEMAND 1
-namespace contingency_table {
-class ProtocolImp;
-}
-
-class ContingencyTableProtocol : public Protocol {
+class MeanProtocol : public Protocol {
 public:
-    ContingencyTableProtocol(int p = 0, int q = 0, long threshold = 2);
-
-    ~ContingencyTableProtocol() {}
+    MeanProtocol();
+    ~MeanProtocol() {}
 
     bool encrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
@@ -37,9 +26,12 @@ public:
                   const std::string &outputDir,
                   core::pk_ptr pk,
                   core::context_ptr context) const override;
+
 protected:
     core::FHEArg parameters() const override;
+
 private:
-    std::shared_ptr<contingency_table::ProtocolImp> imp;
+    class ProtocolImp;
+    std::shared_ptr<ProtocolImp> imp;
 };
-#endif //CODA_CLION_PROTOCOL_CONTINGENCY_HPP
+#endif // CORE_PROTOCOL_MEAN_HPP

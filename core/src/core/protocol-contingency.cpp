@@ -6,9 +6,10 @@
 #include "../../include/core/global.hpp"
 #include "../../include/core/file_util.hpp"
 #include "../../include/core/literal.hpp"
-#include "../../include/HElib/EncryptedArray.h"
 #include "../../include/core/core.hpp"
 #include "../../include/core/ctxt_util.hpp"
+
+#include "../../include/HElib/EncryptedArray.h"
 #include <fstream>
 #include <memory>
 #include <sstream>
@@ -121,53 +122,54 @@ public:
                  const std::string &outputDirPath,
                  bool local_compute,
                  core::pk_ptr pk,
-                 core::context_ptr context);
+                 core::context_ptr context) const;
 
     bool decrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
                  core::pk_ptr pk,
                  core::sk_ptr sk,
-                 core::context_ptr context);
+                 core::context_ptr context) const;
 
     bool evaluate(const std::vector<std::string> &inputDirs,
                   const std::string &outputDir,
                   core::pk_ptr pk,
-                  core::context_ptr context);
+                  core::context_ptr context) const;
 private:
     bool doEncrypt(std::ifstream &fin,
                    const std::string &outputDirPath,
                    const std::vector<core::Attribute> &attributes,
                    core::pk_ptr pk,
-                   const EncryptedArray *ea);
+                   const EncryptedArray *ea) const;
 
     bool localEncrypt(std::ifstream &fin,
                       const std::string &outputDirPath,
                       const std::vector<core::Attribute> &attributes,
                       core::pk_ptr pk,
-                      const EncryptedArray *ea);
+                      const EncryptedArray *ea) const;
 
     bool doEvaluate(const std::vector<std::string> &inputDirs,
                     const std::string &outputDir,
                     const std::vector<core::Attribute> &attributes,
-                    core::pk_ptr pk, core::context_ptr context);
+                    core::pk_ptr pk, core::context_ptr context) const;
 
     bool localEvaluate(const std::vector<std::string> &inputDirs,
                        const std::string &outputDir,
                        const std::vector<core::Attribute> &attributes,
-                       core::pk_ptr pk, core::context_ptr context);
+                       core::pk_ptr pk, core::context_ptr context) const;
 
     bool createDoneFile(const std::string &path,
                         bool local_computed,
                         const std::vector<core::Attribute> &attributes,
-                        const std::vector<std::pair<int32_t, int32_t>> &pairs);
+                        const std::vector<std::pair<int32_t, int32_t>> &pairs) const;
 
     void encode(NTL::ZZX &poy,
                 const std::vector<std::string> &values,
                 const std::vector<core::Attribute> &attributes,
-                const EncryptedArray *ea);
+                const EncryptedArray *ea) const;
 
-    std::vector<core::Attribute> parseHeader(const std::string &file_path);
-    std::vector<core::Attribute> parseHeader(std::istream &in);
+    std::vector<core::Attribute> parseHeader(const std::string &file_path) const;
+
+    std::vector<core::Attribute> parseHeader(std::istream &in) const;
     const int _p, _q;
     const long _threshold;
 };
@@ -176,7 +178,7 @@ bool ProtocolImp::encrypt(const std::string &inputFilePath,
                           const std::string &outputDirPath,
                           bool local_compute,
                           core::pk_ptr pk,
-                          core::context_ptr context)
+                          core::context_ptr context) const
 {
     std::ifstream fin(inputFilePath, std::ios::binary);
     if (!fin.is_open()) {
@@ -232,7 +234,7 @@ bool ProtocolImp::localEncrypt(std::ifstream &fin,
                                const std::string &outputDirPath,
                                const std::vector <core::Attribute> &attributes,
                                core::pk_ptr pk,
-                               const EncryptedArray *ea)
+                               const EncryptedArray *ea) const
 {
     size_t nr_attributes = attributes.size();
 
@@ -287,7 +289,7 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
                             const std::string &outputDirPath,
                             const std::vector<core::Attribute> &attributes,
                             core::pk_ptr pk,
-                            const EncryptedArray *ea)
+                            const EncryptedArray *ea) const
 {
     size_t nr_attributes = attributes.size();
     auto makePath = [](std::string const& path, const long count) -> std::string {
@@ -296,7 +298,7 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
 
     long file_nr = 1;
     long ctx_dumped = 0;
-    std::ofstream fout(makePath(outputDirPath, file_nr), std::ios::binary | std::ios::out);
+    std::ofstream fout(makePath(outputDirPath, file_nr), std::ios::binary);
     if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create new files under {0}", outputDirPath);
         return false;
@@ -332,7 +334,8 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
 void ProtocolImp::encode(NTL::ZZX &poly,
                          const std::vector<std::string> &values,
                          const std::vector<core::Attribute> &attributes,
-                         const EncryptedArray *ea) {
+                         const EncryptedArray *ea) const 
+{
     size_t nr_attributes = attributes.size();
     std::vector<long> slots(ea->size(), 0);   
     size_t offset = 0;
@@ -346,14 +349,14 @@ void ProtocolImp::encode(NTL::ZZX &poly,
     ea->encode(poly, slots);
 }
 
-std::vector<core::Attribute> ProtocolImp::parseHeader(const std::string &in) {
+std::vector<core::Attribute> ProtocolImp::parseHeader(const std::string &in) const {
     std::ifstream fin(in);
     auto res = parseHeader(fin);
     fin.close();
     return res;
 }
 
-std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) {
+std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) const {
     std::vector<core::Attribute> attributes;
     std::string line;
     std::getline(in, line); 
@@ -377,7 +380,8 @@ std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) {
 bool ProtocolImp::createDoneFile(const std::string &path,
                                  bool local_computed,
                                  const std::vector<core::Attribute> &attributes,
-                                 const std::vector<std::pair<int32_t, int32_t>> &pairs) {
+                                 const std::vector<std::pair<int32_t, int32_t>> &pairs) const
+{
     auto fd = util::createDoneFile(path);
     if (!fd) {
         L_WARN(global::_console, "Can not create done file under {0}", path);
@@ -404,7 +408,7 @@ bool ProtocolImp::createDoneFile(const std::string &path,
 bool ProtocolImp::decrypt(const std::string &inputFilePath,
                           const std::string &outputDirPath, 
                           core::pk_ptr pk, core::sk_ptr sk,
-                          core::context_ptr context)
+                          core::context_ptr context) const
 {
     std::string doneFile = util::concatenate(util::getDirPath(inputFilePath), global::_doneFileName);
     std::ifstream fin(doneFile, std::ios::binary);
@@ -427,7 +431,7 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
     std::vector<core::PrivateContingencyTableHelper::Publishable> publishables;
     helper.open_gamma(publishables, results.gamma, results.tilde_gamma, ea, sk);
     auto table = helper.final_decrypt(results.n_uv, publishables, sk, ea);
-    std::ofstream fout(util::concatenate(outputDirPath, "FILE_1"), std::ios::binary);
+    std::ofstream fout(util::concatenate(outputDirPath, core::core_setting.decrypted_file), std::ios::binary);
     if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create new file under {0}", outputDirPath);
         return false;
@@ -444,7 +448,8 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
 
 bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
                            const std::string &outputDir, core::pk_ptr pk,
-                           core::context_ptr context) {
+                           core::context_ptr context) const 
+{
     std::ifstream fin(util::concatenate(inputDirs.front(), global::_doneFileName));
     if (!fin.is_open()) {
         L_WARN(global::_console, "Can not open {0}", global::_doneFileName);
@@ -475,7 +480,8 @@ static size_t get_index(int p, int q, int nr_attr) {
 bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
                                 const std::string &outputDir,
                                 const std::vector<core::Attribute> &attributes,
-                                core::pk_ptr pk, core::context_ptr context) {
+                                core::pk_ptr pk, core::context_ptr context) const 
+{
     size_t nr_attribute = attributes.size();
     long pIndex = ATTR_INDEX(_p);
     long qIndex = ATTR_INDEX(_q);
@@ -531,7 +537,8 @@ bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
 bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
                              const std::string &outputDir,
                              const std::vector<core::Attribute> &attributes,
-                             core::pk_ptr pk, core::context_ptr context) {
+                             core::pk_ptr pk, core::context_ptr context) const
+{
     size_t nr_attribute = attributes.size();
     long pIndex = ATTR_INDEX(_p);
     long qIndex = ATTR_INDEX(_q);
@@ -581,7 +588,7 @@ bool ContingencyTableProtocol::encrypt(const std::string &inputFilePath,
                                        const std::string &outputDirPath,
                                        bool local_compute,
                                        core::pk_ptr pk,
-                                       core::context_ptr context)
+                                       core::context_ptr context) const
 {
     return imp->encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
 }
@@ -589,14 +596,14 @@ bool ContingencyTableProtocol::encrypt(const std::string &inputFilePath,
 bool ContingencyTableProtocol::decrypt(const std::string &inputFilePath,
                                        const std::string &outputDirPath,
                                        core::pk_ptr pk, core::sk_ptr sk,
-                                       core::context_ptr context)
+                                       core::context_ptr context) const
 {
     return imp->decrypt(inputFilePath, outputDirPath, pk, sk, context);
 }
 
 bool ContingencyTableProtocol::evaluate(const std::vector <std::string> &inputDirs,
                                         const std::string &outputDir, core::pk_ptr pk,
-                                        core::context_ptr context)
+                                        core::context_ptr context) const
 {
     return imp->evaluate(inputDirs, outputDir, pk, context);
 }
