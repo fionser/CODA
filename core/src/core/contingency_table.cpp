@@ -14,14 +14,6 @@
 #include <atomic>
 #include <algorithm>
 
-#include <NTL/ZZ.h>
-
-#ifdef FHE_THREADS
-#warning "Using #NR_THREADS threads"
-#else
-#warning "Using single threads"
-#endif
-
 namespace core {
 static long toCRTIndex(long i, long p1, long p2) {
     auto u = i / p2;
