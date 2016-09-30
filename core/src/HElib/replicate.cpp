@@ -51,10 +51,10 @@ void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first
   long dim = ea.dimension();
 
   for (long d = 0; d < dim; d++) {
-    if (!ea.nativeDimension(d)) {
+    //if (!ea.nativeDimension(d)) {
       long shamt = -ea.coordinate(d, pos);
       ea.rotate1D(ctxt, d, shamt, true); // "don't care"
-    }
+    //}
 
     Ctxt ctxt_orig = ctxt; 
 
@@ -62,16 +62,15 @@ void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first
     assert(first_k > 0 && sz >= first_k);
     long k = NumBits(first_k);
     long e = 1;
-
     // now process bits k-2 down to 0
     for (long j = k-2; j >= 0; j--) {
       // e -> 2*e
       Ctxt tmp = ctxt;
       ea.rotate1D(tmp, d, e, true); // "don't care"
-      ctxt += tmp;
       e = 2*e;
-      
-      long b = bit(sz, j); // bit j of sz
+      ctxt += tmp;
+
+      long b = bit(first_k, j); // bit j of sz
       // e -> e+b
       if (b) {
         ea.rotate1D(ctxt, d, 1, true); // "don't care"

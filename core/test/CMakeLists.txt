@@ -41,3 +41,6 @@ TARGET_LINK_LIBRARIES(test_protocol_mean core-imp fhe ${local-ntl} ${local-gmp} 
 
 ADD_EXECUTABLE(test_dumpkeys TestDumpKeys.cpp)
 TARGET_LINK_LIBRARIES(test_dumpkeys fhe ${local-ntl} ${local-gmp} pthread)
+
+ADD_EXECUTABLE(test_matmult TestMatMult.cpp.cpp)
+TARGET_LINK_LIBRARIES(test_matmult fhe ${local-ntl} ${local-gmp} )
