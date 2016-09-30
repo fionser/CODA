@@ -27,7 +27,7 @@ ExternalProject_Add(NTL
     TMP_DIR ${NTL_PATH}/tmp
     STAMP_DIR ${NTL_PATH}/stmp
     DOWNLOAD_DIR ${NTL_PATH}/download
-    URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.10.0.tar.gz
+    URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.11.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
     CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=${NTL_THREADS} PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
     BINARY_DIR ${NTL_PATH}/source/src/
@@ -39,7 +39,7 @@ ExternalProject_Add(NTL
     TMP_DIR ${NTL_PATH}/tmp
     STAMP_DIR ${NTL_PATH}/stmp
     DOWNLOAD_DIR ${NTL_PATH}/download
-    URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.10.0.tar.gz
+    URL ${PROJECT_SOURCE_DIR}/thirdparties/ntl-9.11.0.tar.gz
     SOURCE_DIR ${NTL_PATH}/source
     CONFIGURE_COMMAND ${NTL_PATH}/source/src/configure GMP_PREFIX=${PROJECT_BINARY_DIR} NTL_GMP_LIP=on NTL_THREADS=${NTL_THREADS} PREFIX=${PROJECT_BINARY_DIR} WIZARD=off
     BINARY_DIR ${NTL_PATH}/source/src/
