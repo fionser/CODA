@@ -26,41 +26,6 @@ Mat_t MatMult(Mat_t &a, Mat_t b) {
     return res;
 }
 
-class StopReplicate {};
-
-class MatMultHandler : public ReplicateHandler {
-public:
-    MatMultHandler(const FHEPubKey &pk, const EMat_t &b)
-            : res(pk), b(b)
-    {
-        res.clear();
-    }
-
-    void handle(const Ctxt& ctxt) override {
-        if (pos >= bound) {
-            res.reLinearize();
-            throw StopReplicate();
-        }
-        auto tmp(ctxt);
-        tmp *= b.at(pos);
-        if (pos > 0)
-            res += tmp;
-        else
-            res = tmp;
-        pos++;
-    }
-
-    void setBound(long b) { if (b >= 0) bound = b; }
-    void reset() { pos = 0; res.clear(); }
-    Ctxt result() { return res; }
-
-private:
-    Ctxt res;
-    const EMat_t &b;
-    long bound = 0;
-    long pos = 0;
-};
-
 #ifdef FHE_THREADS
 #include "HElib/multicore.h"
 EMat_t MatMult(const EMat_t &a, const EMat_t &b,
@@ -109,6 +74,7 @@ EMat_t MatMult(const EMat_t &a, const EMat_t &b,
     }
     return res;
 }
+
 #endif
 
 void random(const long sze, const EncryptedArray &ea, Mat_t &m) {
@@ -177,17 +143,18 @@ int main(int argc, char *argv[]) {
     for (long i = 0; i < dim; i++) {
         ea.encrypt(emat.at(i), pk, mat.at(i));
     }
+    replicate(ea, emat[0], 2);
 
-    FHE_NTIMER_START(MatMult);
-    auto m1 = MatMult(emat, emat, dim, context);
-    FHE_NTIMER_STOP(MatMult);
-
-    FHE_NTIMER_START(decrypt);
-    auto result = decrypt(m1, dim, sk);
-    FHE_NTIMER_STOP(decrypt);
-    print(result, dim);
+//     FHE_NTIMER_START(MatMult);
+//     auto m1 = MatMult(emat, emat, dim, context);
+//     FHE_NTIMER_STOP(MatMult);
 //
-    printNamedTimer(std::cout, "MatMult");
-    printNamedTimer(std::cout, "decrypt");
+//     FHE_NTIMER_START(decrypt);
+     auto result = decrypt(emat, dim, sk);
+//     FHE_NTIMER_STOP(decrypt);
+    print(result, dim);
+// //
+//     printNamedTimer(std::cout, "MatMult");
+//     printNamedTimer(std::cout, "decrypt");
     return 0;
 }

@@ -39,3 +39,4 @@ tmp
 .idea/
 build/
 CTestTestfile.cmake
+tags
