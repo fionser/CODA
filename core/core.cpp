@@ -14,7 +14,7 @@ static const char USAGE[] =
      core gen <meta file path>
      core enc <input file path> <output dir path> <meta file path> [-l type]
      core dec <input file path> <output dir path> <meta file path>
-     core eva <session dir path> <output dir path> <meta file path> -p <protocol> [<data> ...]
+     core eva <data dir path> <output dir path> <meta file path> -p <protocol> [<data> ...]
 
    Options:
      -h --help  Show Help.
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
             return -1;
         }
     } else if (args["eva"].asBool()) {
-        auto sessionDirPath = args["<session dir path>"].asString();
+        auto dataDirPath = args["<data dir path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
 
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         if (args["<data>"])
            params = args["<data>"].asStringList();
 
-        if (!core::evaluate(sessionDirPath, outputFilePath, metaFilePath, params)) {
+        if (!core::evaluate(dataDirPath, outputFilePath, metaFilePath, params)) {
             L_ERROR(_console, "Somthing went wrong in the evaluataion");
             return -1;
         }
