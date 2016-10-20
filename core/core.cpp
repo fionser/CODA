@@ -12,7 +12,7 @@ static const char USAGE[] =
 
    Usage:
      core gen <meta file path>
-     core enc [-l type] <input file path> <output dir path> <meta file path>
+     core enc <input file path> <output dir path> <meta file path> [-l type]
      core dec <input file path> <output dir path> <meta file path>
      core eva <session dir path> <output dir path> <meta file path> -p <protocol> [<data> ...]
 
