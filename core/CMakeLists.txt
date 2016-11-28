@@ -66,7 +66,6 @@ add_subdirectory(src/HElib fhe)
 include_directories(include/)
 
 add_executable(core core.cpp)
-add_executable(search_FHE_parameter search_FHE_parameter.cpp)
 find_library(local-ntl
              NAMES libntl.a ntl
 	     HINTS "${PROJECT_BINARY_DIR}/lib")
@@ -76,11 +75,9 @@ find_library(local-gmp
      #MESSAGE(STATUS ${local-ntl})
      #MESSAGE(STATUS ${local-gmp})
 target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt)
-target_link_libraries(search_FHE_parameter fhe ${local-ntl} ${local-gmp} pthread)
 
 if (${BUILD_test})
 add_subdirectory(test test)
-add_executable(test_slot test_slot.cpp)
 target_link_libraries(test_slot fhe ${local-ntl} ${local-gmp} pthread)
 endif(${BUILD_test})
 

@@ -53,8 +53,6 @@ bool genKeypair(core::Protocol protocol,
 
     FHEcontext context(args.m, args.p, args.r);
     buildModChain(context, args.L);
-    std::cout << "SL " << context.securityLevel() << "\n";
-    std::cout << "NumOfGens " << context.zMStar.numOfGens() << "\n";
     writeContextBase(ctxtStream, context);
     ctxtStream << context;
 
