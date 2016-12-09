@@ -32,8 +32,8 @@ fi
 
 if [[ ${BUILD_LIB} == "on" ]]; then
     echo "cmake .. -DBUILD_lib=on $1 $2 $3"
-    cmake .. -DBUILD_lib=on $1 $2 $3 && make -j 3
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_lib=on $1 $2 $3 && make -j 3
 else
     echo "cmake .. ${LIBS_TO_BUILD} $1 $2 $3"
-    cmake .. ${LIBS_TO_BUILD} $1 $2 $3 && make -j 3
+    cmake .. -DCMAKE_BUILD_TYPE=Release ${LIBS_TO_BUILD} $1 $2 $3 && make -j 3
 fi
