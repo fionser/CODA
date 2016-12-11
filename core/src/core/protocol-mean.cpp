@@ -73,7 +73,7 @@ private:
 
     int parseHeader(std::ifstream &fin) const;
 
-    bool encode(NTL::ZZX &poly, const std::string &row, 
+    bool encode(NTL::ZZX &poly, const std::string &row,
                 const int attr_nr, const EncryptedArray *ea) const;
 
     bool addOneLine(std::vector<long> &numbers,
@@ -98,24 +98,24 @@ int MeanProtocol::ProtocolImp::parseHeader(std::ifstream &fin) const {
 bool MeanProtocol::ProtocolImp::doEncrypt(const std::string &inputFilePath,
                                           const std::string &outputDirPath,
                                           core::pk_ptr pk,
-                                          core::context_ptr context) const 
+                                          core::context_ptr context) const
 {
     std::ifstream fin(inputFilePath, std::ios::binary);
     if (!fin.is_open()) {
         L_ERROR(global::_console, "Can not open file {0}", inputFilePath);
         return false;
     }
-    
+
     const int number_of_attributes = parseHeader(fin);
     if (number_of_attributes <= 0) {
         L_ERROR(global::_console, "Invalid header of {0}", inputFilePath);
         return false;
     }
-    
+
     long file_nr = 1;
     std::ofstream fout(makePath(outputDirPath, file_nr), std::ios::binary);
     if (!fout.is_open()) {
-        L_WARN(global::_console, 
+        L_WARN(global::_console,
                "Can not create new files under {0}", outputDirPath);
         return false;
     }
@@ -158,7 +158,7 @@ bool MeanProtocol::ProtocolImp::localEncrypt(const std::string &inputFilePath,
         L_ERROR(global::_console, "Can not open file {0}", inputFilePath);
         return false;
     }
-    
+
     std::ofstream fout(makePath(outputDirPath, 1), std::ios::binary);
     if (!fout.is_open()) {
         L_ERROR(global::_console, "Can not create new file in {0}", outputDirPath);
@@ -200,16 +200,16 @@ bool MeanProtocol::ProtocolImp::decrypt(const std::string &inputFilePath,
                                         core::pk_ptr pk,
                                         core::sk_ptr sk,
                                         core::context_ptr context) const {
-    std::string dir = util::getDirPath(inputFilePath); 
+    std::string dir = util::getDirPath(inputFilePath);
     std::string doneFilePath = util::concatenate(dir, global::_doneFileName);
     std::ifstream doneFile(doneFilePath, std::ios::binary);
     if (!doneFile.is_open()) {
         L_ERROR(global::_console, "Can not found {0}", doneFilePath);
         return false;
     }
-    
+
     int nr_attrs = parseHeader(doneFile);
-    if (nr_attrs <= 0) { 
+    if (nr_attrs <= 0) {
         L_ERROR(global::_console, "Invalid {0}", doneFilePath);
         doneFile.close();
         return false;
@@ -242,16 +242,16 @@ bool MeanProtocol::ProtocolImp::decrypt(const std::string &inputFilePath,
     for (int i = 0; i < nr_attrs; i++) positions[i] = i;
     ea->decodeSlots(results, poly, positions);
 
-    std::ofstream fout(util::concatenate(outputDirPath, core::core_setting.decrypted_file), 
+    std::ofstream fout(util::concatenate(outputDirPath, core::core_setting.decrypted_file),
                        std::ios::binary);
     if (!fout.is_open()) {
         L_ERROR(global::_console, "Can not create new file in {0}", outputDirPath);
     }
-    
+
     for (auto res : results) {
-        fout << res * 1.0 / nr_records << " "; 
+        fout << res * 1.0 / nr_records << " ";
     }
-    fout.close(); 
+    fout.close();
 
     DoneFileContent content = { .local_computed = local_computed, .nr_attrs = nr_attrs, .nr_records = nr_records };
     return createDoneFile(outputDirPath, content);
@@ -260,7 +260,7 @@ bool MeanProtocol::ProtocolImp::decrypt(const std::string &inputFilePath,
 bool MeanProtocol::ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
                                          const std::string &outputDir,
                                          core::pk_ptr pk,
-                                         core::context_ptr context) const 
+                                         core::context_ptr context) const
 {
     std::ifstream fin(util::concatenate(inputDirs.front(), global::_doneFileName));
     if (!fin.is_open()) {
@@ -291,7 +291,7 @@ doEvaluate(const std::vector<std::string> &inputDirs,
            const std::string &outputDir,
            const DoneFileContent &content,
            core::pk_ptr pk,
-           core::context_ptr context) const 
+           core::context_ptr context) const
 {
     auto resultFile = util::concatenate(outputDir, "FILE_1");
     std::ofstream fout(resultFile, std::ios::binary);
@@ -303,10 +303,10 @@ doEvaluate(const std::vector<std::string> &inputDirs,
     Ctxt ctx(*pk);
     int nr_records = 0;
     for (const auto &dir : inputDirs) {
-        auto files = util::listDir(dir, util::flag_t::FILE_ONLY);         
+        auto files = util::listDir(dir, util::flag_t::FILE_ONLY);
         for (const auto &file : files) {
             if (file.find("FILE_") != 0) continue;
-            std::list<Ctxt> ctxs; 
+            std::list<Ctxt> ctxs;
             auto fullPath = util::concatenate(dir, file);
             if (!core::loadCiphers(ctxs, pk, fullPath)) return false;
             for (auto &ct : ctxs) {
@@ -314,10 +314,10 @@ doEvaluate(const std::vector<std::string> &inputDirs,
                 nr_records += 1;
             }
         }
-    }  
+    }
     assert(content.nr_records == nr_records && "Seems cipher files are invalid");
     fout.close();
-    
+
     fout = std::ofstream(makePath(outputDir, 1), std::ios::binary);
     if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create new file in {0}", outputDir);
@@ -333,7 +333,7 @@ localEvaluate(const std::vector<std::string> &inputDirs,
               const std::string &outputDir,
               const DoneFileContent &content,
               core::pk_ptr pk,
-              core::context_ptr context) const 
+              core::context_ptr context) const
 {
     return false;
 }
@@ -353,7 +353,7 @@ bool MeanProtocol::ProtocolImp::addOneLine(std::vector<long> &numbers,
 }
 
 bool MeanProtocol::ProtocolImp::
-encode(NTL::ZZX &poly, const std::string &row, 
+encode(NTL::ZZX &poly, const std::string &row,
        const int attr_nr, const EncryptedArray *ea) const {
     auto fields = util::splitBySpace(row);
     if (fields.size() != attr_nr) {
@@ -371,7 +371,7 @@ encode(NTL::ZZX &poly, const std::string &row,
     return true;
 }
 
-bool MeanProtocol::ProtocolImp::createDoneFile(const std::string &dir, 
+bool MeanProtocol::ProtocolImp::createDoneFile(const std::string &dir,
                                                const DoneFileContent &content) const {
     auto fd = util::createDoneFile(dir);
     if (!fd) {
@@ -397,7 +397,7 @@ bool MeanProtocol::encrypt(const std::string &inputFilePath,
                            const std::string &outputDirPath,
                            bool local_compute,
                            core::pk_ptr pk,
-                           core::context_ptr context) const {
+                           core::context_ptr context) {
     return imp->encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
 }
 
@@ -405,14 +405,15 @@ bool MeanProtocol::decrypt(const std::string &inputFilePath,
                            const std::string &outputDirPath,
                            core::pk_ptr pk,
                            core::sk_ptr sk,
-                           core::context_ptr context) const {
+                           core::context_ptr context) {
     return imp->decrypt(inputFilePath, outputDirPath, pk, sk, context);
 }
 
 bool MeanProtocol::evaluate(const std::vector<std::string> &inputDirs,
                             const std::string &outputDir,
+                            const std::vector<std::string> &/*params*/,
                             core::pk_ptr pk,
-                            core::context_ptr context) const {
+                            core::context_ptr context) {
     return imp->evaluate(inputDirs, outputDir, pk, context);
 }
 

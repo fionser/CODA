@@ -19,7 +19,7 @@ int main () {
     FHE_NTIMER_START(EVALUATE);
     std::vector<std::string> dirs;
     dirs.push_back("test-dir-1");
-    mean.evaluate(dirs, "evaluated", pk, context);
+    mean.evaluate(dirs, "evaluated", {""}, pk, context);
     FHE_NTIMER_STOP(EVALUATE);
     printNamedTimer(std::cout, "EVALUATE");
 

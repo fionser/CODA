@@ -214,7 +214,7 @@ static std::vector<long> parseRow(const std::string &line,
     std::vector<long> numbers;
     auto fields = util::splitBySpace(line);
     if (fields.size() != attributes.size()) {
-        L_WARN(global::_console, "Mismatch the number of attributes: {0} and {1}",
+        L_WARN(global::_console, "Mismatch the number of attributes: got {0} but need {1}",
                fields.size(), attributes.size());
         return numbers;
     }
@@ -356,6 +356,7 @@ std::vector<core::Attribute> ProtocolImp::parseHeader(const std::string &in) con
     return res;
 }
 
+// header = #<attribute_nr><space><attr1_size><space><attr2_size> ....
 std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) const {
     std::vector<core::Attribute> attributes;
     std::string line;
@@ -365,7 +366,9 @@ std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) const {
         attributes.reserve(attr_sizes.size());
         size_t offset = 0;
         core::Attribute attribute;
-        for (auto s : attr_sizes) {
+        long attr_number = literal::stol(attr_sizes[0]);
+        for (size_t i = 1; i < attr_sizes.size(); ++i) {
+            const std::string &s(attr_sizes[i]);
             attribute.size = literal::stol(s);
             attribute.offset = offset;
             attribute.type = core::Attribute::Type::CATEGORICAL;
@@ -373,6 +376,8 @@ std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) const {
             attributes.push_back(attribute);
             offset += attribute.size;
         }
+        if (attr_number != attributes.size())
+            L_WARN(global::_console, "Invalid header: need {0} attributes but got {1}", attr_number, attributes.size());
     }
     return attributes;
 }
@@ -391,6 +396,7 @@ bool ProtocolImp::createDoneFile(const std::string &path,
     std::stringstream sstream;
     sstream << '#';
     auto nr = attributes.size();
+    sstream << nr << " ";
     for (size_t i = 0; i + 1 < nr; i++)
         sstream << std::to_string(attributes[i].size) << " ";
     sstream << std::to_string(attributes.back().size) << '\n';
@@ -447,7 +453,8 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
 }
 
 bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
-                           const std::string &outputDir, core::pk_ptr pk,
+                           const std::string &outputDir,
+                           core::pk_ptr pk,
                            core::context_ptr context) const
 {
     std::ifstream fin(util::concatenate(inputDirs.front(), global::_doneFileName));
@@ -579,33 +586,46 @@ bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
 
 } // namespace contingency_table
 
-ContingencyTableProtocol::ContingencyTableProtocol(int p, int q, long T)
+ContingencyTableProtocol::ContingencyTableProtocol(int /*p*/, int /*q*/, long /*T*/)
         : Protocol(std::string("Contingency Table"))
 {
-    imp = std::make_shared<contingency_table::ProtocolImp>(p, q, T);
+    imp = nullptr;
 }
 
 bool ContingencyTableProtocol::encrypt(const std::string &inputFilePath,
                                        const std::string &outputDirPath,
                                        bool local_compute,
                                        core::pk_ptr pk,
-                                       core::context_ptr context) const
+                                       core::context_ptr context)
 {
+    if (!imp)
+        imp = std::make_shared<contingency_table::ProtocolImp>(0, 0, 0);
     return imp->encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
 }
 
 bool ContingencyTableProtocol::decrypt(const std::string &inputFilePath,
                                        const std::string &outputDirPath,
                                        core::pk_ptr pk, core::sk_ptr sk,
-                                       core::context_ptr context) const
+                                       core::context_ptr context)
 {
+    if (!imp)
+        imp = std::make_shared<contingency_table::ProtocolImp>(0, 0, 0);
     return imp->decrypt(inputFilePath, outputDirPath, pk, sk, context);
 }
 
 bool ContingencyTableProtocol::evaluate(const std::vector <std::string> &inputDirs,
-                                        const std::string &outputDir, core::pk_ptr pk,
-                                        core::context_ptr context) const
+                                        const std::string &outputDir,
+                                        const std::vector<std::string> &params,
+                                        core::pk_ptr pk,
+                                        core::context_ptr context)
 {
+    if (params.size() < 2) return false;
+    int p = literal::stol(params[0]);
+    int q = literal::stol(params[1]);
+    long T = 2;
+    if (params.size() == 3) T = literal::stol(params[2]);
+
+    imp = std::make_shared<contingency_table::ProtocolImp>(p, q, T);
     return imp->evaluate(inputDirs, outputDir, pk, context);
 }
 
@@ -617,41 +637,3 @@ core::FHEArg ContingencyTableProtocol::parameters() const {
     args.r = 1;
     return args;
 }
-
-namespace protocol {
-namespace contingency {
-extern const core::FHEArg _fheArgs = {.m = 16384, .p = 8191, .r = 1, .L = 10};
-
-bool encrypt(const std::string &inputFilePath,
-             const std::string &outputDirPath,
-             bool local_compute,
-             core::pk_ptr pk,
-             core::context_ptr context) {
-    ContingencyTableProtocol ct;
-    return ct.encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
-}
-
-bool decrypt(const std::string &inputFilePath,
-             const std::string &outputFilePath,
-             core::pk_ptr pk,
-             core::sk_ptr sk,
-             core::context_ptr context) {
-    ContingencyTableProtocol ct;
-    return ct.decrypt(inputFilePath, outputFilePath, pk, sk, context);
-}
-
-bool evaluate(const std::vector <std::string> &inputDirs,
-              const std::string &outputDir,
-              const std::vector<std::string> &params,
-              core::pk_ptr pk,
-              core::context_ptr context) {
-    if (params.size() < 2) return false;
-    int p = literal::stol(params[0]);
-    int q = literal::stol(params[1]);
-    long T = 2;
-    if (params.size() == 3) T = literal::stol(params[2]);
-    ContingencyTableProtocol ct(p, q, T);
-    return ct.evaluate(inputDirs, outputDir, pk, context);
-}
-} // namespace protocol
-} // namespace core
