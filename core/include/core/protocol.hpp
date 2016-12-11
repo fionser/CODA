@@ -39,9 +39,19 @@ private:
     std::string description;
 };
 
-namespace core {
-static std::shared_ptr<Protocol> __currentProtocol = nullptr;
-} // namespace core
+class CurrentProtocol {
+public:
+    static std::shared_ptr<Protocol> get() { return instance_; }
+    static void set(std::shared_ptr<Protocol> in) { instance_ = in; }
+private:
+    CurrentProtocol() {}
+    ~CurrentProtocol() {}
+    CurrentProtocol(const CurrentProtocol &oth) = delete;
+    CurrentProtocol(CurrentProtocol &&oth) = delete;
+    CurrentProtocol& operator=(const CurrentProtocol &oth) = delete;
+private:
+    static std::shared_ptr<Protocol> instance_;
+};
 
 namespace protocol {
 bool genKeypair(core::Protocol protocol,

@@ -78,7 +78,6 @@ target_link_libraries(core core-imp fhe ${local-ntl} ${local-gmp} pthread docopt
 
 if (${BUILD_test})
 add_subdirectory(test test)
-target_link_libraries(test_slot fhe ${local-ntl} ${local-gmp} pthread)
 endif(${BUILD_test})
 
 

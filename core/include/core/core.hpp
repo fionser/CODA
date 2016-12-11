@@ -1,12 +1,13 @@
 #ifndef CORE_CORE_H
 #define CORE_CORE_H
+#include "coda.hpp"
+
 #include <vector>
 #include <list>
-#include "coda.hpp"
-namespace core {
-bool setCurrentProtocol(std::string description);
+#include <memory>
 
-bool genKeypair(Protocol protocol, const std::string &meta_file_path);
+namespace core {
+bool setProtocol(const std::string &description);
 
 context_ptr loadContext(bool *ok, const std::string &contextFile);
 
@@ -21,6 +22,8 @@ bool loadCiphers(std::list<Ctxt>& out, const pk_ptr &pk, const std::string &file
 bool dumpCiphers(const std::list<Ctxt>& ciphers, const std::string &file);
 
 bool dumpCiphers(const std::vector<Ctxt *>& ciphers, const std::string &file);
+
+bool genKeypair();
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,

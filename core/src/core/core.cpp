@@ -7,19 +7,40 @@
 #include "core/core.hpp"
 #include "core/file_util.hpp"
 #include "core/protocol.hpp"
+#include "core/protocol-mean.hpp"
+#include "core/protocol-contingency.hpp"
 namespace core {
-bool genKeypair(Protocol protocol, const std::string &metaFilePath) {
-    std::string dirPath = util::getDirPath(metaFilePath);
-    std::ofstream skStream(util::concatenate(dirPath, "fhe_key.sk"), std::ios::binary);
-    std::ofstream ctxtStream(util::concatenate(dirPath, "fhe_key.ctxt"), std::ios::binary);
-    std::ofstream pkStream(util::concatenate(dirPath, "fhe_key.pk"), std::ios::binary);
-    if (!skStream.is_open() || !ctxtStream.is_open() || !pkStream.is_open())
+bool setProtocol(const std::string &protocol) {
+
+    switch (getProtocol(protocol)) {
+    case core::Protocol::PROT_CI2:
+        //__currentProtocol = nullptr;
+        return true;
+    case core::Protocol::PROT_CON:
+        CurrentProtocol::set(std::make_shared<ContingencyTableProtocol>());
+        return true;
+    case core::Protocol::PROT_MEAN:
+        CurrentProtocol::set(std::make_shared<MeanProtocol>());
+        return true;
+    default:
         return false;
-    bool ok = protocol::genKeypair(protocol, skStream, ctxtStream, pkStream);
-    skStream.close();
-    ctxtStream.close();
-    pkStream.close();
-    return ok;
+    }
+}
+
+
+bool genKeypair() {
+    return false;
+    // std::string dirPath = util::getDirPath(metaFilePath);
+    // std::ofstream skStream(util::concatenate(dirPath, "fhe_key.sk"), std::ios::binary);
+    // std::ofstream ctxtStream(util::concatenate(dirPath, "fhe_key.ctxt"), std::ios::binary);
+    // std::ofstream pkStream(util::concatenate(dirPath, "fhe_key.pk"), std::ios::binary);
+    // if (!skStream.is_open() || !ctxtStream.is_open() || !pkStream.is_open())
+    //     return false;
+    // bool ok = protocol::genKeypair(protocol, skStream, ctxtStream, pkStream);
+    // skStream.close();
+    // ctxtStream.close();
+    // pkStream.close();
+    // return ok;
 }
 
 context_ptr loadContext(bool *ok, const std::string &contextFile) {

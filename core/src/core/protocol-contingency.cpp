@@ -294,7 +294,7 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
     size_t nr_attributes = attributes.size();
     auto makePath = [](std::string const& path, const long count) -> std::string {
         return path + literal::separator + "FILE_" + std::to_string(count);
-    }; 
+    };
 
     long file_nr = 1;
     long ctx_dumped = 0;
@@ -334,10 +334,10 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
 void ProtocolImp::encode(NTL::ZZX &poly,
                          const std::vector<std::string> &values,
                          const std::vector<core::Attribute> &attributes,
-                         const EncryptedArray *ea) const 
+                         const EncryptedArray *ea) const
 {
     size_t nr_attributes = attributes.size();
-    std::vector<long> slots(ea->size(), 0);   
+    std::vector<long> slots(ea->size(), 0);
     size_t offset = 0;
     for (size_t i = 0; i < nr_attributes; i++) {
         long attribute_value = literal::stol(values[i]);
@@ -359,7 +359,7 @@ std::vector<core::Attribute> ProtocolImp::parseHeader(const std::string &in) con
 std::vector<core::Attribute> ProtocolImp::parseHeader(std::istream &in) const {
     std::vector<core::Attribute> attributes;
     std::string line;
-    std::getline(in, line); 
+    std::getline(in, line);
     if (line.c_str()[0] == '#') {
         auto attr_sizes = util::splitBySpace(line.substr(1));
         attributes.reserve(attr_sizes.size());
@@ -406,7 +406,7 @@ bool ProtocolImp::createDoneFile(const std::string &path,
 }
 
 bool ProtocolImp::decrypt(const std::string &inputFilePath,
-                          const std::string &outputDirPath, 
+                          const std::string &outputDirPath,
                           core::pk_ptr pk, core::sk_ptr sk,
                           core::context_ptr context) const
 {
@@ -448,7 +448,7 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
 
 bool ProtocolImp::evaluate(const std::vector<std::string> &inputDirs,
                            const std::string &outputDir, core::pk_ptr pk,
-                           core::context_ptr context) const 
+                           core::context_ptr context) const
 {
     std::ifstream fin(util::concatenate(inputDirs.front(), global::_doneFileName));
     if (!fin.is_open()) {
@@ -474,13 +474,14 @@ static size_t get_index(int p, int q, int nr_attr) {
             idx += 1;
         }
     }
+    return idx;
     assert(0);
 }
 
 bool ProtocolImp::localEvaluate(const std::vector<std::string> &inputDirs,
                                 const std::string &outputDir,
                                 const std::vector<core::Attribute> &attributes,
-                                core::pk_ptr pk, core::context_ptr context) const 
+                                core::pk_ptr pk, core::context_ptr context) const
 {
     size_t nr_attribute = attributes.size();
     long pIndex = ATTR_INDEX(_p);

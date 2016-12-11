@@ -4,6 +4,9 @@
 #include "HElib/FHEContext.h"
 
 #include <fstream>
+
+std::shared_ptr<Protocol> CurrentProtocol::instance_ = nullptr;
+
 bool Protocol::genKeypair(const std::string &metaPath) const {
     auto args = parameters();
     FHEcontext context(args.m, args.p, args.r);
