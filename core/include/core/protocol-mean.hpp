@@ -14,18 +14,19 @@ public:
                  const std::string &outputDirPath,
                  bool local_compute,
                  core::pk_ptr pk,
-                 core::context_ptr context) const override;
+                 core::context_ptr context) override;
 
     bool decrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
                  core::pk_ptr pk,
                  core::sk_ptr sk,
-                 core::context_ptr context) const override;
+                 core::context_ptr context) override;
 
     bool evaluate(const std::vector<std::string> &inputDirs,
                   const std::string &outputDir,
+                  const std::vector<std::string> &params,
                   core::pk_ptr pk,
-                  core::context_ptr context) const override;
+                  core::context_ptr context) override;
 
 protected:
     core::FHEArg parameters() const override;

@@ -7,8 +7,6 @@
 #include <memory>
 
 namespace core {
-bool setProtocol(const std::string &description);
-
 context_ptr loadContext(bool *ok, const std::string &contextFile);
 
 pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile);
@@ -23,7 +21,7 @@ bool dumpCiphers(const std::list<Ctxt>& ciphers, const std::string &file);
 
 bool dumpCiphers(const std::vector<Ctxt *>& ciphers, const std::string &file);
 
-bool genKeypair();
+bool genKeypair(const std::string &metaFilePath);
 
 bool encrypt(const std::string &inputFilePath,
              const std::string &outputFilePath,

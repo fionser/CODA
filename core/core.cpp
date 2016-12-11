@@ -32,8 +32,7 @@ int main(int argc, char *argv[]) {
     std::map<std::string, docopt::value> args =
             docopt::docopt(USAGE, {argv + 1, argv + argc}, false, "coda core 1.0");
     if (args["gen"].asBool()) {
-        core::setProtocol(args["<meta file path>"].asString());
-        if (!core::genKeypair()) {
+        if (!core::genKeypair(args["<meta file path>"].asString())) {
             L_ERROR(_console, "Something went wrong in the key-generation");
             return -1;
         }
@@ -41,7 +40,6 @@ int main(int argc, char *argv[]) {
         auto inputFilePath = args["<input file path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
-        core::setProtocol(metaFilePath);
         bool local_compute = false;
         if (args["--local"]) local_compute = true;
 
@@ -53,7 +51,6 @@ int main(int argc, char *argv[]) {
         auto inputFilePath = args["<input file path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
-        core::setProtocol(metaFilePath);
         if (!core::decrypt(inputFilePath, outputFilePath, metaFilePath)) {
             L_ERROR(_console, "Something went wrong in the decryption");
             return -1;
@@ -62,8 +59,6 @@ int main(int argc, char *argv[]) {
         auto dataDirPath = args["<data dir path>"].asString();
         auto outputFilePath = args["<output dir path>"].asString();
         auto metaFilePath = args["<meta file path>"].asString();
-        core::setProtocol(metaFilePath);
-
         std::vector<std::string> params;
         if (args["<data>"])
            params = args["<data>"].asStringList();

@@ -10,6 +10,8 @@ typedef std::map<std::string, strVec_t> Meta;
 
 std::tuple<Meta, bool> readMetaFile(const std::string &metaFilePath);
 
+std::string trim(const std::string &file);
+
 std::vector<std::string> splitBySpace(const std::string &line);
 
 std::string getDirPath(const std::string &path);
