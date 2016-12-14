@@ -25,7 +25,7 @@ ADD_TEST(NAME TestDecode1Slot
 TARGET_LINK_LIBRARIES(test_decode1slot fhe ${local-ntl} ${local-gmp} pthread)
 
 ADD_EXECUTABLE(BenchmarkMatMul BenchmarkMatMul.cpp)
-ADD_TEST(NAME BenchmarkMatMul 
+ADD_TEST(NAME BenchmarkMatMul
         COMMAND $<TARGET_FILE:BenchmarkMatMul>
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 TARGET_LINK_LIBRARIES(BenchmarkMatMul fhe ${local-ntl} ${local-gmp} pthread)
@@ -44,3 +44,6 @@ TARGET_LINK_LIBRARIES(test_dumpkeys fhe ${local-ntl} ${local-gmp} pthread)
 
 ADD_EXECUTABLE(test_matmult TestMatMult.cpp.cpp)
 TARGET_LINK_LIBRARIES(test_matmult fhe ${local-ntl} ${local-gmp} )
+
+ADD_EXECUTABLE(benchmark_table_suppression BenchmarkTableSuppression.cpp)
+TARGET_LINK_LIBRARIES(benchmark_table_suppression fhe ${local-ntl} ${local-gmp} cryptopp)
