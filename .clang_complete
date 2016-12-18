@@ -1,2 +1,2 @@
--include core/include/
-
+-include core/include
+-I ./core/include/

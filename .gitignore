@@ -4,7 +4,6 @@ CMakeScripts
 Makefile
 cmake_install.cmake
 install_manifest.txt
-<<<<<<< HEAD
 # Compiled Object files
 *.slo
 *.lo
