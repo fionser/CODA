@@ -2,6 +2,7 @@
 // Created by riku on 2016/07/19.
 //
 #include "core/ctxt_util.hpp"
+#include "core/literal.hpp"
 #include "HElib/Ctxt.h"
 #include "HElib/EncryptedArray.h"
 #include "HElib/PAlgebra.h"
@@ -115,5 +116,37 @@ void conv(Ctxt &obj, const std::string &str) {
     std::stringstream sstream(str);
     sstream >> obj;
 }
+
+bool dumpCtxts(const std::vector<Ctxt> &ctxts,
+               const std::string &outputDirPath) {
+    auto makePath = [](std::string const& path, const long count) -> std::string {
+        return path + literal::separator + "FILE_" + std::to_string(count);
+    };
+
+    long file_nr = 1;
+    long ctx_dumped = 0;
+    std::ofstream fout(makePath(outputDirPath, file_nr), std::ios::binary);
+    if (!fout.is_open()) {
+        return false;
+    }
+
+    for (const Ctxt &ctx :ctxts) {
+        if (ctx_dumped < core::core_setting.CTX_PER_FILE) {
+            fout << ctx;
+            ctx_dumped += 1;
+        } else {
+            fout.close();
+            file_nr += 1;
+            fout = std::ofstream(makePath(outputDirPath, file_nr), std::ios::binary);
+            if (!fout.is_open())
+                return false;
+            fout << ctx;
+            ctx_dumped = 1;
+        }
+    }
+    fout.close();
+    return true;
+}
+
 }
 

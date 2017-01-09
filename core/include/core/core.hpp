@@ -17,7 +17,9 @@ bool loadCiphers(std::vector<Ctxt>& out, const pk_ptr &pk, const std::string &fi
 
 bool loadCiphers(std::list<Ctxt>& out, const pk_ptr &pk, const std::string &file);
 
-bool dumpCiphers(const std::list<Ctxt>& ciphers, const std::string &file);
+bool dumpCiphers(const std::vector<Ctxt> &ciphers, const std::string &file);
+
+bool dumpCiphers(const std::list<Ctxt> &ciphers, const std::string &file);
 
 bool dumpCiphers(const std::vector<Ctxt *>& ciphers, const std::string &file);
 

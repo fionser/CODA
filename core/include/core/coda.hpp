@@ -16,6 +16,7 @@ typedef std::shared_ptr<FHESecKey> sk_ptr;
 struct {
     const int CTX_PER_FILE = 50;
     const std::string decrypted_file = "File_result";
+    const std::string resulting_file = "File_result";
 } core_setting;
 
 struct ContextPk {
@@ -41,9 +42,9 @@ std::istream& operator>>(std::istream &in, FHEArg &args);
 enum class Protocol {
     PROT_CI2, // chi-2
     PROT_CON, // contingency table
+    PROT_HYBRID_CON, // hybrid protocol for large contingency table
     PROT_MEAN,
-    PROT_MAX,
-    PROT_UKN  // unknown
+    PROT_UNKOWN  // unknown
 };
 
 std::string toString(Protocol type);

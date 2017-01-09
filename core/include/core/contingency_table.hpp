@@ -7,9 +7,9 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "coda.hpp"
-#include "../HElib/Ctxt.h"
-#include "greaterthan.h"
+#include "core/coda.hpp"
+#include "HElib/Ctxt.h"
+#include "core/greaterthan.h"
 
 namespace NTL { class ZZX; }
 class EncryptedArray;

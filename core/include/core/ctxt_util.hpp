@@ -26,6 +26,7 @@ std::vector<std::vector<long>> randomness(long D, const EncryptedArray &ea);
 
 size_t number_bits(long a);
 
+bool dumpCtxts(const std::vector<Ctxt> &ctxts, const std::string &outputDirPath);
 /// return x s.t. x = a \mod p1, x = b \mod p2
 long apply_crt(long a, long b, long p1, long p2);
 template<class HELibObj>

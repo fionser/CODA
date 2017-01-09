@@ -38,6 +38,10 @@ public:
 protected:
     virtual core::FHEArg parameters() const = 0;
 
+    virtual bool hookForKeyGen(FHESecKey &) const { return true; }
+
+    bool isNeedKeySwitching = true;
+
 private:
     std::string description_;
     std::string metaPath_;

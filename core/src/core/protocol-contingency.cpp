@@ -77,8 +77,12 @@ public:
     }
 
     void add(int pp, int qq) {
-       if (pp == 0 || qq == 0) return;
-        _data[ATTR_INDEX(pp)][ATTR_INDEX(qq)] += 1;
+        add(pp, qq, 1);
+    }
+
+    void add(int pp, int qq, int value) {
+       if (pp == 0 || qq == 0 || value < 0) return;
+        _data[ATTR_INDEX(pp)][ATTR_INDEX(qq)] += value;
     }
 
     void print() const {
@@ -256,6 +260,7 @@ bool ProtocolImp::localEncrypt(std::ifstream &fin,
         size_t idx = 0;
         for (size_t i  = 0; i < nr_attributes; i++) {
             for (size_t j = i + 1; j < nr_attributes; j++) {
+                // only count the apperance of each pair.
                 ctables.at(idx).add(numbers.at(i), numbers.at(j));
                 idx += 1;
             }
@@ -566,6 +571,7 @@ bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
         loader.loadCiphers(ctxts, dir, pk);
 
     const EncryptedArray *ea = context->ea;
+    // only do the counting
     core::PrivateContingencyTableHelper helper(P, Q, _threshold, ea);
     core::PrivateContingencyTable privateContingencyTable(context, &helper);
     auto results = privateContingencyTable.evaluate(ctxts);

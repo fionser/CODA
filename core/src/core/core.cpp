@@ -1,19 +1,27 @@
 #include <sstream>
 #include <iostream>
-#include <core/global.hpp>
 
 #include "HElib/FHE.h"
 #include "HElib/FHEContext.h"
 #include "core/core.hpp"
+#include "core/global.hpp"
 #include "core/file_util.hpp"
 #include "core/protocol.hpp"
 #include "core/protocol-mean.hpp"
 #include "core/protocol-contingency.hpp"
-namespace core {
-static bool setProtocol(const std::string &metaPath) {
+#include "core/protocol-hybrid-contingency.hpp"
 
-    switch (getProtocol(metaPath)) {
+namespace core {
+static bool setProtocol(const std::string &metaFilePath) {
+    util::Meta meta;
+    bool ok;
+    std::tie(meta, ok) = util::readMetaFile(metaFilePath);
+    if (!ok || meta.find("protocol") == meta.end() || meta["protocol"].empty())
+        return false;
+
+    switch (getProtocol(meta["protocol"].front())) {
     case core::Protocol::PROT_CI2:
+        assert(0 && "Not implemented yet.");
         //__currentProtocol = nullptr;
         break;
     case core::Protocol::PROT_CON:
@@ -22,18 +30,20 @@ static bool setProtocol(const std::string &metaPath) {
     case core::Protocol::PROT_MEAN:
         CurrentProtocol::set(std::make_shared<MeanProtocol>());
         break;
+    case core::Protocol::PROT_HYBRID_CON:
+        CurrentProtocol::set(std::make_shared<HybridContingencyTable>());
+        break;
     default:
         break;
     }
 
     if (CurrentProtocol::get() != nullptr) {
-        CurrentProtocol::get()->setMeta(metaPath);
+        CurrentProtocol::get()->setMeta(metaFilePath);
         return true;
     } else {
         return false;
     }
 }
-
 
 context_ptr loadContext(bool *ok, const std::string &contextFile) {
     std::ifstream in(contextFile, std::ios::binary);
@@ -189,6 +199,20 @@ bool loadCiphers(std::list<Ctxt> &out, const pk_ptr &pk, const std::string &file
 }
 
 bool dumpCiphers(const std::list<Ctxt> &ciphers, const std::string &file) {
+    std::ofstream out(file);
+    if (!out.is_open()) {
+        L_ERROR(global::_console, "Can not dump into file {0}", file);
+        return false;
+    }
+
+    for (auto &c : ciphers) {
+        out << c;
+    }
+    out.close();
+    return true;
+}
+
+bool dumpCiphers(const std::vector<Ctxt> &ciphers, const std::string &file) {
     std::ofstream out(file);
     if (!out.is_open()) {
         L_ERROR(global::_console, "Can not dump into file {0}", file);

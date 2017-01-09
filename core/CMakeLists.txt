@@ -1,5 +1,9 @@
-include(ExternalProject)
+cmake_minimum_required(VERSION 2.8)
+project("coda-core")
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
+include(ExternalProject)
 if(${BUILD_gmp} OR ${BUILD_lib})
 set(GMP_PATH ${PROJECT_BINARY_DIR}/tmp/gmp)
 ExternalProject_Add(GMP
@@ -60,10 +64,12 @@ add_definitions(-DNFHE_THREADS)
 add_definitions(-DNR_THREADS=1)
 endif(${MULT_THREADS})
 
-add_subdirectory(src/core core-imp)
-add_subdirectory(src/doctopt.cpp doctopt)
-add_subdirectory(src/HElib fhe)
-include_directories(include/)
+include_directories(
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_BINARY_DIR}/include   # add the binary tree to the search path so that we will find Version.h
+    )
+
+add_subdirectory(src)
 
 add_executable(core core.cpp)
 find_library(local-ntl

@@ -30,6 +30,8 @@ std::string toString(Protocol t) {
         return "PROT_CI2";
     case Protocol::PROT_CON:
         return "PROT_CON";
+    case Protocol::PROT_HYBRID_CON:
+        return "PROT_HYBRID_CON";
     default:
         return "PROT_UKN";
     }
@@ -45,6 +47,9 @@ Protocol getProtocol(std::string description) {
     if (description.compare("PROT_MEAN") == 0)
         return Protocol::PROT_MEAN;
 
-    return Protocol::PROT_UKN;
+    if (description.compare("PROT_HYBRID_CON") == 0)
+        return Protocol::PROT_HYBRID_CON;
+
+    return Protocol::PROT_UNKOWN;
 }
 } // namespace core

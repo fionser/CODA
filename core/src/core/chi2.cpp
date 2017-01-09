@@ -1,13 +1,14 @@
 #include <set>
 #include <fstream>
-#include <HElib/FHE.h>
 #include <algorithm>
-#include <core/core.hpp>
-#include <spdlog/spdlog.h>
-#include <core/global.hpp>
-#include <core/literal.hpp>
-#include <core/protocol.hpp>
-#include <core/file_util.hpp>
+
+#include "HElib/FHE.h"
+#include "core/core.hpp"
+#include "spdlog/spdlog.h"
+#include "core/global.hpp"
+#include "core/literal.hpp"
+#include "core/protocol.hpp"
+#include "core/file_util.hpp"
 
 namespace protocol {
 namespace chi2 {

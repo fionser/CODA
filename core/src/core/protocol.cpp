@@ -13,7 +13,9 @@ bool Protocol::genKeypair() const {
     buildModChain(context, args.L);
     FHESecKey sk(context);
     sk.GenSecKey(64);
-    addSome1DMatrices(sk);
+    if (isNeedKeySwitching)
+        addSome1DMatrices(sk);
+    hookForKeyGen(sk);
     const FHEPubKey &pk = sk;
 
     std::string dirPath = util::getDirPath(metaPath_);
