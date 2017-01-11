@@ -17,6 +17,7 @@ struct {
     const int CTX_PER_FILE = 50;
     const std::string decrypted_file = "File_result";
     const std::string resulting_file = "File_result";
+    const std::string random_share_file = ".random_share";
 } core_setting;
 
 struct ContextPk {

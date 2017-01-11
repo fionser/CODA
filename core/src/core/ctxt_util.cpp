@@ -125,7 +125,7 @@ bool dumpCtxts(const std::vector<Ctxt> &ctxts,
 
     long file_nr = 1;
     long ctx_dumped = 0;
-    std::ofstream fout(makePath(outputDirPath, file_nr), std::ios::binary);
+    std::ofstream fout(makePath(outputDirPath, file_nr), std::ios::binary | std::ios::trunc);
     if (!fout.is_open()) {
         return false;
     }

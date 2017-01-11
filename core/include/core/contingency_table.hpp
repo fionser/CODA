@@ -17,7 +17,7 @@ class EncryptedArray;
 namespace core {
 struct Attribute {
     enum class Type {
-        NUMERICAL,
+        NUMERICAL = 0,
         CATEGORICAL,
         ORDINAL
     };

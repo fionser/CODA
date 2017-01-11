@@ -1,15 +1,15 @@
 //
 // Created by riku on 2016/08/09.
 //
-#include "../../include/core/protocol-contingency.hpp"
-#include "../../include/core/contingency_table.hpp"
-#include "../../include/core/global.hpp"
-#include "../../include/core/file_util.hpp"
-#include "../../include/core/literal.hpp"
-#include "../../include/core/core.hpp"
-#include "../../include/core/ctxt_util.hpp"
+#include "core/protocol-contingency.hpp"
+#include "core/contingency_table.hpp"
+#include "core/global.hpp"
+#include "core/file_util.hpp"
+#include "core/literal.hpp"
+#include "core/core.hpp"
+#include "core/ctxt_util.hpp"
+#include "HElib/EncryptedArray.h"
 
-#include "../../include/HElib/EncryptedArray.h"
 #include <fstream>
 #include <memory>
 #include <sstream>
@@ -447,12 +447,17 @@ bool ProtocolImp::decrypt(const std::string &inputFilePath,
         L_WARN(global::_console, "Can not create new file under {0}", outputDirPath);
         return false;
     }
-
-    fout << p << " " << q << '\n';
-    for (auto &row : table)
-        for (auto c : row)
+    // dump the result to file
+    fout << p << " " << q << '\n'; // the index of the two attributes.
+    // follows by one line that indicating all the values in the contingency table, row by row.
+    for (size_t i = 0; i + 1 < table.size(); i++) {
+        for (auto c : table.at(i))
             fout << c << " ";
-    fout << "\n";
+    }
+    for (size_t i = 0; i + 1 < table.back().size(); i++)
+        fout << table.back().at(i) << " ";
+    fout << table.back().back() << "\n";
+
     fout.close();
     return true;
 }
