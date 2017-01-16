@@ -13,6 +13,14 @@
 #include <sstream>
 #include <vector>
 
+static std::ostream& _toBinary(std::ostream &out, long v) {
+    for (int i = 0; i < 32; i++) {
+        out << (v & 1);
+        v >>= 1;
+    }
+    return out;
+}
+
 class UserCipherLoader {
 public:
     typedef std::function<bool(const std::string &dir)> doneFileChecker;
@@ -414,11 +422,8 @@ bool HybridProtocolImp::createRandomShares(std::vector<Ctxt> &evaluationResult,
     for (auto itr = shares.cbegin(); itr != shares.cend(); itr++) {
         long sze = phiM < tableSize ? phiM : tableSize;
         const NTL::ZZX &poly = *itr;
-        for (long i = 0; i + 1< sze; i++)
-            fout << NTL::to_long(poly[i]) << " ";
-        fout << NTL::to_long(poly[sze - 1]);
-        if (std::distance(itr, shares.cend()) > 1)
-            fout << " ";
+        for (long i = 0; i < sze; i++)
+            _toBinary(fout, NTL::to_long(poly[i]));
         tableSize -= sze;
         assert(tableSize >= 0);
     }
@@ -461,11 +466,8 @@ bool HybridProtocolImp::dumpDecryptedContent(const std::string &resultFile,
     for (auto itr = polys.cbegin(); itr != polys.cend(); itr++) {
         long sze = phiM < tableSize ? phiM : tableSize;
         const NTL::ZZX &poly = *itr;
-        for (long i = 0; i + 1< sze; i++)
-            *out << NTL::to_long(poly[i]) << " ";
-        *out << NTL::to_long(poly[sze - 1]);
-        if (std::distance(itr, polys.cend()) > 1)
-            *out << " ";
+        for (long i = 0; i < sze; i++)
+            _toBinary(*out, NTL::to_long(poly[i]));
         tableSize -= sze;
         assert(tableSize >= 0);
     }
