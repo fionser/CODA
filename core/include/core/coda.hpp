@@ -18,6 +18,7 @@ struct {
     const std::string decrypted_file = "File_result";
     const std::string resulting_file = "File_result";
     const std::string random_share_file = ".random_share";
+    const int gc_user_port = 56789;
 } core_setting;
 
 struct ContextPk {
