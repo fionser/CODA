@@ -1,8 +1,9 @@
 #include "core/literal.hpp"
+#include "core/global.hpp"
 namespace literal {
 #ifdef OS_WIN
 #include <stack>
-#incude <locale>
+#include <locale>
 long stol(const std::string &str, std::size_t *pos, int base) {
 	size_t len = str.size();
 	const char *cstr = str.c_str();
@@ -23,7 +24,15 @@ long stol(const std::string &str, std::size_t *pos, int base) {
 std::string separator = "\\";
 #else
 long stol(const std::string &str, std::size_t *pos, int base) {
-    return std::stol(str, pos, base);
+    std::size_t _pos = 0;
+    if (pos == nullptr) {
+        long ret = std::stol(str, &_pos, base);
+        if (str.empty() || _pos != str.size())
+            L_WARN(global::_console, "Invalid string {0} to convert", str);
+        return ret;
+    } else {
+        return std::stol(str, pos, base);
+    }
 }
 
 std::string separator = "/";

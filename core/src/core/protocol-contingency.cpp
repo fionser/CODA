@@ -581,7 +581,7 @@ bool ProtocolImp::doEvaluate(const std::vector<std::string> &inputDirs,
     core::PrivateContingencyTable privateContingencyTable(context, &helper);
     auto results = privateContingencyTable.evaluate(ctxts);
 
-    auto outputFile = util::concatenate(outputDir, "File_result");
+    auto outputFile = util::concatenate(outputDir, core::core_setting.resulting_file);
     bool ok = helper.dump(results, outputFile);
     if (ok) {
         int32_t pp = static_cast<int32_t>(_p);

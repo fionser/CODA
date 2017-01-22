@@ -60,6 +60,16 @@ greaterthan::compare(const Ctxt *x, const NTL::ZZX &y) const {
     return ctxt_parts;
 }
 
+greaterthan::ResultType
+greaterthan::compare(const Ctxt *x, const long y) const {
+    std::vector<long> slots(context->ea->size(), 0);
+    for (int i = 0; i < domain_size && i < slots.size(); i++)
+        slots[i] = y;
+    NTL::ZZX poly;
+    context->ea->encode(poly, slots);
+    return compare(x, poly);
+}
+
 greaterthan::Result
 greaterthan::open_result(const greaterthan::ResultType &ciphers, core::sk_ptr sk) const {
     return open_result(ciphers, sk, nullptr);

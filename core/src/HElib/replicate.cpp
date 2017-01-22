@@ -8,7 +8,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
@@ -21,24 +21,24 @@
 
 
 
-NTL_THREAD_LOCAL 
+NTL_THREAD_LOCAL
 bool replicateVerboseFlag = false;
 
 // The value in slot #pos is replicated in all
 // other slots.  If there are n slots, this algorithm performs
-// O(log n) 1D rotations.  
+// O(log n) 1D rotations.
 
 void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos)
 {
   long nSlots = ea.size();
-  assert(pos >= 0 && pos < nSlots); 
+  assert(pos >= 0 && pos < nSlots);
   replicate(ea, ctxt, pos, nSlots);
 }
 
 void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first_k)
 {
   long nSlots = ea.size();
-  assert(pos >= 0 && pos < nSlots); 
+  assert(pos >= 0 && pos < nSlots);
 
   ZZX mask;
   ea.encodeUnitSelector(mask, pos);
@@ -51,12 +51,12 @@ void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first
   long dim = ea.dimension();
 
   for (long d = 0; d < dim; d++) {
-    //if (!ea.nativeDimension(d)) {
+    if (!ea.nativeDimension(d)) {
       long shamt = -ea.coordinate(d, pos);
       ea.rotate1D(ctxt, d, shamt, true); // "don't care"
-    //}
+    }
 
-    Ctxt ctxt_orig = ctxt; 
+    Ctxt ctxt_orig = ctxt;
 
     long sz = ea.sizeOfDimension(d);
     assert(first_k > 0 && sz >= first_k);
@@ -92,7 +92,7 @@ void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos)
       ea.rotate1D(ctxt, d, shamt, true); // "don't care"
     }
 
-    Ctxt ctxt_orig = ctxt; 
+    Ctxt ctxt_orig = ctxt;
 
     long sz = ea.sizeOfDimension(d);
     long k = NumBits(sz);
@@ -105,7 +105,7 @@ void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos)
       ea.rotate1D(tmp, d, e, true); // "don't care"
       ctxt += tmp;
       e = 2*e;
-      
+
       long b = bit(sz, j); // bit j of sz
       // e -> e+b
       if (b) {
@@ -147,7 +147,7 @@ void SelectRange(const EncryptedArray& ea, ZZX& mask, long lo, long hi)
   maskArray.resize(nSlots);
   for (long i = 0; i < nSlots; i++) maskArray[i] = 0;
   for (long i = lo; i < hi; i++) maskArray[i] = 1;
-  
+
   ea.encode(mask, maskArray);
 }
 
@@ -180,8 +180,8 @@ public:
 //   0 <= limit < ea.size(): max # of positions to process
 
 static
-void recursiveReplicate(const EncryptedArray& ea, const Ctxt& ctxt, 
-                        long n, long k, long pos, long limit,  
+void recursiveReplicate(const EncryptedArray& ea, const Ctxt& ctxt,
+                        long n, long k, long pos, long limit,
                         RepAux& repAux,
                         ReplicateHandler *handler)
 {
@@ -255,15 +255,15 @@ void recursiveReplicate(const EncryptedArray& ea, const Ctxt& ctxt,
     ctxt_left += ctxt_masked;
 
     recursiveReplicate(ea, ctxt_left, n, k, pos, limit, repAux, handler);
-  
+
   }
- 
+
   pos += (1L << k);
   if (pos >= limit)
     return;
 
   Ctxt ctxt_right = ctxt;
-  ctxt_right -= ctxt_masked; 
+  ctxt_right -= ctxt_masked;
   ctxt_masked = ctxt_right; // reuse ctxt_masked as a temp
   ea.rotate(ctxt_masked, -(1L << k));
   ctxt_right += ctxt_masked;
@@ -285,7 +285,7 @@ void replicateAllOrig(const EncryptedArray& ea, const Ctxt& ctxt,
 
   RepAux repAux;
 
-  recursiveReplicate(ea, ctxt1, n, n, 0, 1L << n, 
+  recursiveReplicate(ea, ctxt1, n, n, 0, 1L << n,
                      repAux, handler);
 
   if ((1L << n) < nSlots) {
@@ -294,7 +294,7 @@ void replicateAllOrig(const EncryptedArray& ea, const Ctxt& ctxt,
     ea.rotate(ctxt1, -(1L << n));
     recursiveReplicate(ea, ctxt1, n, n, 1L << n, nSlots, repAux, handler);
   }
-    
+
 }
 
 // The following code is based on the same logic as the
@@ -316,12 +316,12 @@ void SelectRangeDim(const EncryptedArray& ea, ZZX& mask, long lo, long hi,
   maskArray.resize(nSlots);
   for (long i = 0; i < nSlots; i++) {
     long c = ea.coordinate(d, i);
-    if (c >= lo && c < hi) 
+    if (c >= lo && c < hi)
       maskArray[i] = 1;
     else
       maskArray[i] = 0;
   }
-  
+
   ea.encode(mask, maskArray);
 }
 
@@ -358,11 +358,11 @@ public:
 // replicateOneBlock: assumes that all slots are zero,
 // except for those in the "block" whose coordinate
 // in dimension d lies in the interval [ pos*blockSize .. pos*(blockSize+1) )
-// This block is then replicated throught the range 
+// This block is then replicated throught the range
 // [ 0.. floor(dSize/blockSize)*blockSize )
 
 static
-void replicateOneBlock(const EncryptedArray& ea, Ctxt& ctxt, 
+void replicateOneBlock(const EncryptedArray& ea, Ctxt& ctxt,
                        long pos, long blockSize, long d)
 {
   long dSize = ea.sizeOfDimension(d);
@@ -387,7 +387,7 @@ void replicateOneBlock(const EncryptedArray& ea, Ctxt& ctxt,
     ea.rotate1D(tmp, d, e*blockSize, true); // "don't care"
     ctxt += tmp;
     e = 2*e;
-    
+
     long b = bit(sz, j); // bit j of sz
     // e -> e+b
     if (b) {
@@ -414,11 +414,11 @@ void replicateAllNextDim(const EncryptedArray& ea, const Ctxt& ctxt,
 //   0 <= pos < ea.sizeOfDimension(d): relative position of first vector
 //   0 <= limit < ea.sizeOfDimension(): max # of positions to process
 //   dimProd: product of dimensions 0..d
-//   recBound: recursion bound (controls noise) 
+//   recBound: recursion bound (controls noise)
 
 static
-void recursiveReplicateDim(const EncryptedArray& ea, const Ctxt& ctxt, 
-                           long d, long extent, long k, long pos, long limit,  
+void recursiveReplicateDim(const EncryptedArray& ea, const Ctxt& ctxt,
+                           long d, long extent, long k, long pos, long limit,
                            long dimProd, long recBound,
                            RepAuxDim& repAux,
                            ReplicateHandler *handler)
@@ -495,22 +495,22 @@ void recursiveReplicateDim(const EncryptedArray& ea, const Ctxt& ctxt,
     ea.rotate1D(ctxt_left, d, 1L << k, true);
     ctxt_left += ctxt_masked;
 
-    recursiveReplicateDim(ea, ctxt_left, d, extent, k, pos, limit, 
+    recursiveReplicateDim(ea, ctxt_left, d, extent, k, pos, limit,
                           dimProd, recBound, repAux, handler);
-  
+
   }
- 
+
   pos += (1L << k);
   if (pos >= limit)
     return;
 
   Ctxt ctxt_right = ctxt;
-  ctxt_right -= ctxt_masked; 
+  ctxt_right -= ctxt_masked;
   ctxt_masked = ctxt_right; // reuse ctxt_masked as a temp
   ea.rotate1D(ctxt_masked, d, -(1L << k), true);
   ctxt_right += ctxt_masked;
 
-  recursiveReplicateDim(ea, ctxt_right, d, extent, k, pos, limit, 
+  recursiveReplicateDim(ea, ctxt_right, d, extent, k, pos, limit,
                         dimProd, recBound, repAux, handler);
 }
 
@@ -527,7 +527,7 @@ void replicateAllNextDim(const EncryptedArray& ea, const Ctxt& ctxt,
     handler->handle(ctxt);
     return;
   }
-  
+
   long dSize = ea.sizeOfDimension(d);
   long n = GreatestPowerOfTwo(dSize);
 
@@ -568,7 +568,7 @@ void replicateAllNextDim(const EncryptedArray& ea, const Ctxt& ctxt,
   }
 
   if (numBlocks == 1) {
-    recursiveReplicateDim(ea, ctxt1, d, extent, k, 0, extent, 
+    recursiveReplicateDim(ea, ctxt1, d, extent, k, 0, extent,
                           dimProd, recBound, repAux, handler);
   }
   else {
@@ -576,7 +576,7 @@ void replicateAllNextDim(const EncryptedArray& ea, const Ctxt& ctxt,
       Ctxt ctxt2 = ctxt1;
       SelectRangeDim(ea, ctxt2, pos*blockSize, (pos+1)*blockSize, d);
       replicateOneBlock(ea, ctxt2, pos, blockSize, d);
-      recursiveReplicateDim(ea, ctxt2, d, extent, k, 0, extent, 
+      recursiveReplicateDim(ea, ctxt2, d, extent, k, 0, extent,
                             dimProd, recBound, repAux, handler);
     }
   }
@@ -594,10 +594,10 @@ void replicateAllNextDim(const EncryptedArray& ea, const Ctxt& ctxt,
     ea.rotate1D(ctxt1, d, -extent, true);
 
     replicateOneBlock(ea, ctxt1, 0, blockSize, d);
-    recursiveReplicateDim(ea, ctxt1, d, extent, k, extent, dSize, 
+    recursiveReplicateDim(ea, ctxt1, d, extent, k, extent, dSize,
                             dimProd, recBound, repAux, handler);
   }
-    
+
 }
 
 // recBound < 0 => pure recursion
@@ -605,7 +605,7 @@ void replicateAllNextDim(const EncryptedArray& ea, const Ctxt& ctxt,
 // otherwise, a recursion depth is chosen heuristically,
 //   but is capped at recBound
 
-void replicateAll(const EncryptedArray& ea, const Ctxt& ctxt, 
+void replicateAll(const EncryptedArray& ea, const Ctxt& ctxt,
                          ReplicateHandler *handler, long recBound)
 {
   RepAuxDim repAux;
@@ -642,7 +642,7 @@ public:
 
 void replicate(const EncryptedArray& ea, NewPlaintextArray& pa, long i)
 {
-  ea.dispatch<replicate_pa_impl>(Fwd(pa), i); 
+  ea.dispatch<replicate_pa_impl>(Fwd(pa), i);
 }
 
 

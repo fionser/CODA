@@ -36,6 +36,8 @@ public:
 
     ResultType compare(const Ctxt *x, const NTL::ZZX &y) const;
 
+    ResultType compare(const Ctxt *x, const long y) const;
+
     Result open_result(const ResultType &, core::sk_ptr) const;
 
     Result open_result(const ResultType &, core::sk_ptr, ZeroPosition *pos) const;
