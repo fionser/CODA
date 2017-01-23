@@ -68,12 +68,11 @@ void mask_first(Ctxt &ctxt, size_t n, const EncryptedArray &ea) {
 
 std::vector<std::vector<long>> random_permutation(long D, const EncryptedArray &ea) {
     size_t nr = (D + ea.size() - 1) / ea.size();
-    std::vector<std::vector<long>> parts(nr, std::vector<long>(ea.size()));
-    std::vector<long> I(nr * ea.size());
+    std::vector<std::vector<long>> parts(nr, std::vector<long>(ea.size(), 0));
+    std::vector<long> I(nr * ea.size(), 0);
     for (size_t i = 0; i < I.size(); i++) I.at(i) = i;
 
     std::random_shuffle(I.begin(), I.end());
-
     auto itr = I.begin();
     for (auto &part : parts) {
         for (auto &value : part) {

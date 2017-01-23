@@ -50,6 +50,9 @@ public:
     ResultType evaluate(const std::vector<Ctxt> &attributes) const;
 
     ResultType evaluate(const ctxt_ptr &ct, long nr_records) const;
+
+    ResultType::Type_gamma special_greater_than(ctxt_ptr CT, long domain_size,
+                                                const EncryptedArray *ea) const;
 private:
     ctxt_ptr compute_table(const std::vector<Ctxt> &attributes,
                            Attribute p, Attribute q,
@@ -61,8 +64,6 @@ private:
     Ctxt do_compute(const Ctxt &one_record, const Attribute &p,
                     const Attribute &q, const EncryptedArray *ea) const;
 
-    ResultType::Type_gamma special_greater_than(ctxt_ptr CT, long domain_size,
-                                                const EncryptedArray *ea) const;
 
     ResultType::Type_tilde_gamma blind_GT(const ResultType::Type_gamma &gamma,
                                           const std::vector<long> &blind_factor,
