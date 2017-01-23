@@ -51,10 +51,10 @@ void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first
   long dim = ea.dimension();
 
   for (long d = 0; d < dim; d++) {
-    if (!ea.nativeDimension(d)) {
-      long shamt = -ea.coordinate(d, pos);
-      ea.rotate1D(ctxt, d, shamt, true); // "don't care"
-    }
+      if (first_k < ea.size() || !ea.nativeDimension(d)) {
+          long shamt = -ea.coordinate(d, pos);
+          ea.rotate1D(ctxt, d, shamt, true); // "don't care"
+      }
 
     Ctxt ctxt_orig = ctxt;
 

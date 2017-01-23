@@ -46,6 +46,7 @@ enum class Protocol {
     PROT_CON, // contingency table
     PROT_HYBRID_CON, // hybrid protocol for large contingency table
     PROT_MEAN,
+    PROT_PERCENTILE, // k-percentile
     PROT_UNKOWN  // unknown
 };
 

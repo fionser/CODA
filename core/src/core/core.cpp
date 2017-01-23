@@ -10,6 +10,7 @@
 #include "core/protocol-mean.hpp"
 #include "core/protocol-contingency.hpp"
 #include "core/protocol-hybrid-contingency.hpp"
+#include "core/protocol-percentile.hpp"
 
 namespace core {
 static bool setProtocol(const std::string &metaFilePath) {
@@ -32,6 +33,9 @@ static bool setProtocol(const std::string &metaFilePath) {
         break;
     case core::Protocol::PROT_HYBRID_CON:
         CurrentProtocol::set(std::make_shared<HybridContingencyTable>());
+        break;
+    case core::Protocol::PROT_PERCENTILE:
+        CurrentProtocol::set(std::make_shared<PercentileProtocol>());
         break;
     default:
         break;

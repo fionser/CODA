@@ -63,7 +63,7 @@ greaterthan::compare(const Ctxt *x, const NTL::ZZX &y) const {
 greaterthan::ResultType
 greaterthan::compare(const Ctxt *x, const long y) const {
     std::vector<long> slots(context->ea->size(), 0);
-    for (int i = 0; i < domain_size && i < slots.size(); i++)
+    for (int i = 0; i < slots.size(); i++)
         slots[i] = y;
     NTL::ZZX poly;
     context->ea->encode(poly, slots);

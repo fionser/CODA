@@ -8,7 +8,7 @@
 typedef std::vector<std::string> StringList;
 class PercentileProtocol : public Protocol {
 public:
-    PercentileProtocol(long k);
+    PercentileProtocol();
 
     ~PercentileProtocol() {}
 

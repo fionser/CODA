@@ -27,17 +27,23 @@ bool create_dir(const std::string &path) {
     return true;
 }
 
-long _sizeP = 14;
+long _sizeP = 4;
 long _sizeQ = 2;
 struct Cell {
     long p, q, v;
 };
+
 // test cases
 std::vector<Cell> _cells = {
     {1, 2, 1},
     {2, 1, 1},
-    {14, 1, 2},
-    {14, 2, 2}
+    {2, 1, 1},
+    {2, 1, 1},
+    {3, 1, 2},
+    {3, 1, 2},
+    {3, 1, 2},
+    {3, 1, 2},
+    {4, 2, 2}
 };
 
 bool gen_content(const std::string &path) {
@@ -84,13 +90,14 @@ int main () {
     if (!create_dir("test-ct-2"))
         return -1;
 
-    core::context_ptr context = std::make_shared<FHEcontext>(2048, 8191, 3);
-    buildModChain(*context, 5);
+    core::context_ptr context = std::make_shared<FHEcontext>(256, 8191, 3);
+    buildModChain(*context, 7);
     core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
     sk->GenSecKey(64);
+    addSome1DMatrices(*sk);
     core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
 
-    PercentileProtocol protocol(10);
+    PercentileProtocol protocol;
     gen_content("test-ct-1");
     if (!protocol.encrypt("test-ct-1/data.csv", "test-ct-1/", true, pk, context))
         return -1;
@@ -103,25 +110,21 @@ int main () {
 
     if (!create_dir("test-out"))
        return -1;
-    std::cout << "to eval\n";
-    if (!protocol.evaluate(inputDirs, "test-out", {"2"}, pk, context))
+    // the 50-percentile of the 1-st attr
+    if (!protocol.evaluate(inputDirs, "test-out", {"50", "1"}, pk, context))
         return -1;
-    std::cout << "to dec\n";
     if (!protocol.decrypt("test-out/" + core::core_setting.resulting_file,
                     "./", pk, sk, context))
         return -1;
 
-    // std::ifstream fin(core::core_setting.decrypted_file);
-    // if (!fin.is_open())
-    //     return -1;
-    // std::ifstream fin2("test-out/" + core::core_setting.random_share_file);
-    // if (!fin2.is_open())
-    //     return -1;
-    //
-    // std::string line1, line2;
-    // std::getline(fin, line1);
-    // std::getline(fin2, line2);
-    // fin.close();
-    // fin2.close();
-    // return check(util::splitBySpace(line1), util::splitBySpace(line2));
+    std::ifstream fin(core::core_setting.decrypted_file);
+    if (!fin.is_open())
+        return -1;
+    int kPercentile;
+    fin >> kPercentile;
+    if (kPercentile != 3) {
+        return -1;
+    }
+    fin.close();
+    return 0;
 }

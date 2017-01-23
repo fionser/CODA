@@ -31,10 +31,7 @@ private:
 
 class PercentileProtocol::Imp {
 public:
-    Imp(long k) : k_(k) {
-        if (k_ < 0) k = 0;
-        if (k_ > 100) k = 100;
-    }
+    Imp() {}
 
     ~Imp() {}
 
@@ -97,8 +94,8 @@ private:
                            const std::vector<core::Attribute> &attrs) const;
 
     bool createEvalDoneFile(const std::string &outputDir) const;
-private:
-    long k_;
+
+    bool createDecDoneFile(const std::string &outputDir) const;
 }; // PercentileProtocol::Imp
 
 bool PercentileProtocol::Imp::encrypt(const std::string &inputFilePath,
@@ -235,22 +232,39 @@ bool PercentileProtocol::Imp::decrypt(const std::string &inputFilePath,
         return false;
     }
 
-    int nr_parts;
-    greaterthan gt(8, context);
+    size_t nr_parts;
+    greaterthan gt(0, context);
+    bool first = true;
+    int kPercentile = 1;
     while (!fin.eof()) {
         std::vector<ctxt_ptr> parts;
         fin >> nr_parts;
+        if (nr_parts == 0) break;
         for (int index = 0; index < nr_parts; index++) {
             parts.push_back(std::make_shared<Ctxt>(*pk));
             fin >> *parts.back();
         }
+
         greaterthan::Result result = gt.open_result(parts, sk);
-        if (result == greaterthan::Result::GREATER_OR_EQUAL)
-            std::cout << ">=\n";
-        else
-            std::cout << "<\n";
+        // the first frequency is larger than the k-percentile
+        if (result == greaterthan::Result::GREATER_OR_EQUAL) {
+            break;
+        } else {
+            kPercentile += 1;
+        }
     }
     fin.close();
+
+    std::string resultFile = util::concatenate(outputDirPath, core::core_setting.resulting_file);
+    std::ofstream fd(resultFile);
+    if (!fd.is_open()) {
+        L_WARN(global::_console, "Can not create {0}", resultFile);
+        std::cout << "the k-percentile is " << kPercentile << "\n";
+    } else {
+        fd << kPercentile;
+        fd.close();
+        createDecDoneFile(outputDirPath);
+    }
     return true;
 }
 
@@ -259,8 +273,8 @@ bool PercentileProtocol::Imp::evaluate(const StringList &inputDirs,
                                        const StringList &params,
                                        core::pk_ptr pk,
                                        core::context_ptr context) {
-    if (params.size() != 1) {
-        L_ERROR(global::_console, "Invalid evaluate parameters");
+    if (params.size() != 2) {
+        L_ERROR(global::_console, "Invalid evaluate parameters. Require [k-percentile] [target attr index]");
         return false;
     }
 
@@ -272,7 +286,8 @@ bool PercentileProtocol::Imp::evaluate(const StringList &inputDirs,
     }
 
     auto attributes = parseHeader(fin);
-    const int attrIndex = literal::stol(params[0]);
+    const int percentile = literal::stol(params[0]);
+    const int attrIndex = literal::stol(params[1]);
     if (attrIndex > attributes.size() || attrIndex <= 0) {
         L_ERROR(global::_console, "Invalid evaluate parameter {0}, only get {1} attributes",
                 attrIndex, attributes.size());
@@ -288,7 +303,8 @@ bool PercentileProtocol::Imp::evaluate(const StringList &inputDirs,
     sumCtxtOfClients(summation, total_record, inputDirs, checker, pk);
 
     greaterthan gt(total_record, context);
-    core::Attribute targetAttr = attributes.at(attrIndex);
+    const int threshold = static_cast<int>(std::ceil(percentile * total_record / 100.0));
+    core::Attribute targetAttr = attributes.at(attrIndex - 1);
     const EncryptedArray *ea = context->ea;
     std::string saveTo = util::concatenate(outputDir, core::core_setting.resulting_file);
     std::ofstream fout(saveTo);
@@ -299,13 +315,13 @@ bool PercentileProtocol::Imp::evaluate(const StringList &inputDirs,
         Ctxt replicated_slot(summation.at(ctxt_index));
         // replicate the slot_index for total_record times
         replicate(*ea, replicated_slot, slot_index);
-        auto gt_result = gt.compare(&replicated_slot, k_);
-
+        auto gt_result = gt.compare(&replicated_slot, threshold);
         fout << gt_result.size();
         for (auto ctx : gt_result) {
             fout << *ctx;
         }
     }
+    fout << 0;
     fout.close();
     return createEvalDoneFile(outputDir);
 }
@@ -407,8 +423,18 @@ bool PercentileProtocol::Imp::createEvalDoneFile(const std::string &outputDirPat
     }
 }
 
-PercentileProtocol::PercentileProtocol(long k) : Protocol("k-percentile") {
-    imp_ = std::make_shared<PercentileProtocol::Imp>(k);
+bool PercentileProtocol::Imp::createDecDoneFile(const std::string &outputDirPath) const {
+    FILE *fd = util::createDoneFile(outputDirPath);
+    if (fd) {
+        fclose(fd);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+PercentileProtocol::PercentileProtocol() : Protocol("k-percentile") {
+    imp_ = std::make_shared<PercentileProtocol::Imp>();
 }
 
 bool PercentileProtocol::encrypt(const std::string &inputFilePath,

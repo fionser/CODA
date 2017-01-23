@@ -32,6 +32,10 @@ std::string toString(Protocol t) {
         return "PROT_CON";
     case Protocol::PROT_HYBRID_CON:
         return "PROT_HYBRID_CON";
+    case Protocol::PROT_PERCENTILE:
+        return "PROT_PERCENTILE";
+    case Protocol::PROT_MEAN:
+        return "PROT_MEAN";
     default:
         return "PROT_UKN";
     }
@@ -49,6 +53,9 @@ Protocol getProtocol(std::string description) {
 
     if (description.compare("PROT_HYBRID_CON") == 0)
         return Protocol::PROT_HYBRID_CON;
+
+    if (description.compare("PROT_PERCENTILE") == 0)
+        return Protocol::PROT_PERCENTILE;
 
     return Protocol::PROT_UNKOWN;
 }
