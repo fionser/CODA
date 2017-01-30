@@ -38,7 +38,7 @@ void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos)
 void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first_k)
 {
   long nSlots = ea.size();
-  assert(pos >= 0 && pos < nSlots);
+  assert(pos >= 0 && pos < nSlots && first_k >= 0 && first_k < nSlots);
 
   ZZX mask;
   ea.encodeUnitSelector(mask, pos);
