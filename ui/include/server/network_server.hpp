@@ -15,8 +15,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "network_base.hpp"
 #include "filesystem_server.hpp"
+#include "../common/network_base.hpp"
 
 class NetworkServer : private NetworkBase {
     private:

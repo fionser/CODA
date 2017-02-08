@@ -3,46 +3,78 @@
 void Driver::error_usage(char *cmd)
 {
     fprintf(stderr, "usage :\n");
-    fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>\n", cmd, CConst::C_MAIN_CMD_INIT);
-    fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name>\n", cmd, CConst::C_MAIN_CMD_SEND_KEY);
+    fprintf(stderr, "      : %s %s <session_name> <protocol> <schema_file_path> <user_name ...>\n", cmd, CConst::C_MAIN_CMD_INIT);
+    fprintf(stderr, "      : %s %s <session_name>\n", cmd, CConst::C_MAIN_CMD_SEND_KEY);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_JOIN);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name> <user_name>\n", cmd, CConst::C_MAIN_CMD_SEND_DATA);
     fprintf(stderr, "      : %s %s <hostname> <portno> <session_name> <analyst_name>\n", cmd, CConst::C_MAIN_CMD_RECEIVE_RESULT);
     fprintf(stderr, "      : %s %s [-e] <session_name> <csv_data_file_path>\n", cmd, "conv");
     fprintf(stderr, "      : %s %s [-d] <session_name> <result_file_path>\n", cmd, "conv");
     fprintf(stderr, "      : %s %s <hostname> <port_no>\n", cmd, CConst::C_SUB_CMD_NET);
-    fprintf(stderr, "      : %s %s \n", cmd, CConst::C_SUB_CMD_DEBUG);
 }
 
 int Driver::init_session(int argc, char *argv[])
 {
     /*
-     * argc = 9
-     * argv  : 0  1     2          3        4              5              6          7                  8
-     * usage : ui init <hostname> <portno> <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>
+     * argc = 6
+     * argv  : 0  1     2              3          4                  5
+     * usage : ui init <session_name> <protocol> <schema_file_path> <user_name ...>
      */
-    if( argc < 9) {
+    // check arg
+    if( argc < 6) {
         error_usage(argv[0]);
         return -1;
     }
-    std::vector<std::string> args;
-    for(int i=4; i < argc; i++){
-        args.push_back(argv[i]);
+    // check config
+    std::map<std::string, std::string> cnf_info = get_config_info(CConst::CONFIG_FILE_NAME);
+    if(cnf_info.size() == 0) {
+        L_ERROR(_console, "coda config error.");
+        return -1;
     }
-    if(dir_ini(args) != 0){
+    std::string session_name = argv[2];
+    std::string plot_name = argv[3];
+    std::string schema_file_path = argv[4];
+    std::string analyst_name = cnf_info[CConst::CFG_KEY_UNAME];
+    std::string user_name = cnf_info[CConst::CFG_KEY_UNAME];
+    // store user names
+    std::vector<std::string> user_names;
+    for(int i=5; i < argc; i++){
+        user_names.push_back(argv[i]);
+    }
+    // create filesystem
+    FileSystemClient fs(session_name, analyst_name, user_name);
+    if(fs.make_session_directory() != 0){
         L_ERROR(_console, "init session directory.");
-        if(d_rm_session_dir(argv[4]) != 0) {
+        if(fs.remove_directory(fs.path_session_dir()) != 0) {
             L_ERROR(_console, "remove directory NG.");
         }
         return -1;
     }
-    NetworkClient c;
-    if(c.service_init(argv[2], atoi(argv[3]), args) == 0){
+    // copy schema file
+    if(fs.copy_schema_file(schema_file_path) != 0) {
+        L_ERROR(_console, "copy schema file.");
+        if(fs.remove_directory(fs.path_session_dir()) != 0) {
+            L_ERROR(_console, "remove directory NG.");
+        }
+        return -1;
+    }
+    L_INFO(_console, "copy schema file.");
+    // create meta file
+    if(fs.make_meta_file(plot_name, user_names) != 0) {
+        L_ERROR(_console, "copy schema file.");
+        if(fs.remove_directory(fs.path_session_dir()) != 0) {
+            L_ERROR(_console, "remove directory NG.");
+        }
+        return -1;
+    }
+    // connect server and register session.
+    NetworkClient nc(cnf_info[CConst::CFG_KEY_HOST], cnf_info[CConst::CFG_KEY_PORT], cnf_info[CConst::CFG_KEY_UNAME]);
+    if(nc.service_init(session_name, plot_name, user_names) == 0){
         L_INFO(_console, "init session OK.");
         return 0;
     } else {
         L_ERROR(_console, "init session NG.");
-        if(d_rm_session_dir(argv[4]) != 0) {
+        if(fs.remove_directory(fs.path_session_dir()) != 0) {
             L_ERROR(_console, "remove directory NG.");
         }
         return -1;
@@ -52,24 +84,28 @@ int Driver::init_session(int argc, char *argv[])
 int Driver::send_key(int argc, char *argv[])
 {
     /*
-     * argc = 6
-     * argv  : 0  1         2          3        4              5
-     * usage : ui send_key <hostname> <portno> <session_name> <analyst_name>
+     * argc = 3
+     * argv  : 0  1         2
+     * usage : ui send_key <session_name>
      */
-    if( argc < 6) {
+    if( argc < 3) {
         error_usage(argv[0]);
         return -1;
     }
-    std::vector<std::string> args;
-    for(int i=4; i < argc; i++){
-        args.push_back(argv[i]);
+    // check config
+    std::map<std::string, std::string> cnf_info = get_config_info(CConst::CONFIG_FILE_NAME);
+    if(cnf_info.size() == 0) {
+        L_ERROR(_console, "coda config error.");
+        return -1;
     }
-    NetworkClient c;
-    if(c.send_pk(argv[2], atoi(argv[3]), args) == 0){
-        L_INFO(_console, "send public key OK.");
+    std::string session_name = argv[2];
+    // send key
+    NetworkClient nc(cnf_info[CConst::CFG_KEY_HOST], cnf_info[CConst::CFG_KEY_PORT], cnf_info[CConst::CFG_KEY_UNAME]);
+    if(nc.send_pk(session_name) == 0){
+        L_INFO(_console, "send public key successfully.");
         return 0;
     } else {
-        L_ERROR(_console, "send public key NG.");
+        L_ERROR(_console, "send public key failure.");
         return -1;
     }
 }
@@ -85,8 +121,8 @@ int Driver::join_session(int argc, char *argv[])
         error_usage(argv[0]);
         return -1;
     }
-    FileSystemClient d;
-    if(d.make_directory(argv[4]) != 0){
+    FileSystemClient d(argv[4]);
+    if(d.make_session_directory() != 0){
         return -1;
     }
     std::vector<std::string> args;
@@ -128,17 +164,15 @@ int Driver::convert(int argc, char *argv[])
             return -1;
         }
         FileSystemClient fc(argv[3]);
-        std::string schema_path = fc.get_filepath(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME));
-        Schema schema = Schema(schema_path);
-        schema.convert_csv(argv[4], "converted_file.txt");
+        Schema schema = Schema(fc.path_schema_file());
+        schema.convert_csv(argv[4], fc.path_plain_uploading_files());
     } else if(std::string(argv[2]) == "-d") {
         if( argc < 5) {
             error_usage(argv[0]);
             return -1;
         }
         FileSystemClient fc(argv[3]);
-        std::string schema_path = fc.get_filepath(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME));
-        Schema schema = Schema(schema_path);
+        Schema schema = Schema(fc.path_schema_file());
         schema.deconvert(argv[4], "result.csv");
     } else {
         error_usage(argv[0]);
@@ -215,17 +249,6 @@ int Driver::net_start(int argc, char *argv[])
     return 0;
 }
 
-int Driver::dir_ini(std::vector<std::string> argv)
-{
-    /*
-     * argc >= 5
-     * argv  : 0              1              2          3                   4...
-     * usage : <session_name> <analyst_name> <protocol> <schema_file_path> <user_name ...>
-     */
-    FileSystemClient d;
-    return d.make_analyst_info(argv);
-}
-
 int Driver::d_rm_session_dir(char *dir_name)
 {
     FileSystemClient d;
@@ -236,34 +259,29 @@ int Driver::d_rm_session_dir(char *dir_name)
     }
 }
 
-void Driver::debug_m(int argc, char *argv[])
+std::map<std::string, std::string> Driver::get_config_info(std::string file_path)
 {
-    /*
-     * argv  : 0   1       2...
-     * usage : cmd d_debug arg...
-     */
-    /////////// init directory by analyst info ////////////////////////////////
-    if( argc < 6) {
-        error_usage(argv[0]);
-        return;
+    std::map<std::string, std::string> cnf_info;
+    // file check
+    struct stat stat_buf;
+    if(stat(file_path.c_str(), &stat_buf) != 0) {
+        L_ERROR(_console, "config file {} doesn't exist.", file_path);
+        return cnf_info;
     }
-    std::vector<std::string> args;
-    for(int i=2; i < argc; i++){
-        args.push_back(argv[i]);
+    // create map
+    std::vector<std::string> v,keys;
+    keys.push_back(CConst::CFG_KEY_CORE_BIN);
+    keys.push_back(CConst::CFG_KEY_HOST);
+    keys.push_back(CConst::CFG_KEY_PORT);
+    keys.push_back(CConst::CFG_KEY_UNAME);
+    for(auto itr = keys.begin(); itr != keys.end(); ++itr) {
+        Utils::get_items(file_path, *itr, &v);
+        cnf_info[*itr] = v[0];
+        v.clear();
+        v.shrink_to_fit();
     }
-    if(dir_ini(args) != 0){
-        L_ERROR(_console, "init session directory.");
-        return;
-    }
-    /////////// dir remove debug ////////////////////////////////
-    // d_rm_session_dir(argv[2]);
-    /////////// file list debug /////////////////////////////////
-    // FileSystemClient d;
-    // std::vector<std::string> test = d.get_file_list(argv[2]);
-    // for(int i=0; i<test.size(); i++) {
-    //     printf("list %d : %s\n", i, test[i].c_str());
-    // }
-    // printf("result : %d\n", d.remove_directory(argv[2]));
+    L_DEBUG(_console, "read config file. {}", file_path);
+    return cnf_info;
 }
 
 int Driver::drive(int argc, char *argv[])
@@ -285,10 +303,10 @@ int Driver::drive(int argc, char *argv[])
         receive_result(argc, argv);
     } else if (std::string(argv[1]) == CConst::C_SUB_CMD_NET) {
         net_start(argc, argv);
-    } else if (std::string(argv[1]) == CConst::C_SUB_CMD_DEBUG) {
-        debug_m(argc, argv);
+    } else if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v") {
+        std::cout << CConst::VER_CLIENT << std::endl;
     } else if (std::string(argv[1]) == "test") {
-        UTC::test();
+        UTC::test(argc, argv);
     } else {
         error_usage(argv[0]);
         return -1;

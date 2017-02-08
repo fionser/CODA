@@ -47,7 +47,7 @@ int NetworkClient::control_msg(int client_socket)
             fprintf(stdout, "KEY_WORD FILE [%d] PATH : ", i+1);
             std::string kpath_tmp;
             std::getline(std::cin, kpath_tmp);
-            kpath.push_back(std::string(CConst::PATH_DEBUG + CConst::SEP_CH_FILE +  kpath_tmp));
+            kpath.push_back(std::string(CConst::KPATH_DEBUG + CConst::SEP_CH_FILE +  kpath_tmp));
         }
         FileSystemClient fs;
         file_trans(client_socket, kpath, fs, 0);
@@ -62,7 +62,7 @@ int NetworkClient::control_msg(int client_socket)
             fprintf(stdout, "KEY_WORD FILE [%d] PATH : ", i+1);
             std::string kpath_tmp;
             std::getline(std::cin, kpath_tmp);
-            kpath.push_back(std::string(CConst::PATH_DEBUG + CConst::SEP_CH_FILE +  kpath_tmp));
+            kpath.push_back(std::string(CConst::KPATH_DEBUG + CConst::SEP_CH_FILE +  kpath_tmp));
         }
         FileSystemClient fs;
         file_trans(client_socket, kpath, fs, 1);
@@ -181,11 +181,11 @@ int NetworkClient::manage(const char* hostname, const int port_no)
 /*
  * info 0:session_name, 1:analyst_name, 2:protocol_name, 3:user_name
  */
-int NetworkClient::service_init(const char* hostname, const int port_no, const std::vector<std::string> info)
+int NetworkClient::service_init(std::string session_name, std::string prot_name, std::vector<std::string> user_names)
 {
     L_INFO(_console, "service init");
     int socket;
-    if ((socket = connect_server(hostname, port_no)) == -1) {
+    if ((socket = connect_server(hostname_.c_str(), port_no_)) == -1) {
         L_ERROR(_console, "error : make socket error.");
         return -1;
     }
@@ -203,39 +203,39 @@ int NetworkClient::service_init(const char* hostname, const int port_no, const s
         L_ERROR(_console, "receive msg check error.");
         return -1;
     }
-    if(send_msg(socket, info[1]) != 0) {
+    if(send_msg(socket, username_) != 0) {
         L_ERROR(_console, "send msg error.");
         return 1;
     }
-    L_DEBUG(_console, "send analyst name [{}].", info[1]);
+    L_DEBUG(_console, "send analyst name [{}].", username_);
     // send session name
     if(recv_check(socket, CConst::MSG_SESSION_NAME) != 0) {
         L_ERROR(_console, "receive msg check error.");
         return -1;
     }
-    if(send_msg(socket, info[0]) != 0) {
+    if(send_msg(socket, session_name) != 0) {
         L_ERROR(_console, "send msg error.");
         return 1;
     }
-    L_DEBUG(_console, "send session name [{}].", info[0]);
+    L_DEBUG(_console, "send session name [{}].", session_name);
     // send protocol
     if(recv_check(socket, CConst::MSG_PROTOCOL) != 0) {
         L_ERROR(_console, "receive msg check error.");
         L_ERROR(_console, "server: analyst or session directory cannot be made.");
         return -1;
     }
-    if(send_msg(socket, info[2]) != 0) {
+    if(send_msg(socket, prot_name) != 0) {
         L_ERROR(_console, "send msg error.");
         return 1;
     }
-    L_DEBUG(_console, "send protocol name [{}].", info[2]);
+    L_DEBUG(_console, "send protocol name [{}].", prot_name);
     // send number of users
     if(recv_check(socket, CConst::MSG_USER_NUM) != 0) {
         L_ERROR(_console, "receive msg check error.");
         L_ERROR(_console, "server: analyst or session directory cannot be made.");
         return -1;
     }
-    int num_user = info.size() - 4;
+    int num_user = user_names.size();
     if(send_msg(socket, to_string(num_user)) != 0) {
         L_ERROR(_console, "send msg error.");
         return 1;
@@ -247,11 +247,11 @@ int NetworkClient::service_init(const char* hostname, const int port_no, const s
             L_ERROR(_console, "receive msg check error.");
             return -1;
         }
-        if(send_msg(socket, info[4+i]) != 0) {
+        if(send_msg(socket, user_names[i]) != 0) {
             L_ERROR(_console, "send msg error.");
             return 1;
         }
-        L_DEBUG(_console, "send user name [{}].", info[3+i]);
+        L_DEBUG(_console, "send user name [{}].", user_names[i]);
     }
     if(recv_check(socket, CConst::MSG_OK) != 0) {
         L_ERROR(_console, "receive msg check error.");
@@ -263,10 +263,10 @@ int NetworkClient::service_init(const char* hostname, const int port_no, const s
         L_ERROR(_console, "send msg error.");
         return 1;
     }
-    FileSystemClient fs(info[1], info[0], "");
+    FileSystemClient fs(session_name, username_, username_);
     std::vector<std::string> key_file_path;
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::META_FILE_NAME));
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME));
+    key_file_path.push_back(fs.kpath_meta_file());
+    key_file_path.push_back(fs.kpath_schema_file());
     // send meta file
     if(file_trans(socket, key_file_path, fs, 0) != 0) {
         L_ERROR(_console, "send meta file error.");
@@ -281,11 +281,11 @@ int NetworkClient::service_init(const char* hostname, const int port_no, const s
 /*
  * info 0:session_name, 1:analyst_name
  */
-int NetworkClient::send_pk(const char* hostname, const int port_no, const std::vector<std::string> info)
+int NetworkClient::send_pk(const std::string session_name)
 {
     L_INFO(_console, "send pk");
     int socket;
-    if ((socket = connect_server(hostname, port_no)) == -1) {
+    if ((socket = connect_server(hostname_.c_str(), port_no_)) == -1) {
         L_ERROR(_console, "error : make socket error.");
         return -1;
     }
@@ -303,33 +303,32 @@ int NetworkClient::send_pk(const char* hostname, const int port_no, const std::v
         L_ERROR(_console, "receive msg check error.");
         return -1;
     }
-    if(send_msg(socket, info[1]) != 0) {
+    if(send_msg(socket, username_) != 0) {
         L_ERROR(_console, "send msg error.");
         return 1;
     }
-    L_DEBUG(_console, "send analyst name [{}].", info[1]);
+    L_DEBUG(_console, "send analyst name [{}].", username_);
     // send session name
     if(recv_check(socket, CConst::MSG_SESSION_NAME) != 0) {
         L_ERROR(_console, "receive msg check error.");
         return -1;
     }
-    if(send_msg(socket, info[0]) != 0) {
+    if(send_msg(socket, session_name) != 0) {
         L_ERROR(_console, "send msg error.");
         return 1;
     }
-    L_DEBUG(_console, "send session name [{}].", info[0]);
+    L_DEBUG(_console, "send session name [{}].", session_name);
     // ready for sending
-    FileSystemClient fs(info[1], info[0], "");
+    FileSystemClient fs(session_name, username_, username_);
     std::vector<std::string> key_file_path;
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::PUBLIC_KEY));
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::PUBLIC_KEY_CTEXT));
+    key_file_path.push_back(fs.kpath_pkey_file());
+    key_file_path.push_back(fs.kpath_ckey_file());
     // send meta file
     if(file_trans(socket, key_file_path, fs, 0) != 0) {
         L_ERROR(_console, "send pk file error.");
         return -1;
     }
-    L_INFO(_console, "send pk file.");
-    L_INFO(_console, "send pk succeed.");
+    L_INFO(_console, "send pk successfully.");
     close(socket);
     return 0;
 }
@@ -385,12 +384,12 @@ int NetworkClient::join_session(const char* hostname, const int port_no, const s
     }
     L_DEBUG(_console, "send user name [{}].", info[2]);
     // ready for receiving
-    FileSystemClient fs(info[1], info[0], info[2]);
+    FileSystemClient fs(info[0], info[1], info[2]);
     std::vector<std::string> key_file_path;
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::META_FILE_NAME));
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::SCHEMA_FILE_NAME));
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::PUBLIC_KEY));
-    key_file_path.push_back(std::string(CConst::PATH_META + CConst::SEP_CH_FILE + CConst::PUBLIC_KEY_CTEXT));
+    key_file_path.push_back(fs.kpath_meta_file());
+    key_file_path.push_back(fs.kpath_schema_file());
+    key_file_path.push_back(fs.kpath_pkey_file());
+    key_file_path.push_back(fs.kpath_ckey_file());
     // send meta file
     if(file_trans(socket, key_file_path, fs, 1) != 0) {
         L_ERROR(_console, "receive meta and pk files error.");
@@ -450,14 +449,14 @@ int NetworkClient::send_enc_data(const char* hostname, const int port_no, const 
     }
     L_DEBUG(_console, "send user name [{}].", info[2]);
     // ready for sending
-    FileSystemClient fs(info[1], info[0], info[2]);
-    std::vector<std::string> key_file_path = fs.get_file_list(std::string(info[0] + CConst::SEP_CH_FILE + CConst::D_NAMES[6]).c_str());
+    FileSystemClient fs(info[0], info[2], info[1]);
+    std::vector<std::string> key_file_path = fs.get_file_list(fs.path_enc_uploading_dir(CConst::CATEGORICAL).c_str());
     if(key_file_path.size() == 0) {
         L_ERROR(_console, "enc file nothing.");
         return -1;
     }
     for(int i=0; i<key_file_path.size(); i++) {
-        key_file_path[i] = CConst::PATH_DATA + CConst::SEP_CH_FILE + key_file_path[i];
+        key_file_path[i] = CConst::KPATH_DATA + CConst::SEP_CH_FILE + key_file_path[i];
     }
     // send meta file
     if(file_trans(socket, key_file_path, fs, 0) != 0) {
@@ -508,10 +507,10 @@ int NetworkClient::receive_result(const char* hostname, const int port_no, const
     }
     L_DEBUG(_console, "send session name [{}].", info[0]);
     // ready for receiving
-    FileSystemClient fs(info[1], info[0], "");
+    FileSystemClient fs(info[0], info[1], info[1]);
     std::vector<std::string> key_file_path;
-    key_file_path.push_back(std::string(CConst::PATH_RESULT + CConst::SEP_CH_FILE + CConst::RESULT_FILE_NAME));
-    key_file_path.push_back(std::string(CConst::PATH_RESULT + CConst::SEP_CH_FILE + CConst::FLAG_FILE_NAME));
+    key_file_path.push_back(fs.kpath_result_file("type", CConst::RESULT_FILE_NAME)); // ToDo make type
+    key_file_path.push_back(fs.kpath_result_file("type", CConst::FLAG_FILE_NAME));
     // send meta file
     if(file_trans(socket, key_file_path, fs, 1) != 0) {
         L_ERROR(_console, "receive result file error.");
@@ -521,6 +520,21 @@ int NetworkClient::receive_result(const char* hostname, const int port_no, const
     L_INFO(_console, "receive result succeed.");
     close(socket);
     return 0;
+}
+
+
+NetworkClient::NetworkClient()
+{
+    hostname_ = "";
+    port_no_ = 0;
+    username_ = "";
+}
+
+NetworkClient::NetworkClient(const std::string hostname, const std::string port_no, const std::string username)
+{
+    hostname_ = hostname;
+    port_no_ = atoi(port_no.c_str());
+    username_ = username;
 }
 
 

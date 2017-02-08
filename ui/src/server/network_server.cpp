@@ -109,21 +109,14 @@ int NetworkServer::init_session(int socket)
     std::string session_name = buf;
     L_DEBUG(_console, "get session name [{}].", session_name);
     // get analyst session unique check
-    FileSystemServer d;
-    if(d.make_user_directory(analyst_name.c_str()) != 0){
+    FileSystemServer d(session_name, analyst_name, analyst_name);
+    if(d.make_session_directory() != 0){
         L_ERROR(_console, "make analyst directory");
         if(send_msg(socket, CConst::MSG_NG) != 0) {
             L_ERROR(_console, "send msg error.");
             return 1;
         }
-        close(socket);
-        return 1;
-    } else if(d.make_session_directory(analyst_name.c_str(), session_name.c_str()) != 0){
-        L_ERROR(_console, "make session directory");
-        if(send_msg(socket, CConst::MSG_NG) != 0) {
-            L_ERROR(_console, "send msg error.");
-            return 1;
-        }
+        // ToDo rm session dir ?
         close(socket);
         return 1;
     }
@@ -178,7 +171,7 @@ int NetworkServer::init_session(int socket)
         L_ERROR(_console, "receive msg check error.");
         return -1;
     }
-    FileSystemServer fs(analyst_name, session_name, "");
+    FileSystemServer fs(session_name, analyst_name, analyst_name);
     // get meta file
     if(file_trans(socket, fs) != 0) {
         L_ERROR(_console, "receive meta file error.");
@@ -216,7 +209,7 @@ int NetworkServer::receive_pk(int socket)
     std::string session_name = buf;
     L_DEBUG(_console, "get session name [{}].", session_name);
     // ready for receiving
-    FileSystemServer fs(analyst_name, session_name, "");
+    FileSystemServer fs(session_name, analyst_name, analyst_name);
     // get meta file
     if(file_trans(socket, fs) != 0) {
         L_ERROR(_console, "receive pk files error.");
@@ -265,7 +258,7 @@ int NetworkServer::join_session(int socket)
     std::string user_name = buf;
     L_DEBUG(_console, "get user name [{}].", user_name);
     // ready for send
-    FileSystemServer fs(analyst_name, session_name, user_name);
+    FileSystemServer fs(session_name, analyst_name, user_name);
     // send meta and pk file
     if(file_trans(socket, fs) != 0) {
         L_ERROR(_console, "send meta and pk files error.");
@@ -314,7 +307,7 @@ int NetworkServer::receive_enc_data(int socket)
     std::string user_name = buf;
     L_DEBUG(_console, "get user name [{}].", user_name);
     // ready for receiving
-    FileSystemServer fs(analyst_name, session_name, user_name);
+    FileSystemServer fs(session_name, analyst_name, user_name);
     // get meta file
     if(file_trans(socket, fs) != 0) {
         L_ERROR(_console, "receive enc data files error.");
@@ -352,7 +345,7 @@ int NetworkServer::send_result_data(int socket)
     std::string session_name = buf;
     L_DEBUG(_console, "get session name [{}].", session_name);
     // ready for send
-    FileSystemServer fs(analyst_name, session_name, "");
+    FileSystemServer fs(session_name, analyst_name, analyst_name);
     // send meta and pk file
     if(file_trans(socket, fs) != 0) {
         L_ERROR(_console, "send result file error.");
