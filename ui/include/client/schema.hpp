@@ -44,10 +44,10 @@ class Schema {
     public:
         Schema();
         Schema(std::string file_path);
-        int check();
+        int check() const;
         int get_schema(std::string file_path);
-        std::string convert(std::string key_string, int rule_no);
-        int convert_csv(const std::string in_file_path, const Schema_Output_Filepath opaths);
+        std::string convert(std::string key_string, int rule_no) const;
+        int convert_csv(const std::string in_file_path, const Schema_Output_Filepath opaths) const;
         int deconvert(std::string file_path, std::string output_file_path);
         void debug_display();
 };

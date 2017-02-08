@@ -1,3 +1,5 @@
+#ifndef UI_SERVER_DRIVER_HPP
+#define UI_SERVER_DRIVER_HPP
 #include <string>
 #include "filesystem_server.hpp"
 #include "network_server.hpp"
@@ -15,4 +17,4 @@ class Driver {
     public:
         int drive(int argc, char *argv[]);
 };
-
+#endif

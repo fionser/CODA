@@ -210,7 +210,7 @@ int Driver::receive_result(int argc, char *argv[])
 {
     /*
      * argc = 6
-     * argv  : 0  1               2          3        4              5   
+     * argv  : 0  1               2          3        4              5
      * usage : ui receive_result <hostname> <portno> <session_name> <analyst_name>
      */
     if( argc < 6) {

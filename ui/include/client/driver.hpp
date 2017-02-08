@@ -1,3 +1,5 @@
+#ifndef UI_CLIENT_DRIVER_HPP
+#define UI_CLIENT_DRIVER_HPP
 #include <string>
 #include "filesystem_client.hpp"
 #include "network_client.hpp"
@@ -19,6 +21,8 @@ private:
     int d_rm_session_dir(char *dir_name);
     std::map<std::string, std::string> get_config_info(std::string file_path);
 public:
+    Driver() {}
+    ~Driver() {}
     int drive(int argc, char *argv[]);
 };
-
+#endif

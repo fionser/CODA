@@ -33,7 +33,7 @@ Schema::Schema(std::string file_path) : Schema()
     active_flg_ = get_schema(file_path);
 }
 
-int Schema::check()
+int Schema::check() const
 {
     return active_flg_;
 }
@@ -76,20 +76,18 @@ int Schema::get_schema(std::string file_path)
     return cTrue_;
 }
 
-std::string Schema::convert(std::string key_string, int rule_no)
+std::string Schema::convert(std::string key_string, int rule_no) const
 {
-    if(item_type_[rule_no] == categorical_) {
-        return rule_[rule_no][key_string];
-    } else if(item_type_[rule_no] == ordinal_) {
-        return rule_[rule_no][key_string];
-    } else if(item_type_[rule_no] == numerical_) {
-        return std::to_string(int(std::stof(key_string) * pow(10, item_size_[rule_no])));
+    if(item_type_[rule_no].compare(numerical_) == 0) {
+        return std::to_string(int(std::stof(key_string) * pow(10, item_size_.at(rule_no))));
     } else {
-        return default_str_;
+        const std::map<std::string, std::string> &key_value_map = rule_.at(rule_no);
+        auto itr = key_value_map.find(key_string);
+        return itr != key_value_map.end() ? itr->second : default_str_;
     }
 }
 
-int Schema::convert_csv(const std::string in_file_path, const Schema_Output_Filepath opaths)
+int Schema::convert_csv(const std::string in_file_path, const Schema_Output_Filepath opaths) const
 {
         // check schema
         if(check() != cTrue_) return cError_;
@@ -117,9 +115,9 @@ int Schema::convert_csv(const std::string in_file_path, const Schema_Output_File
         ofs[ordinal_] << meta_ch_ << Utils::join(meta_strs[ordinal_], sep_sp_) << std::endl;
         ofs[numerical_] << meta_ch_ << Utils::join(meta_strs[numerical_], sep_sp_) << std::endl;
         // write convert data
-        std::string str;
-        while(std::getline(ifs, str)) {
-            std::vector<std::string> vec_str = Utils::split(str, sep_coma_);
+        std::string line;
+        while(std::getline(ifs, line)) {
+            std::vector<std::string> vec_str = Utils::split(line, sep_coma_);
             std::map< std::string, std::vector<std::string> > write_strs;
             for(int i=0; i<vec_str.size(); i++) {
                 std::string s = vec_str[i];
