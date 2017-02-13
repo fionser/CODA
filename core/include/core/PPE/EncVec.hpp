@@ -1,15 +1,12 @@
-#ifndef CORE_ALGEBRA_ENCVEC_HPP
-#define CORE_ALGEBRA_ENCVEC_HPP
-#include "core/coda.hpp"
-#include <NTL/vec_ZZ.h>
-#include <iosfwd>
-#include <vector>
-#include <memory>
-typedef NTL::vec_ZZ Vector;
-namespace core {
+#ifndef CORE_PPE_ENCVEC_HPP
+#define CORE_PPE_ENCVEC_HPP
+#include "core/algebra/EncVec.hpp"
+namespace ppe {
+class SecKey;
+class PubKey;
 class EncVec {
 public:
-    EncVec(core::pk_ptr pk);
+    EncVec(const PubKey &pk);
 
     EncVec(const EncVec &oth);
 
@@ -20,7 +17,7 @@ public:
     EncVec& pack(const Vector &vec);
 
 	bool unpack(Vector &result,
-				core::sk_ptr sk,
+				const SecKey &sk,
 				bool negate = false) const;
 
     EncVec& add(const EncVec &c);
@@ -45,13 +42,11 @@ public:
 
     long length() const;
 
-    bool dump(std::ostream &out) const;
-
-    bool restore(std::istream &in);
 private:
 	class Imp;
     friend class Imp;
 	std::shared_ptr<Imp> imp_;
 };
-} // namespace core
-#endif // CORE_ALGEBRA_ENCVEC_HPP
+
+} // namespace ppe
+#endif // CORE_PPE_ENCVEC_HPP

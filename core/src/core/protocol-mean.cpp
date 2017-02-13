@@ -1,10 +1,10 @@
-#include "../../include/core/protocol-mean.hpp"
-#include "../../include/core/core.hpp"
-#include "../../include/core/global.hpp"
-#include "../../include/core/file_util.hpp"
-#include "../../include/core/literal.hpp"
+#include "core/protocol-mean.hpp"
+#include "core/core.hpp"
+#include "core/global.hpp"
+#include "core/file_util.hpp"
+#include "core/literal.hpp"
 
-#include "../../include/HElib/EncryptedArray.h"
+#include "HElib/EncryptedArray.h"
 
 #include <fstream>
 #include <sstream>

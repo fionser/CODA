@@ -35,7 +35,7 @@ public:
         return *this;
     }
 
-    Imp& pack(const Vector &vec) {
+    bool pack(const Vector &vec) {
         long n = NUM_PARTS(ea_->size(), vec.length());
         std::vector<iVec> parts = extend(vec, n);
         ctxts_.resize(n);
@@ -45,7 +45,7 @@ public:
             ea_->encrypt(*ctxts_[i], *pk_, parts[i]);
         }
         length_ = vec.length();
-        return *this;
+        return true;
     }
 
     bool unpack(Vector &result,
@@ -101,7 +101,7 @@ public:
             std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << oth->length() << "\n";
             return false;
         }
-#pragma omp parallel for
+        #pragma omp parallel for
         for (size_t i = 0; i < ctxts_.size(); i++)
             ctxts_[i]->operator*=(*(oth->ctxts_.at(i)));
         return true;
@@ -117,7 +117,7 @@ public:
             return false;
         std::vector<iVec> constants = extend(c, ctxts_.size());
         NTL::ZZX poly;
-#pragma omp parallel for
+        #pragma omp parallel for
         for (size_t i = 0; i < constants.size(); i++) {
             ea_->encode(poly, constants[i]);
             ctxts_[i]->multByConstant(poly);
@@ -159,11 +159,33 @@ public:
     std::vector<EncVec> replicateAll(long width) const {
         assert(width > 0 && "Invalid replicateAll parameter");
         std::vector<EncVec> replicated(length(), pk_);
-#pragma omp parallel for
+        #pragma omp parallel for
         for (size_t i = 0; i < replicated.size(); i++) {
             replicated.at(i) = replicate(i, width);
         }
         return replicated;
+    }
+
+    bool dump(std::ostream &out) const {
+        out << static_cast<int32_t>(ctxts_.size()) << " " << length_ << "\n";
+        for (auto &ctx : ctxts_) {
+            out << *ctx << "\n";
+        }
+        return true;
+    }
+
+    bool restore(std::istream &in) {
+        if (!pk_) return false;
+
+        int32_t parts;
+        in >> parts;
+        in >> length_;
+        ctxts_.resize(parts);
+        for (int32_t i = 0; i < parts; i++) {
+            ctxts_[i] = std::make_shared<Ctxt>(*pk_);
+            in >> *(ctxts_[i]);
+        }
+        return true;
     }
     friend class EncVec;
 
@@ -304,5 +326,13 @@ std::vector<EncVec> EncVec::replicateAll(long width) const {
 
 long EncVec::length() const {
     return imp_->length();
+}
+
+bool EncVec::dump(std::ostream &out) const {
+    return imp_->dump(out);
+}
+
+bool EncVec::restore(std::istream &in) {
+    return imp_->restore(in);
 }
 } // namespace core

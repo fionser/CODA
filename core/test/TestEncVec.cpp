@@ -126,6 +126,29 @@ int test3(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
     return 0;
 }
 
+int testIO(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
+    core::EncVec encVec(pk);
+    NTL::vec_ZZ slots;
+    slots.SetLength(7);
+    for (int i = 0; i < slots.length(); i++)
+        slots[i] = NTL::to_ZZ(i + 1);
+    encVec.pack(slots);
+    std::ofstream out("./tmp.ctx", std::ios::binary);
+    if (!encVec.dump(out)) { out.close(); return -1; }
+    out.close();
+
+    std::ifstream in("./tmp.ctx", std::ios::binary);
+    core::EncVec encVec2(pk);
+    if (!encVec2.restore(in)) { in.close(); return -1; }
+    in.close();
+
+    NTL::vec_ZZ slots2;
+    encVec2.unpack(slots2, sk);
+    if (slots2 != slots)
+        return -1;
+    return 0;
+}
+
 int main() {
     core::context_ptr context = std::make_shared<FHEcontext>(2048, 8191, 1);
     buildModChain(*context, 14);
@@ -143,6 +166,10 @@ int main() {
         return -1;
     }
     if (test3(sk, pk, ea) != 0) {
+        std::cout << "test3 fail\n";
+        return -1;
+    }
+    if (testIO(sk, pk, ea) != 0) {
         std::cout << "test3 fail\n";
         return -1;
     }
