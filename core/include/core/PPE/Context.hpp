@@ -5,7 +5,7 @@
 #include <vector>
 #include <NTL/ZZ.h>
 class FHEcontext;
-typedef std::shared_ptr<FHEcontext> context_ptr;
+typedef std::shared_ptr<FHEcontext> raw_context_ptr;
 namespace ppe {
 class Context {
 public:
@@ -23,7 +23,7 @@ public:
 	void buildModChain(long L);
 
 	/// @return the specific FHEcontext
-	const context_ptr get(int index) const { return contexts_.at(index); }
+	const raw_context_ptr get(int index) const { return contexts_.at(index); }
 
 	size_t partsNum() const { return contexts_.size(); }
 
@@ -37,7 +37,7 @@ public:
 
 private:
     NTL::ZZ plainSpace_;
-	std::vector<context_ptr> contexts_;
+	std::vector<raw_context_ptr> contexts_;
 };
 }
 #endif // CORE_PPE_CONTEXT_HPP

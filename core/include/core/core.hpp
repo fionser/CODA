@@ -7,11 +7,14 @@
 #include <memory>
 
 namespace core {
-context_ptr loadContext(bool *ok, const std::string &contextFile);
+ContextWrapper loadContext(bool *pk, const std::string &contextFile);
+// context_ptr loadContext(bool *ok, const std::string &contextFile);
 
-pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile);
+PubKeyWrapper loadPK(bool *ok, const context_ptr &context, const std::string &pkFile);
+// pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile);
 
-sk_ptr loadSK(bool *ok, const context_ptr &context, const std::string &skFile);
+SecKeyWrapper loadSK(bool *ok, const context_ptr &context, const std::string &skFile);
+// sk_ptr loadSK(bool *ok, const context_ptr &context, const std::string &skFile);
 
 bool loadCiphers(std::vector<Ctxt>& out, const pk_ptr &pk, const std::string &file);
 

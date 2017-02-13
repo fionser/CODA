@@ -64,12 +64,15 @@ int main () {
     if (!create_dir("test-ct-2"))
         return -1;
 
-    core::context_ptr context = std::make_shared<FHEcontext>(256, 8191, 3);
-    buildModChain(*context, 7);
-    core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
-    sk->GenSecKey(64);
-    addSome1DMatrices(*sk);
-    core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
+    core::ContextWrapper context;
+    core::SecKeyWrapper sk;
+    core::PubKeyWrapper pk;
+    // core::context_ptr context = std::make_shared<FHEcontext>(256, 8191, 3);
+    // buildModChain(*context, 7);
+    // core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
+    // sk->GenSecKey(64);
+    // addSome1DMatrices(*sk);
+    // core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
 
     PCAProtocol protocol;
     gen_content("test-ct-1");
@@ -78,27 +81,5 @@ int main () {
     gen_content("test-ct-2");
     if (!protocol.encrypt("test-ct-2/data.csv", "test-ct-2/", true, pk, context))
         return -1;
-    // std::vector<std::string> inputDirs;
-    // inputDirs.push_back("test-ct-1");
-    // inputDirs.push_back("test-ct-2");
-    //
-    // if (!create_dir("test-out"))
-    //    return -1;
-    // // the 50-percentile of the 1-st attr
-    // if (!protocol.evaluate(inputDirs, "test-out", {"50", "1"}, pk, context))
-    //     return -1;
-    // if (!protocol.decrypt("test-out/" + core::core_setting.resulting_file,
-    //                 "./", pk, sk, context))
-    //     return -1;
-    //
-    // std::ifstream fin(core::core_setting.decrypted_file);
-    // if (!fin.is_open())
-    //     return -1;
-    // int kPercentile;
-    // fin >> kPercentile;
-    // if (kPercentile != 3) {
-    //     return -1;
-    // }
-    // fin.close();
     return 0;
 }

@@ -3,7 +3,12 @@
 
 #include "HElib/FHE.h"
 #include "HElib/FHEContext.h"
+#include "core/coda_wrapper.hpp"
 #include "core/core.hpp"
+#include "core/PPE/types.hpp"
+#include "core/PPE/Context.hpp"
+#include "core/PPE/PubKey.hpp"
+#include "core/PPE/SecKey.hpp"
 #include "core/global.hpp"
 #include "core/file_util.hpp"
 #include "core/protocol.hpp"
@@ -49,73 +54,132 @@ static bool setProtocol(const std::string &metaFilePath) {
     }
 }
 
-context_ptr loadContext(bool *ok, const std::string &contextFile) {
-    std::ifstream in(contextFile, std::ios::binary);
-    if (!in.is_open()) {
-        if (ok) *ok = false;
-        return nullptr;
-    }
+static core::context_ptr loadSingleContext(std::istream &in) {
     unsigned long m, p, r;
     std::vector<long> gens, ords;
     readContextBase(in, m, p, r, gens, ords);
     auto context = std::make_shared<FHEcontext>(m, p, r, gens, ords);
     if (context == nullptr) {
-        if (ok) *ok = false;
         return nullptr;
     }
     in >> *context;
     return context;
 }
 
-pk_ptr loadPK(bool *ok, const context_ptr &context, const std::string &pkFile) {
-    std::ifstream in(pkFile, std::ios::binary);
+static ppe::context_ptr loadPPEContext(std::istream &in) {
+    auto context = std::make_shared<ppe::Context>();
+    if (!context) return nullptr;
+    context->restore(in);
+    return context;
+}
+
+ContextWrapper loadContext(bool *ok, const std::string &contextFile) {
+    ContextWrapper context = { .single = nullptr, .ppe = nullptr };
+    std::ifstream in(contextFile, std::ios::binary);
     if (!in.is_open()) {
         if (ok) *ok = false;
-        return nullptr;
+        return context;
     }
 
-    auto pk = std::make_shared<FHEPubKey>(*context);
-    if (pk == nullptr) {
+    int type;
+    in >> type;
+    if (type == TYPE_SINGLE) {
+        context.single = loadSingleContext(in);
+        if (ok) *ok = context.single != nullptr;
+    } else if (type == TYPE_PPE) {
+        context.ppe = loadPPEContext(in);
+        if (ok) *ok = context.ppe != nullptr;
+    } else {
         if (ok) *ok = false;
-        return nullptr;
     }
+
+    in.close();
+    return context;
+}
+
+static core::pk_ptr loadSinglePubKey(std::istream &in, const core::context_ptr &context) {
+    auto pk = std::make_shared<FHEPubKey>(*context);
+    if (pk == nullptr)
+        return nullptr;
 
     in >> *pk;
-    in.close();
-
-    if (ok) *ok = true;
-
     return pk;
 }
 
-sk_ptr loadSK(bool *ok, const context_ptr &context, const std::string &skFile) {
-    if (context == nullptr) {
-        if (ok) *ok = false;
+static ppe::pk_ptr loadPPEPubKey(std::istream &in, const ppe::context_ptr &context) {
+    auto pk = std::make_shared<ppe::PubKey>(*context);
+    if (pk == nullptr)
         return nullptr;
+    pk->restore(in, *context);
+    return pk;
+}
+
+PubKeyWrapper loadPK(bool *ok, const ContextWrapper &context, const std::string &pkFile) {
+    PubKeyWrapper pk = { .single = nullptr, .ppe = nullptr };
+    std::ifstream in(pkFile, std::ios::binary);
+    if (!in.is_open()) {
+        if (ok) *ok = false;
+        return pk;
     }
 
+    int type;
+    in >> type;
+    if (type == TYPE_SINGLE) {
+        pk.single = loadSinglePubKey(in, context.single);
+        if (ok) *ok = pk.single != nullptr;
+    } else if (type == TYPE_PPE) {
+        pk.ppe = loadPPEPubKey(in, context.ppe);
+        if (ok) *ok = pk.ppe != nullptr;
+    } else {
+        if (ok) *ok = false;
+    }
+    in.close();
+    return pk;
+}
+
+static core::sk_ptr loadSingleSecKey(std::istream &in, const core::context_ptr &context) {
+    auto sk = std::make_shared<FHESecKey>(*context);
+    if (sk == nullptr)
+        return nullptr;
+    in >> *sk;
+    return sk;
+}
+
+static ppe::sk_ptr loadPPESecKey(std::istream &in, const ppe::context_ptr &context) {
+    auto sk = std::make_shared<ppe::SecKey>(*context);
+    if (sk == nullptr)
+        return nullptr;
+    sk->restore(in, *context);
+    return sk;
+}
+
+SecKeyWrapper loadSK(bool *ok, const ContextWrapper &context, const std::string &skFile) {
+    SecKeyWrapper sk = { .single = nullptr, .ppe = nullptr };
     std::fstream in(skFile, std::ios::binary | std::ios::in);
     if (!in.is_open()) {
         L_WARN(global::_console, "Can not open {0}", skFile);
         if (ok) *ok = false;
-        return nullptr;
+        return sk;
     }
 
-    auto sk = std::make_shared<FHESecKey>(*context);
-    if (sk == nullptr) {
+    int type;
+    in >> type;
+    if (type == TYPE_SINGLE) {
+        sk.single = loadSingleSecKey(in, context.single);
+        if (ok) *ok = sk.single != nullptr;
+    } else if (type == TYPE_PPE) {
+        sk.ppe = loadPPESecKey(in, context.ppe);
+        if (ok) *ok = sk.ppe != nullptr;
+    } else {
         if (ok) *ok = false;
-        return nullptr;
     }
-
-    in >> *sk;
     in.close();
-    if (ok) *ok = true;
     return sk;
 }
 
 static bool loadFromMetaFile(const std::string &metaFilePath,
-                             core::context_ptr &context,
-                             core::pk_ptr &pk,
+                             ContextWrapper &context,
+                             PubKeyWrapper &pk,
                              util::Meta &meta) {
     bool ok;
     std::tie(meta, ok) = util::readMetaFile(metaFilePath);
@@ -141,7 +205,6 @@ static bool loadFromMetaFile(const std::string &metaFilePath,
     auto pkPath = util::concatenate(dirPath, "fhe_key.pk");
     pk = loadPK(&ok, context, pkPath);
     if (!ok) {
-        context = nullptr;
         L_ERROR(global::_console, "Can not load fhe_key.pk in {0}", dirPath);
         return false;
     }
@@ -150,9 +213,9 @@ static bool loadFromMetaFile(const std::string &metaFilePath,
 }
 
 static bool loadFromMetaFile(const std::string &metaFilePath,
-                             core::context_ptr &context,
-                             core::pk_ptr &pk,
-                             core::sk_ptr &sk,
+                             core::ContextWrapper &context,
+                             core::PubKeyWrapper &pk,
+                             core::SecKeyWrapper &sk,
                              util::Meta &meta) {
     if (!loadFromMetaFile(metaFilePath, context, pk, meta))
         return false;
@@ -261,8 +324,8 @@ bool encrypt(const std::string &inputFilePath,
     }
 
     util::Meta meta;
-    core::context_ptr context = nullptr;
-    core::pk_ptr pk = nullptr;
+    core::ContextWrapper context;
+    core::PubKeyWrapper pk;
     if(!loadFromMetaFile(metaFilePath, context, pk, meta))
         return false;
     return CurrentProtocol::get()->encrypt(inputFilePath, outputFilePath, local_compute, pk, context);
@@ -277,9 +340,9 @@ bool decrypt(const std::string &inputFilePath,
     }
 
     util::Meta meta;
-    core::context_ptr context = nullptr;
-    core::pk_ptr pk = nullptr;
-    core::sk_ptr sk = nullptr;
+    core::ContextWrapper context;
+    core::PubKeyWrapper pk;
+    core::SecKeyWrapper sk;
     if (!loadFromMetaFile(metaFilePath, context, pk, sk, meta))
         return false;
     return CurrentProtocol::get()->decrypt(inputFilePath, outputDirPath, pk, sk, context);
@@ -305,8 +368,8 @@ bool evaluate(const std::string &sessionDirPath,
     }
 
     util::Meta meta;
-    core::context_ptr context;
-    core::pk_ptr pk;
+    core::ContextWrapper context;
+    core::PubKeyWrapper pk;
     if (!loadFromMetaFile(metaFilePath, context, pk, meta))
         return false;
 

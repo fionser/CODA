@@ -15,20 +15,20 @@ public:
     bool encrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
                  bool local_compute,
-                 core::pk_ptr pk,
-                 core::context_ptr context) override;
+                 const core::PubKeyWrapper &pk,
+                 const core::ContextWrapper &context) override;
 
     bool decrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
-                 core::pk_ptr pk,
-                 core::sk_ptr sk,
-                 core::context_ptr context) override;
+                 const core::PubKeyWrapper &pk,
+                 const core::SecKeyWrapper &sk,
+                 const core::ContextWrapper &context) override;
 
     bool evaluate(const StringList &inputDirs,
                   const std::string &outputDir,
                   const StringList &params,
-                  core::pk_ptr pk,
-                  core::context_ptr context) override;
+                  const core::PubKeyWrapper &pk,
+                  const core::ContextWrapper &context) override;
 protected:
     core::FHEArg parameters() const override;
 

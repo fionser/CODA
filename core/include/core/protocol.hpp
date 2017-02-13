@@ -20,20 +20,20 @@ public:
     virtual bool encrypt(const std::string &inputFilePath,
                          const std::string &outputDirPath,
                          bool local_compute,
-                         core::pk_ptr pk,
-                         core::context_ptr context) = 0;
+                         const core::PubKeyWrapper &pk,
+                         const core::ContextWrapper &context) = 0;
 
     virtual bool decrypt(const std::string &inputFilePath,
                          const std::string &outputDirPath,
-                         core::pk_ptr pk,
-                         core::sk_ptr sk,
-                         core::context_ptr context) = 0;
+                         const core::PubKeyWrapper &pk,
+                         const core::SecKeyWrapper &sk,
+                         const core::ContextWrapper &context) = 0;
 
     virtual bool evaluate(const std::vector<std::string> &inputDirs,
                           const std::string &outputDir,
                           const std::vector<std::string> &params,
-                          core::pk_ptr pk,
-                          core::context_ptr context) = 0;
+                          const core::PubKeyWrapper &pk,
+                          const core::ContextWrapper &context) = 0;
 
 protected:
     virtual core::FHEArg parameters() const = 0;
@@ -42,8 +42,8 @@ protected:
 
     bool isNeedKeySwitching = true;
 
-private:
     std::string description_;
+
     std::string metaPath_;
 };
 

@@ -3,12 +3,12 @@
 #include "../include/HElib/FHE.h"
 #include "../include/HElib/timing.h"
 int main () {
-    core::context_ptr context = std::make_shared<FHEcontext>(5227, 67499, 1);
-    buildModChain(*context, 10);
-    core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
-    sk->GenSecKey(64);
-    addSome1DMatrices(*sk);
-    core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
+    core::ContextWrapper context = { .single = std::make_shared<FHEcontext>(5227, 67499, 1), .ppe = nullptr };
+    buildModChain(*context.single, 10);
+    core::SecKeyWrapper sk = { .single = std::make_shared<FHESecKey>(*context.single), .ppe = nullptr };
+    addSome1DMatrices(*sk.single);
+    sk.single->GenSecKey(64);
+    core::PubKeyWrapper pk = { .single = std::make_shared<FHEPubKey>(*sk.single), .ppe = nullptr };
 
     MeanProtocol mean;
     FHE_NTIMER_START(ENCRYPT);

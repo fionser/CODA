@@ -84,11 +84,11 @@ int main () {
     if (!create_dir("test-ct-2"))
         return -1;
 
-    core::context_ptr context = std::make_shared<FHEcontext>(16384, 8191, 3);
-    buildModChain(*context, 5);
-    core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
-    sk->GenSecKey(64);
-    core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
+    core::ContextWrapper context = { .single = std::make_shared<FHEcontext>(16384, 8191, 3), .ppe = nullptr };
+    buildModChain(*context.single, 5);
+    core::SecKeyWrapper sk = { .single = std::make_shared<FHESecKey>(*context.single), .ppe = nullptr };
+    sk.single->GenSecKey(64);
+    core::PubKeyWrapper pk = { .single = std::make_shared<FHEPubKey>(*sk.single), .ppe = nullptr };
 
     HybridContingencyTable ct;
     gen_content("test-ct-1");

@@ -4,7 +4,7 @@
 #include <vector>
 #include <iosfwd>
 class FHEPubKey;
-typedef std::shared_ptr<FHEPubKey> pk_ptr;
+typedef std::shared_ptr<FHEPubKey> raw_pk_ptr;
 namespace ppe {
 class SecKey;
 class Context;
@@ -16,7 +16,7 @@ public:
 
     ~PubKey() {}
 
-    const pk_ptr get(int idx) const { return pks_.at(idx); }
+    const raw_pk_ptr get(int idx) const { return pks_.at(idx); }
 
     size_t partsNum() const { return pks_.size(); }
 
@@ -24,7 +24,7 @@ public:
 
     bool restore(std::istream &istream, const Context &context);
 private:
-    std::vector<pk_ptr> pks_;
+    std::vector<raw_pk_ptr> pks_;
 };
 }
 #endif // CORE_PPE_PUBKEY_HPP

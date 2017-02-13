@@ -440,31 +440,34 @@ PercentileProtocol::PercentileProtocol() : Protocol("k-percentile") {
 bool PercentileProtocol::encrypt(const std::string &inputFilePath,
                                  const std::string &outputDirPath,
                                  bool local_compute,
-                                 core::pk_ptr pk,
-                                 core::context_ptr context) {
+                                 const core::PubKeyWrapper &pk,
+                                 const core::ContextWrapper &context)
+{
     if (!imp_) return false;
     return imp_->encrypt(inputFilePath, outputDirPath,
-                         local_compute, pk, context);
+                         local_compute, pk.single, context.single);
 }
 
 bool PercentileProtocol::decrypt(const std::string &inputFilePath,
                                  const std::string &outputDirPath,
-                                 core::pk_ptr pk,
-                                 core::sk_ptr sk,
-                                 core::context_ptr context) {
+                                 const core::PubKeyWrapper &pk,
+                                 const core::SecKeyWrapper &sk,
+                                 const core::ContextWrapper &context)
+{
     if (!imp_) return false;
     return imp_->decrypt(inputFilePath, outputDirPath,
-                         pk, sk, context);
+                         pk.single, sk.single, context.single);
 }
 
 bool PercentileProtocol::evaluate(const StringList &inputDirs,
                                   const std::string &outputDir,
                                   const StringList &params,
-                                  core::pk_ptr pk,
-                                  core::context_ptr context) {
+                                  const core::PubKeyWrapper &pk,
+                                  const core::ContextWrapper &context)
+{
     if (!imp_) return false;
     return imp_->evaluate(inputDirs, outputDir,
-                          params, pk, context);
+                          params, pk.single, context.single);
 }
 
 core::FHEArg PercentileProtocol::parameters() const {

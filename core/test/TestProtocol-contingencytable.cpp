@@ -53,17 +53,26 @@ int main () {
 
     ContingencyTableProtocol ct(1, 2);
     gen_content("test-ct-1");
-    ct.encrypt("test-ct-1/data.csv", "test-ct-1/", false, pk, context);
+    ct.encrypt("test-ct-1/data.csv", "test-ct-1/", false,
+               { .single = pk, .ppe = nullptr },
+               { .single = context, .ppe = nullptr });
     gen_content("test-ct-2");
-    ct.encrypt("test-ct-2/data.csv", "test-ct-2/", false, pk, context);
+    ct.encrypt("test-ct-2/data.csv", "test-ct-2/", false,
+               { .single = pk, .ppe = nullptr },
+               { .single = context, .ppe = nullptr });
 
     std::vector<std::string> inputDirs;
     inputDirs.push_back("test-ct-1");
     inputDirs.push_back("test-ct-2");
     create_dir("test-out");
-    ct.evaluate(inputDirs, "test-out", {"1", "2"}, pk, context);
+    ct.evaluate(inputDirs, "test-out", {"1", "2"},
+               { .single = pk, .ppe = nullptr },
+               { .single = context, .ppe = nullptr });
 
-    ct.decrypt("test-out/File_result", "./", pk, sk, context);
+    ct.decrypt("test-out/File_result", "./",
+               { .single = pk, .ppe = nullptr },
+               { .single = sk, .ppe = nullptr},
+               { .single = context, .ppe = nullptr });
 
     std::ifstream fin("File_result");
     if (!fin.is_open())

@@ -41,6 +41,5 @@ bool SecKey::restore(std::istream &istream, const Context &context) {
         istream >> *(sks_[i]);
     }
     return true;
-
 }
 } // namespace ppe

@@ -396,25 +396,30 @@ MeanProtocol::MeanProtocol() : Protocol("MeanProtocol") {
 bool MeanProtocol::encrypt(const std::string &inputFilePath,
                            const std::string &outputDirPath,
                            bool local_compute,
-                           core::pk_ptr pk,
-                           core::context_ptr context) {
-    return imp->encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
+                           const core::PubKeyWrapper &pk,
+                           const core::ContextWrapper &context)
+{
+    return imp->encrypt(inputFilePath, outputDirPath, local_compute,
+                        pk.single, context.single);
 }
 
 bool MeanProtocol::decrypt(const std::string &inputFilePath,
                            const std::string &outputDirPath,
-                           core::pk_ptr pk,
-                           core::sk_ptr sk,
-                           core::context_ptr context) {
-    return imp->decrypt(inputFilePath, outputDirPath, pk, sk, context);
+                           const core::PubKeyWrapper &pk,
+                           const core::SecKeyWrapper &sk,
+                           const core::ContextWrapper &context)
+{
+    return imp->decrypt(inputFilePath, outputDirPath,
+                        pk.single, sk.single, context.single);
 }
 
 bool MeanProtocol::evaluate(const std::vector<std::string> &inputDirs,
                             const std::string &outputDir,
                             const std::vector<std::string> &/*params*/,
-                            core::pk_ptr pk,
-                            core::context_ptr context) {
-    return imp->evaluate(inputDirs, outputDir, pk, context);
+                            const core::PubKeyWrapper &pk,
+                            const core::ContextWrapper &context)
+{
+    return imp->evaluate(inputDirs, outputDir, pk.single, context.single);
 }
 
 core::FHEArg MeanProtocol::parameters() const {

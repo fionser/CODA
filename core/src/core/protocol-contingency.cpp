@@ -606,29 +606,32 @@ ContingencyTableProtocol::ContingencyTableProtocol(int /*p*/, int /*q*/, long /*
 bool ContingencyTableProtocol::encrypt(const std::string &inputFilePath,
                                        const std::string &outputDirPath,
                                        bool local_compute,
-                                       core::pk_ptr pk,
-                                       core::context_ptr context)
+                                       const core::PubKeyWrapper &pk,
+                                       const core::ContextWrapper &context)
 {
     if (!imp)
         imp = std::make_shared<contingency_table::ProtocolImp>(0, 0, 0);
-    return imp->encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
+    return imp->encrypt(inputFilePath, outputDirPath, local_compute,
+                        pk.single, context.single);
 }
 
 bool ContingencyTableProtocol::decrypt(const std::string &inputFilePath,
                                        const std::string &outputDirPath,
-                                       core::pk_ptr pk, core::sk_ptr sk,
-                                       core::context_ptr context)
+                                       const core::PubKeyWrapper &pk,
+                                       const core::SecKeyWrapper &sk,
+                                       const core::ContextWrapper &context)
 {
     if (!imp)
         imp = std::make_shared<contingency_table::ProtocolImp>(0, 0, 0);
-    return imp->decrypt(inputFilePath, outputDirPath, pk, sk, context);
+    return imp->decrypt(inputFilePath, outputDirPath,
+                        pk.single, sk.single, context.single);
 }
 
 bool ContingencyTableProtocol::evaluate(const std::vector <std::string> &inputDirs,
                                         const std::string &outputDir,
                                         const std::vector<std::string> &params,
-                                        core::pk_ptr pk,
-                                        core::context_ptr context)
+                                        const core::PubKeyWrapper &pk,
+                                        const core::ContextWrapper &context)
 {
     if (params.size() < 2) return false;
     int p = literal::stol(params[0]);
@@ -637,7 +640,7 @@ bool ContingencyTableProtocol::evaluate(const std::vector <std::string> &inputDi
     if (params.size() == 3) T = literal::stol(params[2]);
 
     imp = std::make_shared<contingency_table::ProtocolImp>(p, q, T);
-    return imp->evaluate(inputDirs, outputDir, pk, context);
+    return imp->evaluate(inputDirs, outputDir, pk.single, context.single);
 }
 
 core::FHEArg ContingencyTableProtocol::parameters() const {

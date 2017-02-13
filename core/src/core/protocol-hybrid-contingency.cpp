@@ -488,31 +488,42 @@ HybridContingencyTable::HybridContingencyTable()
 bool HybridContingencyTable::encrypt(const std::string &inputFilePath,
                                      const std::string &outputDirPath,
                                      bool local_compute,
-                                     core::pk_ptr pk,
-                                     core::context_ptr context) {
+                                     const core::PubKeyWrapper &pk,
+                                     const core::ContextWrapper &context)
+{
     if (!imp)
-        imp = std::make_shared<contingency_table::HybridProtocolImp>(1, 2, 3, 0);
-    return imp->encrypt(inputFilePath, outputDirPath, local_compute, pk, context);
+        imp = std::make_shared<contingency_table::HybridProtocolImp>(0, 0, 0, 0);
+    return imp->encrypt(inputFilePath, outputDirPath, local_compute,
+                        pk.single, context.single);
 }
 
 bool HybridContingencyTable::decrypt(const std::string &inputFilePath,
-                                     const std::string &outputDirPath,
-                                     core::pk_ptr pk,
-                                     core::sk_ptr sk,
-                                     core::context_ptr context) {
+                                      const std::string &outputDirPath,
+                                      const core::PubKeyWrapper &pk,
+                                      const core::SecKeyWrapper &sk,
+                                      const core::ContextWrapper &context)
+{
     if (!imp)
-        imp = std::make_shared<contingency_table::HybridProtocolImp>(1, 2, 3, 0);
-    return imp->decrypt(inputFilePath, outputDirPath, pk, sk, context);
+        imp = std::make_shared<contingency_table::HybridProtocolImp>(0, 0, 0, 0);
+    return imp->decrypt(inputFilePath, outputDirPath,
+                        pk.single, sk.single, context.single);
 }
 
-bool HybridContingencyTable::evaluate(const std::vector<std::string> &inputDirs,
-                                      const std::string &outputDir,
+bool HybridContingencyTable::evaluate(const std::vector <std::string> &inputDirs,
+                                      const std::string &outputDirPath,
                                       const std::vector<std::string> &params,
-                                      core::pk_ptr pk,
-                                      core::context_ptr context) {
+                                      const core::PubKeyWrapper &pk,
+                                      const core::ContextWrapper &context)
+{
+    if (params.size() < 2) return false;
+    int p = literal::stol(params[0]);
+    int q = literal::stol(params[1]);
+    long T = 2;
+    if (params.size() == 3) T = literal::stol(params[2]);
+
     if (!imp)
         imp = std::make_shared<contingency_table::HybridProtocolImp>(1, 2, 3, 0);
-    return imp->evaluate(inputDirs, outputDir, params, pk, context);
+    return imp->evaluate(inputDirs, outputDirPath, params, pk.single, context.single);
 }
 
 core::FHEArg HybridContingencyTable::parameters() const {

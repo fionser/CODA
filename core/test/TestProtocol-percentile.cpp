@@ -90,12 +90,12 @@ int main () {
     if (!create_dir("test-ct-2"))
         return -1;
 
-    core::context_ptr context = std::make_shared<FHEcontext>(256, 8191, 3);
-    buildModChain(*context, 7);
-    core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
-    sk->GenSecKey(64);
-    addSome1DMatrices(*sk);
-    core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
+    core::ContextWrapper context = { .single = std::make_shared<FHEcontext>(256, 8191, 3), .ppe = nullptr };
+    buildModChain(*context.single, 7);
+    core::SecKeyWrapper sk = { .single = std::make_shared<FHESecKey>(*context.single), .ppe = nullptr };
+    addSome1DMatrices(*sk.single);
+    sk.single->GenSecKey(64);
+    core::PubKeyWrapper pk = { .single = std::make_shared<FHEPubKey>(*sk.single), .ppe = nullptr };
 
     PercentileProtocol protocol;
     gen_content("test-ct-1");

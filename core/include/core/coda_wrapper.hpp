@@ -1,0 +1,5 @@
+#ifndef CORE_CODA_WRAPPER_HPP
+#define CORE_CODA_WRAPPER_HPP
+#define TYPE_SINGLE 1
+#define TYPE_PPE 2
+#endif // CORE_CODA_WRAPPER_HPP
