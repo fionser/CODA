@@ -41,6 +41,9 @@ public:
         scale(X, magnifications);
         Matrix XTX;
         NTL::mul(XTX, NTL::transpose(X), X);
+
+
+
         return true;
     }
 

@@ -118,6 +118,21 @@ public:
         return true;
     }
 
+    bool sub(const std::shared_ptr<Imp> &oth) {
+        if (rowCnt_ != oth->rowCnt_) return false;
+        for (size_t r = 0; r < rowCnt_; r++) {
+            ctxts_[r].sub(oth->rowAt(r));
+        }
+        return true;
+    }
+
+    bool sub(const Matrix &mat) {
+        if (rowCnt_ != mat.NumRows()) return false;
+        for (size_t r = 0; r < rowCnt_; r++) {
+            ctxts_[r].sub(mat[r]);
+        }
+        return true;
+    }
     friend class EncMat;
 private:
     long rowCnt_;
@@ -173,6 +188,16 @@ EncMat& EncMat::add(const EncMat &oth) {
 
 EncMat& EncMat::add(const Matrix &c) {
     imp_->add(c);
+    return *this;
+}
+
+EncMat& EncMat::sub(const EncMat &oth) {
+    imp_->sub(oth.imp_);
+    return *this;
+}
+
+EncMat& EncMat::sub(const Matrix &c) {
+    imp_->sub(c);
     return *this;
 }
 

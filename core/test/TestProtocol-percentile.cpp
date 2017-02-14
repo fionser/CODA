@@ -93,8 +93,8 @@ int main () {
     core::ContextWrapper context = { .single = std::make_shared<FHEcontext>(256, 8191, 3), .ppe = nullptr };
     buildModChain(*context.single, 7);
     core::SecKeyWrapper sk = { .single = std::make_shared<FHESecKey>(*context.single), .ppe = nullptr };
-    addSome1DMatrices(*sk.single);
     sk.single->GenSecKey(64);
+    addSome1DMatrices(*sk.single);
     core::PubKeyWrapper pk = { .single = std::make_shared<FHEPubKey>(*sk.single), .ppe = nullptr };
 
     PercentileProtocol protocol;
@@ -126,5 +126,6 @@ int main () {
         return -1;
     }
     fin.close();
+    std::cout << "passed" << std::endl;
     return 0;
 }

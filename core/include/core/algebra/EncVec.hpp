@@ -27,6 +27,10 @@ public:
 
     EncVec& add(const Vector &c);
 
+	EncVec& sub(const EncVec &c);
+
+	EncVec& sub(const Vector &c);
+
     EncVec& mul(const Vector &c);
     // equals to lowLevelMul + reLinearize
     EncVec& mul(const EncVec &oth);

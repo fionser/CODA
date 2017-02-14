@@ -29,6 +29,10 @@ public:
 
     EncMat& add(const Matrix &c);
 
+    EncMat& sub(const EncMat &oth);
+
+    EncMat& sub(const Matrix &c);
+
     EncMat& dot(const EncMat &oth);
 
     EncVec sym_dot(const EncVec &oth) const;

@@ -30,6 +30,7 @@ public:
         ea_ = oth.ea_;
         pk_ = oth.pk_;
         ctxts_.resize(oth.ctxts_.size());
+        ptxt_ = oth.ptxt_;
         for (size_t i = 0; i < ctxts_.size(); i++)
             ctxts_.at(i) = std::make_shared<Ctxt>(*oth.ctxts_[i]);
         return *this;
@@ -81,6 +82,32 @@ public:
             return false;
         }
         std::vector<iVec> constants = extend(c, ctxts_.size());
+        NTL::ZZX poly;
+        for (size_t i = 0; i < constants.size(); i++) {
+            ea_->encode(poly, constants[i]);
+            ctxts_[i]->addConstant(poly);
+        }
+        return true;
+    }
+
+    bool sub(const std::shared_ptr<Imp> &oth) {
+        assert(oth && "nullptr");
+        if (length() != oth->length()) {
+            std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << oth->length() << "\n";
+            return false;
+        }
+        for (size_t i = 0; i < ctxts_.size(); i++)
+            ctxts_[i]->operator-=(*(oth->ctxts_[i]));
+        return true;
+    }
+
+    bool sub(const Vector &c) {
+        if (c.length() != length()) {
+            std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << c.length() << "\n";
+            return false;
+        }
+        std::vector<iVec> constants = extend(c, ctxts_.size());
+        negate(constants);
         NTL::ZZX poly;
         for (size_t i = 0; i < constants.size(); i++) {
             ea_->encode(poly, constants[i]);
@@ -245,6 +272,14 @@ private:
         return parts;
     }
 
+    void negate(std::vector<iVec> &parts) {
+        for (iVec& part : parts) {
+           for (long &ele : part) {
+               ele = (-1 * ele) % ptxt_;
+           }
+        }
+    }
+
     long length() const { return length_; }
 private:
     long length_ = 0;
@@ -289,6 +324,16 @@ EncVec& EncVec::add(const EncVec &oth) {
 
 EncVec& EncVec::add(const Vector &c) {
     imp_->add(c);
+    return *this;
+}
+
+EncVec& EncVec::sub(const EncVec &oth) {
+    imp_->sub(oth.imp_);
+    return *this;
+}
+
+EncVec& EncVec::sub(const Vector &c) {
+    imp_->sub(c);
     return *this;
 }
 

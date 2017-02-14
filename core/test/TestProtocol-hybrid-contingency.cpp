@@ -27,8 +27,8 @@ bool create_dir(const std::string &path) {
     return true;
 }
 
-long _sizeP = 400;
-long _sizeQ = 2;
+long _sizeP = 40;
+long _sizeQ = 3;
 struct Cell {
     long p, q, v;
 };

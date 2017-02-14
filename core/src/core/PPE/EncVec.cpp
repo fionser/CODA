@@ -39,7 +39,7 @@ public:
         std::vector<Vector> alphas(crtParts_.size());
         for (size_t i = 0; i < sk.partsNum(); i++)
             crtParts_.at(i).unpack(alphas.at(i), sk.get(i), false);
-        return apply_crt(result, alphas);
+        return apply_crt(result, alphas, negate);
     }
 
     bool add(const std::shared_ptr<Imp> &oth) {
@@ -51,14 +51,28 @@ public:
 
     bool add(const Vector &c) {
         #pragma omp parallel for
-        for (auto crtPart : crtParts_)
+        for (auto &crtPart : crtParts_)
             crtPart.add(c);
+        return true;
+    }
+
+    bool sub(const std::shared_ptr<Imp> &oth) {
+        #pragma omp parallel for
+        for (size_t i = 0; i < crtParts_.size(); i++)
+            crtParts_.at(i).sub(oth->crtParts_.at(i));
+        return true;
+    }
+
+    bool sub(const Vector &c) {
+        #pragma omp parallel for
+        for (auto &crtPart : crtParts_)
+            crtPart.sub(c);
         return true;
     }
 
     bool mul(const Vector &c) {
         #pragma omp parallel for
-        for (auto crtPart : crtParts_)
+        for (auto &crtPart : crtParts_)
             crtPart.mul(c);
         return true;
     }
@@ -78,7 +92,7 @@ public:
 
     bool reLinearize() {
         #pragma omp parallel for
-        for (auto crtPart : crtParts_)
+        for (auto &crtPart : crtParts_)
             crtPart.reLinearize();
         return true;
     }
@@ -127,7 +141,7 @@ private:
         }
     }
 
-    bool apply_crt(Vector &result, const std::vector<Vector> &plains) const {
+    bool apply_crt(Vector &result, const std::vector<Vector> &plains, const bool negate) const {
         if (plains.empty() || plains.size() > primes_.size()) {
             std::cerr << "Invalid parameter for apply_crt\n";
             return false;
@@ -145,7 +159,7 @@ private:
                 }
                 alphas.push_back(plain[pos]);
             }
-            tmp[pos] = algebra::apply_crt(alphas, primes_);
+            tmp[pos] = algebra::apply_crt(alphas, primes_, negate);
         }
         result = tmp;
         return true;
@@ -193,6 +207,16 @@ EncVec& EncVec::add(const EncVec &oth) {
 
 EncVec& EncVec::add(const Vector &c) {
     imp_->add(c);
+    return *this;
+}
+
+EncVec& EncVec::sub(const EncVec &oth) {
+    imp_->sub(oth.imp_);
+    return *this;
+}
+
+EncVec& EncVec::sub(const Vector &c) {
+    imp_->sub(c);
     return *this;
 }
 

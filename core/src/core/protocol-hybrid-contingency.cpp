@@ -146,7 +146,6 @@ public:
             L_ERROR(global::_console, "Can not convert file {0}.", inputFilePath);
             return false;
         }
-
         std::vector<Ctxt> ctxts;
         if (!encryptTableAsPoly(ctxts, table, pk, context)) {
             L_ERROR(global::_console, "Error happend when to encrypt {0}.",
@@ -329,11 +328,11 @@ bool HybridProtocolImp::convertDataToTable(CTable &table,
 
     auto attributes = parseHeader(fin);
     size_t nr_attributes = attributes.size();
-    if (_p > nr_attributes || _q > nr_attributes || _t > nr_attributes) {
+    if (_p > nr_attributes || _q > nr_attributes || _t > nr_attributes
+        || _p <= 0 || _q <= 0) {
         L_ERROR(global::_console, "Invalid attribute index.");
         return false;
     }
-
     auto P = attributes.at(ATTR_INDEX(_p));
     auto Q = attributes.at(ATTR_INDEX(_q));
     auto T = attributes.at(ATTR_INDEX(_t));
@@ -492,7 +491,7 @@ bool HybridContingencyTable::encrypt(const std::string &inputFilePath,
                                      const core::ContextWrapper &context)
 {
     if (!imp)
-        imp = std::make_shared<contingency_table::HybridProtocolImp>(0, 0, 0, 0);
+        imp = std::make_shared<contingency_table::HybridProtocolImp>(1, 2, 3, 0);
     return imp->encrypt(inputFilePath, outputDirPath, local_compute,
                         pk.single, context.single);
 }
@@ -504,7 +503,7 @@ bool HybridContingencyTable::decrypt(const std::string &inputFilePath,
                                       const core::ContextWrapper &context)
 {
     if (!imp)
-        imp = std::make_shared<contingency_table::HybridProtocolImp>(0, 0, 0, 0);
+        imp = std::make_shared<contingency_table::HybridProtocolImp>(0, 0, 0, 0);// dummy 0s
     return imp->decrypt(inputFilePath, outputDirPath,
                         pk.single, sk.single, context.single);
 }
@@ -522,7 +521,7 @@ bool HybridContingencyTable::evaluate(const std::vector <std::string> &inputDirs
     if (params.size() == 3) T = literal::stol(params[2]);
 
     if (!imp)
-        imp = std::make_shared<contingency_table::HybridProtocolImp>(1, 2, 3, 0);
+        imp = std::make_shared<contingency_table::HybridProtocolImp>(p, q, 0, T);
     return imp->evaluate(inputDirs, outputDirPath, params, pk.single, context.single);
 }
 
