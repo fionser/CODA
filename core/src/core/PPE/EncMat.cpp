@@ -94,9 +94,41 @@ public:
         return true;
     }
 
+    bool mul(const Matrix &mat) {
+        if (mat.NumRows() != rowNums() || mat.NumRows() != rowNums())
+            return false;
+        for (size_t i = 0; i < this->crtParts_.size(); i++)
+            this->crtParts_[i].mul(mat);
+        return true;
+    }
+
+    bool dot(const std::shared_ptr<Imp> &oth) {
+        if (oth->crtParts_.size() != this->crtParts_.size())
+            return false;
+        if (colNums() != oth->colNums() || rowNums() != oth->rowNums())
+            return false;
+        #pragma omp parallel for
+        for (size_t i = 0; i < this->crtParts_.size(); i++)
+            this->crtParts_[i].dot(oth->crtParts_[i]);
+        return true;
+    }
+
+    ppe::EncVec sym_dot(const ppe::EncVec &vec) {
+        ppe::EncVec ret(pk_);
+        if (colNums() != vec.length())
+            return ret;
+        std::vector<core::EncVec> parts(crtParts_.size());
+        #pragma omp parallel for
+        for (size_t i = 0; i < parts.size(); i++)
+            parts[i] = crtParts_[i].sym_dot(vec.getCRTPartAt(i));
+        ret.directSetup(parts);
+        return ret;
+    }
+
     long colNums() const { return colNum_; }
 
     long rowNums() const { return rowNum_; }
+
 private:
     void getEncryptedArrays(const PubKey &pk) {
         ea_.resize(pk.partsNum());
@@ -196,14 +228,16 @@ EncMat& EncMat::sub(const Matrix &c) {
 }
 
 EncMat& EncMat::dot(const EncMat &oth) {
+    imp_->dot(oth.imp_);
     return *this;
 }
 
 EncVec EncMat::sym_dot(const EncVec &oth) const {
-//    return EncVec(pk_);
+    return imp_->sym_dot(oth);
 }
 
 EncMat& EncMat::mul(const Matrix &oth) {
+    imp_->mul(oth);
     return *this;
 }
 

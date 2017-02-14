@@ -140,7 +140,6 @@ int test_io() {
     encVec2.pack(vec);
     encVec2.unpack(vec2, sk);
 
-    std::cout << vec2 << "\n";
     if (vec != vec2) return -1;
     return 0;
 }
@@ -160,16 +159,21 @@ int test_EncMat() {
         P *= p;
 
     Matrix mat;
-
+    Vector vec;
     mat.SetDims(10, 10);
-    for (long r = 0; r < 10; r++) {
-        for (long c = 0; c < 10; c++) {
+    vec.SetLength(10);
+    for (long r = 0; r < mat.NumRows(); r++) {
+        for (long c = r; c < mat.NumCols(); c++) {
             mat[r][c] = NTL::to_ZZ(r * 10 + c);
+            mat[c][r] = NTL::to_ZZ(r * 10 + c);
         }
+        vec[r] = 1;
     }
 
     ppe::EncMat encMat(pk);
     encMat.pack(mat);
+    ppe::EncVec encVec(pk);
+    encVec.pack(vec);
     {
         Matrix mat2;
         encMat.unpack(mat2, sk);
@@ -218,16 +222,32 @@ int test_EncMat() {
             for (long c = 0; c < mat2.NumCols(); c++)
                 if (mat2[r][c] != 0) return -1;
     } // test sub
+    {
+        ppe::EncVec ret = encMat.sym_dot(encVec);
+        Vector vec2;
+        ret.unpack(vec2, sk);
+
+        NTL::ZZ_p::init(P);
+        NTL::mat_ZZ_p mat_p;
+        NTL::vec_ZZ_p vec_p, ret_p, computed;
+
+        NTL::conv(mat_p, mat);
+        NTL::conv(vec_p, vec);
+        NTL::conv(computed, vec2);
+        NTL::mul(ret_p, mat_p, vec_p);
+
+        if (computed != ret_p)
+            return -1;
+    } // test matrix-vector multiplication
     return 0;
 }
 
 int main() {
     if (test_EncVec() != 0)
         return -1;
-    // if (test_io() != 0)
-    //     return -1;
     if (test_EncMat() != 0)
         return -1;
-    std::cout << "passed\n";
+//    if (test_io() != 0)
+//        return -1;
     return 0;
 }

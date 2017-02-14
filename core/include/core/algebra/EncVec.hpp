@@ -15,6 +15,8 @@ public:
 
     EncVec& operator=(const EncVec &oth);
 
+	EncVec() {}
+
     ~EncVec() {}
 
     EncVec& pack(const Vector &vec);

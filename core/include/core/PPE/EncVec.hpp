@@ -4,6 +4,7 @@
 namespace ppe {
 class SecKey;
 class PubKey;
+class EncMat;
 class EncVec {
 public:
     EncVec(const PubKey &pk);
@@ -47,8 +48,14 @@ public:
     long length() const;
 
 private:
+	bool directSetup(const std::vector<core::EncVec> &crt_parts);
+
+	const core::EncVec& getCRTPartAt(long index) const;
+
+private:
 	class Imp;
     friend class Imp;
+	friend class EncMat;
 	std::shared_ptr<Imp> imp_;
 };
 

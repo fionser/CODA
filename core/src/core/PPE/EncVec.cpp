@@ -26,6 +26,13 @@ public:
         return *this;
     }
 
+    bool setUpParts(const std::vector<core::EncVec> &parts) {
+        if (pk_.partsNum() != parts.size())
+            return false;
+        crtParts_ = parts;
+        return true;
+    }
+
     bool pack(const Vector &vec) {
         #pragma omp parallel for
         for (size_t i = 0; i < crtParts_.size(); i++)
@@ -126,6 +133,9 @@ public:
         return crtParts_.empty() ? 0 : crtParts_.front().length();
     }
 
+    const core::EncVec& partAt(long index) {
+       return crtParts_.at(index);
+    }
 private:
     void getEncryptedArrays(const PubKey &pk) {
         ea_.resize(pk.partsNum());
@@ -178,6 +188,10 @@ EncVec::EncVec(const PubKey &pk) {
 
 EncVec::EncVec(const EncVec &oth) {
     imp_ = std::make_shared<Imp>(*oth.imp_);
+}
+
+bool EncVec::directSetup(const std::vector<core::EncVec> &crt_parts) {
+    return imp_->setUpParts(crt_parts);
 }
 
 EncVec& EncVec::operator=(const EncVec &oth) {
@@ -254,6 +268,10 @@ std::vector<EncVec> EncVec::replicateAll(long width) const {
 
 long EncVec::length() const {
     return imp_->length();
+}
+
+const core::EncVec& EncVec::getCRTPartAt(long index) const {
+    return imp_->partAt(index);
 }
 }
 
