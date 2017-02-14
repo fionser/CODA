@@ -3,6 +3,7 @@
 #include "core/coda.hpp"
 #include <vector>
 #include <memory>
+#include <iosfwd>
 #include <NTL/mat_ZZ.h>
 typedef NTL::mat_ZZ Matrix;
 namespace core {
@@ -23,6 +24,8 @@ public:
 
     EncMat& pack(const Matrix &mat);
 
+	bool unpack(Matrix &result, core::sk_ptr sk, bool negate = false) const;
+    
     const EncVec& rowAt(int r) const;
 
     EncMat& add(const EncMat &oth);
@@ -38,10 +41,10 @@ public:
     EncVec sym_dot(const EncVec &oth) const;
 
     EncMat& mul(const Matrix &oth);
+    
+	bool dump(std::ostream &out) const;
 
-    bool unpack(Matrix &result,
-                core::sk_ptr sk,
-                bool negate = false) const;
+	bool restore(std::istream &in);
 private:
 	class Imp;
 	std::shared_ptr<Imp> imp_;

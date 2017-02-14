@@ -125,6 +125,20 @@ public:
         return ret;
     }
 
+    bool dump(std::ostream &out) const {
+       out << rowNum_ << " " << colNum_ << std::endl;
+        for (const auto &part : crtParts_)
+            part.dump(out);
+        return true;
+    }
+
+    bool restore(std::istream &in) {
+        in >> rowNum_ >> colNum_;
+        for (auto &part : crtParts_)
+            part.restore(in);
+        return true;
+    }
+
     long colNums() const { return colNum_; }
 
     long rowNums() const { return rowNum_; }
@@ -241,5 +255,12 @@ EncMat& EncMat::mul(const Matrix &oth) {
     return *this;
 }
 
+bool EncMat::dump(std::ostream &out) const {
+   return imp_->dump(out);
+}
+
+bool EncMat::restore(std::istream &in) {
+   return imp_->restore(in);
+}
 }
 

@@ -133,19 +133,55 @@ int testIO(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
     for (int i = 0; i < slots.length(); i++)
         slots[i] = NTL::to_ZZ(i + 1);
     encVec.pack(slots);
-    std::ofstream out("./tmp.ctx", std::ios::binary);
-    if (!encVec.dump(out)) { out.close(); return -1; }
-    out.close();
+    {
+        std::ofstream out("./tmp.ctx", std::ios::binary);
+        if (!encVec.dump(out)) {
+            out.close();
+            return -1;
+        }
+        out.close();
 
-    std::ifstream in("./tmp.ctx", std::ios::binary);
-    core::EncVec encVec2(pk);
-    if (!encVec2.restore(in)) { in.close(); return -1; }
-    in.close();
+        std::ifstream in("./tmp.ctx", std::ios::binary);
+        core::EncVec encVec2(pk);
+        if (!encVec2.restore(in)) {
+            in.close();
+            return -1;
+        }
+        in.close();
 
-    NTL::vec_ZZ slots2;
-    encVec2.unpack(slots2, sk);
-    if (slots2 != slots)
-        return -1;
+        NTL::vec_ZZ slots2;
+        encVec2.unpack(slots2, sk);
+        if (slots2 != slots)
+            return -1;
+    } // Test EncVec
+
+    core::EncMat encMat(pk);
+    NTL::mat_ZZ mat;
+    mat.SetDims(7, 7);
+    for (long r = 0; r < mat.NumRows(); r++)
+        for (long c = 0; c < mat.NumCols(); c++) mat[r][c] = 1;
+    encMat.pack(mat);
+    {
+        std::ofstream out("./tmp.ctx", std::ios::binary);
+        if (!encMat.dump(out)) {
+            out.close();
+            return -1;
+        }
+        out.close();
+
+        std::ifstream in("./tmp.ctx", std::ios::binary);
+        core::EncMat encMat2(pk);
+        if (!encMat2.restore(in)) {
+            in.close();
+            return -1;
+        }
+        in.close();
+
+        NTL::mat_ZZ mat2;
+        encMat2.unpack(mat2, sk);
+        if (mat != mat2)
+            return -1;
+    } // Test EncMat
     return 0;
 }
 

@@ -5,6 +5,8 @@
 #ifndef CORE_PPE_ENCMAT_HPP
 #define CORE_PPE_ENCMAT_HPP
 #include "core/algebra/EncMat.hpp"
+
+#include <iosfwd>
 namespace ppe {
 class SecKey;
 class PubKey;
@@ -42,6 +44,11 @@ public:
 	bool unpack(Matrix &result,
 				const SecKey &sk,
 				bool negate = false) const;
+
+	bool dump(std::ostream &out) const;
+
+	bool restore(std::istream &in);
+
 private:
 	class Imp;
     friend class Imp;

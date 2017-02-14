@@ -52,8 +52,10 @@ public:
     bool unpack(Vector &result,
                 core::sk_ptr sk,
                 bool  negate) const {
-        if (ctxts_.empty())
+        if (ctxts_.empty()) {
+            std::cerr << "core::EncVec. Unpacking empty ciphertext" << std::endl;
             return false;
+        }
         std::vector<iVec> parts = extend(length_);
         #pragma omp parallel for
         for (size_t i = 0; i + 1 < ctxts_.size(); i++) {
@@ -194,15 +196,17 @@ public:
     }
 
     bool dump(std::ostream &out) const {
-        out << static_cast<int32_t>(ctxts_.size()) << " " << length_ << "\n";
-        for (auto &ctx : ctxts_) {
-            out << *ctx << "\n";
-        }
+        out << static_cast<int32_t>(ctxts_.size()) << " " << length_ << std::endl;
+        for (const auto &ctx : ctxts_)
+            out << *ctx << std::endl;
         return true;
     }
 
     bool restore(std::istream &in) {
-        if (!pk_) return false;
+        if (!pk_) {
+            std::cerr << "From EncVec::restore(): pk can no be empty." << std::endl;
+            return false;
+        }
 
         int32_t parts;
         in >> parts;

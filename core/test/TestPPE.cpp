@@ -4,8 +4,11 @@
 #include "core/PPE/EncVec.hpp"
 #include "core/PPE/EncMat.hpp"
 
+#include <NTL/mat_ZZ.h>
+#include <NTL/vec_ZZ.h>
 #include <NTL/vec_ZZ_p.h>
 #include <NTL/mat_ZZ_p.h>
+
 #include <iostream>
 #include <fstream>
 
@@ -79,9 +82,9 @@ int test_EncVec() {
 }
 
 int test_io() {
-    std::vector<long> Ms = {2048, 4096};
-    std::vector<long> Ps = {13, 23};
-    std::vector<long> Rs = {1, 1};
+    std::vector <long> Ms = {2048, 4096};
+    std::vector <long> Ps = {13, 23};
+    std::vector <long> Rs = {1, 1};
     ppe::Context context(Ms, Ps, Rs);
     context.buildModChain(7);
 
@@ -99,20 +102,29 @@ int test_io() {
 
     {
         std::ofstream out("./tmp.context", std::ios::binary);
-        if (!out.is_open()) return -1;
-        if (!context.dump(out)) { out.close(); return -1; }
+        if (!out.is_open()) { std::cerr << "can not create tmp.context" << std::endl; return -1; }
+        if (!context.dump(out)) {
+            out.close();
+            return -1;
+        }
         out.close();
     }
     {
         std::ofstream out("./tmp.sk", std::ios::binary);
-        if (!out.is_open()) return -1;
-        if (!sk.dump(out)) { out.close(); return -1; }
+        if (!out.is_open()) { std::cerr << "can not create tmp.sk" << std::endl; return -1; }
+        if (!sk.dump(out)) {
+            out.close();
+            return -1;
+        }
         out.close();
     }
     {
         std::ofstream out("./tmp.pk", std::ios::binary);
-        if (!out.is_open()) return -1;
-        if (!pk.dump(out)) { out.close(); return -1; }
+        if (!out.is_open()) { std::cerr << "can not create tmp.pk" << std::endl; return -1; }
+        if (!pk.dump(out)) {
+            out.close();
+            return -1;
+        }
         out.close();
     }
 
@@ -121,26 +133,76 @@ int test_io() {
     ppe::PubKey pk2;
     {
         std::ifstream in("./tmp.context", std::ios::binary);
-        if (!context2.restore(in)) { in.close(); return -1; }
+        if (!context2.restore(in)) {
+            in.close();
+            return -1;
+        }
         in.close();
     }
     {
         std::ifstream in("./tmp.sk", std::ios::binary);
-        if (!sk2.restore(in, context2)) { in.close(); return -1; }
+        if (!sk2.restore(in, context2)) {
+            in.close();
+            return -1;
+        }
         in.close();
     }
     {
         std::ifstream in("./tmp.pk", std::ios::binary);
-        if (!pk2.restore(in, context2)) { in.close(); return -1; }
+        if (!pk2.restore(in, context2)) {
+            in.close();
+            return -1;
+        }
         in.close();
     }
+    {
+        Vector vec2;
+        ppe::EncVec encVec2(pk2);
+        encVec2.pack(vec);
+        encVec2.unpack(vec2, sk2);
+        if (vec!=vec2) { std::cerr << "IO for context & pk & sk failed" << std::endl; return -1; }
+    } // Test IO for Context, PubKey, and SecKey
 
-    Vector vec2;
-    ppe::EncVec encVec2(pk2);
-    encVec2.pack(vec);
-    encVec2.unpack(vec2, sk);
+    {
+        ppe::EncVec encVec(pk2);
+        ppe::EncMat encMat(pk2);
+        NTL::vec_ZZ vec;
+        NTL::mat_ZZ mat;
+        vec.SetLength(10);
+        for (long i = 0; i < vec.MaxLength(); i++) vec[i] = 10;
 
-    if (vec != vec2) return -1;
+        mat.SetDims(7, 5);
+        for (long r = 0; r < mat.NumRows(); r++)
+            for (long c = 0; c < mat.NumCols(); c++) mat[r][c] = 10;
+
+        encVec.pack(vec);
+        encMat.pack(mat);
+
+        std::ofstream out("./encVec.ctxt", std::ios::binary);
+        if (!out.is_open()) { std::cerr << "Can not create encVec.ctxt\n"; return -1; }
+        encVec.dump(out);
+        out.close();
+
+        out = std::ofstream("./encMat.ctxt", std::ios::binary);
+        if (!out.is_open()) { std::cerr << "Can not create encMat.ctxt\n"; return -1; }
+        encMat.dump(out);
+        out.close();
+
+        std::ifstream in("./encVec.ctxt", std::ios::binary);
+        ppe::EncVec encVec2(pk2);
+        encVec2.restore(in);
+        NTL::vec_ZZ vec2;
+        encVec2.unpack(vec2, sk2);
+        in.close();
+        if (vec2 != vec) { std::cerr << "IO for EncVec failed" << std::endl; }
+
+        ppe::EncMat encMat2(pk2);
+        NTL::mat_ZZ mat2;
+        in = std::ifstream("./encMat.ctxt", std::ios::binary);
+        encMat2.restore(in);
+        encMat2.unpack(mat2, sk2);
+        if (mat2 != mat) { std::cerr << "IO for EncMat failed" << std::endl; return -1; }
+    }// Test IO for ppe::EncMat and ppe::EncVec
     return 0;
 }
 
@@ -247,7 +309,7 @@ int main() {
         return -1;
     if (test_EncMat() != 0)
         return -1;
-//    if (test_io() != 0)
-//        return -1;
+    if (test_io() != 0)
+        return -1;
     return 0;
 }

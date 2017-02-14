@@ -1,6 +1,7 @@
 #ifndef CORE_PPE_ENCVEC_HPP
 #define CORE_PPE_ENCVEC_HPP
 #include "core/algebra/EncVec.hpp"
+#include <iosfwd>
 namespace ppe {
 class SecKey;
 class PubKey;
@@ -47,6 +48,9 @@ public:
 
     long length() const;
 
+	bool dump(std::ostream &out) const;
+	
+	bool restore(std::istream &in);
 private:
 	bool directSetup(const std::vector<core::EncVec> &crt_parts);
 

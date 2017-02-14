@@ -47,7 +47,10 @@ public:
     }
 
     bool unpack(Matrix &mat, core::sk_ptr sk, bool negate) const {
-        if (ctxts_.empty()) return false;
+        if (ctxts_.empty()) {
+            std::cerr << "core::EncMat. Unpacking empty ciphertext" << std::endl;
+            return false;
+        }
         mat.SetDims(rowCnt_, ctxts_.front().length());
         for (long r = 0; r < rowCnt_; r++) {
             ctxts_.at(r).unpack(mat[r], sk, negate);
@@ -57,12 +60,12 @@ public:
 
     bool dot(const std::shared_ptr<Imp> &oth) {
         if (ctxts_.empty()) {
-            std::cerr << "WARN: empty EncMat\n";
+            std::cerr << "WARN: empty EncMat::dot" << std::endl;
             return false;
         }
 
         if (colNums() != oth->rowNums()) {
-            std::cerr << "WARN: mismatch matrix size\n";
+            std::cerr << "WARN: mismatch matrix size (EncMat::dot)" << std::endl;
             return false;
         }
 
@@ -133,6 +136,24 @@ public:
         }
         return true;
     }
+
+    bool dump(std::ostream &out) const {
+        out << rowCnt_  << " " << static_cast<int32_t>(ctxts_.size()) << std::endl;
+        for (const auto &ctxt : ctxts_)
+            ctxt.dump(out);
+        return true;
+    }
+
+    bool restore(std::istream &in) {
+        in >> rowCnt_;
+        int32_t parts;
+        in >> parts;
+        ctxts_.resize(parts, pk_);
+        for (size_t i = 0; i < parts; i++)
+            ctxts_.at(i).restore(in);
+        return true;
+    }
+
     friend class EncMat;
 private:
     long rowCnt_;
@@ -209,5 +230,13 @@ bool EncMat::unpack(Matrix &result,
 
 const EncVec& EncMat::rowAt(int r) const {
     return imp_->rowAt(r);
+}
+
+bool EncMat::dump(std::ostream &out) const {
+    return imp_->dump(out);
+}
+
+bool EncMat::restore(std::istream &in) {
+    return imp_->restore(in);
 }
 }
