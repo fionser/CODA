@@ -106,7 +106,7 @@ int main () {
         return -1;
     if (!ct.evaluate(inputDirs, "test-out", {"1", "2"}, pk, context))
         return -1;
-    if (!ct.decrypt("test-out/" + core::core_setting.resulting_file,
+    if (!ct.decrypt("test-out/" + core::core_setting.evaluated_file,
                     "./", pk, sk, context))
         return -1;
 

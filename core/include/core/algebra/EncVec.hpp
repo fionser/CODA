@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 typedef NTL::vec_ZZ Vector;
+double norm(const Vector &vec);
 namespace core {
 class EncVec {
 public:
@@ -38,6 +39,8 @@ public:
     EncVec& mul(const EncVec &oth);
 
     EncVec& lowLevelMul(const EncVec &oth);
+
+	EncVec& negate();
 
     EncVec& reLinearize();
 

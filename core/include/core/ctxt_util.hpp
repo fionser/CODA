@@ -24,6 +24,8 @@ std::vector<std::vector<long>> random_permutation(long D, const EncryptedArray &
 
 std::vector<std::vector<long>> randomness(long D, const EncryptedArray &ea);
 
+void replicate(Ctxt *out, const int pos, const int length, const EncryptedArray *ea);
+
 size_t number_bits(long a);
 
 bool dumpCtxts(const std::vector<Ctxt> &ctxts, const std::string &outputDirPath);

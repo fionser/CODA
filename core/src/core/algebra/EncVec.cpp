@@ -1,8 +1,15 @@
 #include "core/algebra/EncVec.hpp"
-
+#include "core/ctxt_util.hpp"
 #include "HElib/EncryptedArray.h"
-#include "HElib/Ctxt.h"
 #include "HElib/replicate.h"
+
+double norm(const Vector &vec) {
+    NTL::ZZ sum_square(0);
+    for (auto itr = vec.begin(); itr != vec.end(); itr++) {
+        sum_square += (*itr) *  (*itr);
+    }
+    return std::sqrt(NTL::to_double(sum_square));
+}
 
 namespace core {
 typedef std::shared_ptr<Ctxt> ctxt_ptr;
@@ -68,71 +75,97 @@ public:
     }
 
     bool add(const std::shared_ptr<Imp> &oth) {
-        assert(oth && "nullptr");
-        if (length() != oth->length()) {
+        assert(pk_ == oth->pk_);
+        if (empty()) {
+            this->operator=(*oth);
+        } else if (length() == oth->length()) {
+            for (size_t i = 0; i < ctxts_.size(); i++)
+                ctxts_[i]->operator+=(*(oth->ctxts_[i]));
+        } else {
             std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << oth->length() << "\n";
             return false;
         }
-        for (size_t i = 0; i < ctxts_.size(); i++)
-            ctxts_[i]->operator+=(*(oth->ctxts_[i]));
         return true;
     }
 
     bool add(const Vector &c) {
-        if (c.length() != length()) {
+        if (empty()) {
+           pack(c);
+        } else if (c.length() == length()) {
+            std::vector<iVec> constants = extend(c, ctxts_.size());
+            NTL::ZZX poly;
+            for (size_t i = 0; i < constants.size(); i++) {
+                ea_->encode(poly, constants[i]);
+                ctxts_[i]->addConstant(poly);
+            }
+        } else {
             std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << c.length() << "\n";
             return false;
-        }
-        std::vector<iVec> constants = extend(c, ctxts_.size());
-        NTL::ZZX poly;
-        for (size_t i = 0; i < constants.size(); i++) {
-            ea_->encode(poly, constants[i]);
-            ctxts_[i]->addConstant(poly);
         }
         return true;
     }
 
     bool sub(const std::shared_ptr<Imp> &oth) {
-        assert(oth && "nullptr");
-        if (length() != oth->length()) {
+        assert(pk_ == oth->pk_);
+        if (empty()) {
+            this->operator=(*oth);
+            negate();
+        } else if (length() == oth->length()) {
+            for (size_t i = 0; i < ctxts_.size(); i++)
+                ctxts_[i]->operator-=(*(oth->ctxts_[i]));
+        } else {
             std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << oth->length() << "\n";
             return false;
         }
-        for (size_t i = 0; i < ctxts_.size(); i++)
-            ctxts_[i]->operator-=(*(oth->ctxts_[i]));
         return true;
     }
 
     bool sub(const Vector &c) {
-        if (c.length() != length()) {
+        if (empty()) {
+           pack(c);
+        } else if (c.length() == length()) {
+            std::vector<iVec> constants = extend(c, ctxts_.size());
+            negate(constants);
+            NTL::ZZX poly;
+            for (size_t i = 0; i < constants.size(); i++) {
+                ea_->encode(poly, constants[i]);
+                ctxts_[i]->addConstant(poly);
+            }
+        } else {
             std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << c.length() << "\n";
             return false;
         }
-        std::vector<iVec> constants = extend(c, ctxts_.size());
-        negate(constants);
-        NTL::ZZX poly;
-        for (size_t i = 0; i < constants.size(); i++) {
-            ea_->encode(poly, constants[i]);
-            ctxts_[i]->addConstant(poly);
-        }
+
         return true;
     }
 
     bool mul(const std::shared_ptr<Imp> &oth) {
-        if (!lowLevelMul(oth)) return false;
-        reLinearize();
-        return true;
+        assert(pk_ == oth->pk_);
+        if (empty()) {
+            Vector zeros;
+            zeros.SetLength(oth->length());
+            pack(zeros);
+        } else {
+            if (!lowLevelMul(oth))
+                return false;
+            reLinearize();
+            return true;
+        }
     }
 
     bool lowLevelMul(const std::shared_ptr<Imp> &oth) {
-        assert(oth && "nullptr");
-        if (oth->length() != length()) {
+        if (empty()) {
+            Vector zeros;
+            zeros.SetLength(oth->length());
+            pack(zeros);
+        } else if (oth->length() == length()) {
+            #pragma omp parallel for
+            for (size_t i = 0; i < ctxts_.size(); i++)
+                ctxts_[i]->operator*=(*(oth->ctxts_.at(i)));
+        } else {
             std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << oth->length() << "\n";
             return false;
         }
-        #pragma omp parallel for
-        for (size_t i = 0; i < ctxts_.size(); i++)
-            ctxts_[i]->operator*=(*(oth->ctxts_.at(i)));
         return true;
     }
 
@@ -142,22 +175,35 @@ public:
     }
 
     bool mul(const Vector &c) {
-        if (c.length() != length_)
+        if (empty()) {
+            Vector zeros;
+            zeros.SetLength(c.length());
+            pack(zeros);
+        } else if (c.length() == length_) {
+            std::vector<iVec> constants = extend(c, ctxts_.size());
+            NTL::ZZX poly;
+            #pragma omp parallel for
+            for (size_t i = 0; i < constants.size(); i++) {
+                ea_->encode(poly, constants[i]);
+                ctxts_[i]->multByConstant(poly);
+            }
+        } else {
+            std::cerr << "WARN: Mismatch size of EncVec: " << length() << " != " << c.length() << "\n";
             return false;
-        std::vector<iVec> constants = extend(c, ctxts_.size());
-        NTL::ZZX poly;
-        #pragma omp parallel for
-        for (size_t i = 0; i < constants.size(); i++) {
-            ea_->encode(poly, constants[i]);
-            ctxts_[i]->multByConstant(poly);
         }
+
         return true;
+    }
+
+    bool negate() {
+       for (auto &ctxt : ctxts_)
+           ctxt->negate();
     }
 
     EncVec replicate(long i) const {
         return replicate(i, length());
     }
-
+    //TODO(riku) to implement the partial replicate
     EncVec replicate(long i, long width) const {
         assert(i >= 0 && i < length());
         assert(width >= 0 && width < length());
@@ -168,7 +214,8 @@ public:
         long replication_length = N > 1 ? ea_->size() : width;
         assert(idx >= 0 && idx < ctxts_.size());
         auto ctx = std::make_shared<Ctxt>(*ctxts_.at(idx));
-        ::replicate(*ea_, *ctx, pos, replication_length);
+//        ::replicate(*ea_, *ctx, pos);
+        core::replicate(ctx.get(), pos, replication_length, ea_);
 
         std::vector<ctxt_ptr> all_same(N);
         all_same[0] = ctx;
@@ -193,6 +240,10 @@ public:
             replicated.at(i) = replicate(i, width);
         }
         return replicated;
+    }
+
+    bool empty() const {
+        return ctxts_.empty();
     }
 
     bool dump(std::ostream &out) const {
@@ -348,6 +399,11 @@ EncVec& EncVec::mul(const Vector &c) {
 
 EncVec& EncVec::pack(const Vector &vec) {
     imp_->pack(vec);
+    return *this;
+}
+
+EncVec& EncVec::negate() {
+    imp_->negate();
     return *this;
 }
 

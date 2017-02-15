@@ -113,7 +113,7 @@ int main () {
     // the 50-percentile of the 1-st attr
     if (!protocol.evaluate(inputDirs, "test-out", {"50", "1"}, pk, context))
         return -1;
-    if (!protocol.decrypt("test-out/" + core::core_setting.resulting_file,
+    if (!protocol.decrypt("test-out/" + core::core_setting.evaluated_file,
                     "./", pk, sk, context))
         return -1;
 

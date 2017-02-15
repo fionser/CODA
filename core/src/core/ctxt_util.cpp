@@ -26,8 +26,8 @@ static bool test_bit(long a, size_t i) {
 }
 
 Ctxt repeat0(const Ctxt &c,
-            const long n_slots, const long rep,
-            const EncryptedArray &ea) {
+             const long n_slots, const long rep,
+             const EncryptedArray &ea) {
     Ctxt repeated(c);
     Ctxt res(c.getPubKey()); /// zero-like
     long offset = n_slots;
@@ -56,6 +56,34 @@ Ctxt repeat(const Ctxt &c,
     Ctxt repeated(c);
     mask_first(repeated, n_slots, ea);
     return repeat0(repeated, n_slots, rep, ea);
+}
+
+// NOTE. This function might introduce too many noise.
+void replicate(Ctxt *out, const int pos ,const int length, const EncryptedArray *ea) {
+    ZZX mask;
+    ea->encodeUnitSelector(mask, pos);
+    out->multByConstant(mask);
+    ea->rotate(*out, -pos);
+    long offset = 0;
+    long k = number_bits(length);
+    Ctxt ctxt_orig(*out);
+    long e = 1;
+    // now process bits k-2 down to 0
+    for (long j = k-2; j >= 0; j--) {
+        // e -> 2*e
+        Ctxt tmp = *out;
+        ea->rotate(tmp, e); 
+        out->addCtxt(tmp);
+        e <<= 1;
+
+        long b = test_bit(length, j); 
+        // e -> e+b
+        if (b) {
+            ea->rotate(*out, 1); 
+            out->addCtxt(ctxt_orig);
+            e++;
+        }
+    }
 }
 
 void mask_first(Ctxt &ctxt, size_t n, const EncryptedArray &ea) {

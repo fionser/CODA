@@ -29,8 +29,7 @@ NTL::ZZ apply_crt(const std::vector<NTL::ZZ> &alphas,
         product *= prime;
     }
 
-    NTL::ZZ half;
-    NTL::divide(half, product, 2);
+    NTL::ZZ half = product >> 1;
     for (size_t i = 0; i < size; i++) {
         NTL::ZZ p = product / primes[i];
         sum += (alphas[i] * _InvMod(p, primes[i]) * p);
@@ -38,7 +37,7 @@ NTL::ZZ apply_crt(const std::vector<NTL::ZZ> &alphas,
 
     NTL::ZZ ret = sum % product;
     if (negate)
-        return ret > half ? product - ret : ret;
+        return ret > half ? ret - product : ret;
     else
         return ret;
 }

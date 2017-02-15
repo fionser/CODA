@@ -8,16 +8,17 @@
 int test1(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
     core::EncVec encVec(pk);
     NTL::vec_ZZ slots;
-    slots.SetLength(7);
+    slots.SetLength(4);
     for (int i = 0; i < slots.length(); i++)
         slots[i] = NTL::to_ZZ(i + 1);
     encVec.pack(slots);
 
     long width = 4;
-    long idx = 4;
+    long idx = 2;
     auto tmp = encVec.replicate(idx, width);
     NTL::vec_ZZ _slots;
     tmp.unpack(_slots, sk, true); // [5, 5, 5, 5]
+    std::cout << slots << " " << _slots << std::endl;
     if (_slots.length() != width)
         return -1;
     for (auto t : _slots) {
@@ -126,6 +127,47 @@ int test3(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
     return 0;
 }
 
+int test4(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
+    NTL::mat_ZZ X, Y;
+    X.SetDims(4, 4);
+    NTL::ZZ range = NTL::to_ZZ(3);
+    for (int r = 0; r < X.NumRows(); r++) {
+        for (int c = 0; c < X.NumCols(); c++) {
+            X.put(r, c, NTL::RandomBnd(range));
+        }
+    }
+
+    {
+        core::EncMat encMat(pk);
+        encMat.add(X);
+        encMat.unpack(Y, sk);
+        if (X != Y)
+            return -1;
+        core::EncMat encMat2(pk);
+        encMat2.sub(X);
+        encMat2.unpack(Y, sk, true);
+        auto tmp(X);
+        NTL::negate(tmp, X);
+        if (tmp != Y)
+            return -1;
+    } // Test empty matrix adds plain matrix
+    {
+        core::EncMat encMat(pk), encMat2(pk), encMat3(pk);
+        encMat2.pack(X);
+        encMat.add(encMat2);
+        encMat.unpack(Y, sk);
+        if (X != Y)
+            return -1;
+        encMat3.sub(encMat2);
+        encMat3.unpack(Y, sk, true);
+        auto tmp(X);
+        NTL::negate(tmp, X);
+        if (tmp != Y)
+            return -1;
+    } // Test empty matrix adds cipher matrix
+    return 0;
+}
+
 int testIO(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
     core::EncVec encVec(pk);
     NTL::vec_ZZ slots;
@@ -186,7 +228,7 @@ int testIO(core::sk_ptr sk, core::pk_ptr pk, const EncryptedArray *ea) {
 }
 
 int main() {
-    core::context_ptr context = std::make_shared<FHEcontext>(2048, 8191, 1);
+    core::context_ptr context = std::make_shared<FHEcontext>(512, 8209, 1);
     buildModChain(*context, 14);
     core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
     sk->GenSecKey(64);
@@ -203,6 +245,10 @@ int main() {
     }
     if (test3(sk, pk, ea) != 0) {
         std::cout << "test3 fail\n";
+        return -1;
+    }
+    if (test4(sk, pk, ea) != 0) {
+        std::cout << "test4 fail\n";
         return -1;
     }
     if (testIO(sk, pk, ea) != 0) {

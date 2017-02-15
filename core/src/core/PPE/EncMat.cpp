@@ -59,54 +59,81 @@ public:
     }
 
     bool add(const std::shared_ptr<Imp> &oth) {
-        if (oth->crtParts_.size() != this->crtParts_.size())
+        assert(pk_ == oth->pk_);
+        if (colNums() == 0 && rowNums() == 0) {
+            colNum_ = oth->colNums();
+            rowNum_ = oth->rowNums();
+        } else if(colNums() != oth->colNums() || rowNums() != oth->rowNums()) {
+            std::cerr << "Mismatch matrix size in EncMat::add()" << std::endl;
             return false;
-        if (colNums() != oth->colNums() || rowNums() != oth->rowNums())
-            return false;
+        }
         for (size_t i = 0; i < this->crtParts_.size(); i++)
             this->crtParts_[i].add(oth->crtParts_.at(i));
         return true;
     }
 
     bool add(const Matrix &mat) {
-        if (mat.NumRows() != rowNums() || mat.NumRows() != rowNums())
+        if (colNums() == 0 && rowNums() == 0) {
+            colNum_ = mat.NumCols();
+            rowNum_ = mat.NumRows();
+        } else if (mat.NumRows() != rowNums() || mat.NumRows() != rowNums()) {
+            std::cerr << "Mismatch matrix size in EncMat::add()" << std::endl;
             return false;
+        }
         for (size_t i = 0; i < this->crtParts_.size(); i++)
             this->crtParts_[i].add(mat);
         return true;
     }
 
     bool sub(const std::shared_ptr<Imp> &oth) {
-        if (oth->crtParts_.size() != this->crtParts_.size())
+        assert(pk_ == oth->pk_);
+        if (colNums() == 0 && rowNums() == 0) {
+            colNum_ = oth->colNums();
+            rowNum_ = oth->rowNums();
+        } else if(colNums() != oth->colNums() || rowNums() != oth->rowNums()) {
+            std::cerr << "Mismatch matrix size in EncMat::sub()" << std::endl;
             return false;
-        if (colNums() != oth->colNums() || rowNums() != oth->rowNums())
-            return false;
+        }
         for (size_t i = 0; i < this->crtParts_.size(); i++)
             this->crtParts_[i].sub(oth->crtParts_.at(i));
         return true;
     }
 
     bool sub(const Matrix &mat) {
-        if (mat.NumRows() != rowNums() || mat.NumRows() != rowNums())
+        if (colNums() == 0 && rowNums() == 0) {
+            colNum_ = mat.NumCols();
+            rowNum_ = mat.NumRows();
+        } else if (mat.NumRows() != rowNums() || mat.NumRows() != rowNums()) {
+            std::cerr << "Mismatch matrix size in EncMat::sub()" << std::endl;
             return false;
+        }
         for (size_t i = 0; i < this->crtParts_.size(); i++)
             this->crtParts_[i].sub(mat);
         return true;
     }
 
     bool mul(const Matrix &mat) {
-        if (mat.NumRows() != rowNums() || mat.NumRows() != rowNums())
+        if (colNums() == 0 && rowNums() == 0) {
+            colNum_ = mat.NumCols();
+            rowNum_ = mat.NumRows();
+        } else if (mat.NumRows() != rowNums() || mat.NumRows() != rowNums()) {
+            std::cerr << "Mismatch matrix size in EncMat::mul()" << std::endl;
             return false;
+        }
         for (size_t i = 0; i < this->crtParts_.size(); i++)
             this->crtParts_[i].mul(mat);
         return true;
     }
 
     bool dot(const std::shared_ptr<Imp> &oth) {
-        if (oth->crtParts_.size() != this->crtParts_.size())
+        assert(pk_ == oth->pk_);
+        if (colNums() == 0 && rowNums() == 0) {
+            colNum_ = oth->colNums();
+            rowNum_ = oth->rowNums();
+        } else if(colNums() != oth->colNums() || rowNums() != oth->rowNums()) {
+            std::cerr << "Mismatch matrix size in EncMat::dot()" << std::endl;
             return false;
-        if (colNums() != oth->colNums() || rowNums() != oth->rowNums())
-            return false;
+        }
         #pragma omp parallel for
         for (size_t i = 0; i < this->crtParts_.size(); i++)
             this->crtParts_[i].dot(oth->crtParts_[i]);
@@ -114,9 +141,8 @@ public:
     }
 
     ppe::EncVec sym_dot(const ppe::EncVec &vec) {
+        assert(colNums() == vec.length());
         ppe::EncVec ret(pk_);
-        if (colNums() != vec.length())
-            return ret;
         std::vector<core::EncVec> parts(crtParts_.size());
         #pragma omp parallel for
         for (size_t i = 0; i < parts.size(); i++)
@@ -126,7 +152,7 @@ public:
     }
 
     bool dump(std::ostream &out) const {
-       out << rowNum_ << " " << colNum_ << std::endl;
+        out << rowNum_ << " " << colNum_ << std::endl;
         for (const auto &part : crtParts_)
             part.dump(out);
         return true;
@@ -198,6 +224,9 @@ EncMat::EncMat(const PubKey &pk) {
 
 EncMat::EncMat(const EncMat &oth) {
     imp_ = std::make_shared<Imp>(*oth.imp_);
+}
+
+EncMat EncMat::zeros(long rowNums, long colNums, const PubKey &pk) {
 }
 
 EncMat &EncMat::operator=(const EncMat &oth) {

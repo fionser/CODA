@@ -19,6 +19,8 @@ public:
 
 	EncMat(const EncMat &oth);
 
+	static EncMat zeros(long rowNums, long colNums, const PubKey &pk);
+
 	EncMat& operator=(const EncMat &oth);
 
 	long rowNums() const;

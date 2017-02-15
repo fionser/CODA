@@ -38,25 +38,27 @@ void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos)
 void replicate(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first_k)
 {
   long nSlots = ea.size();
-  assert(pos >= 0 && pos < nSlots && first_k >= 0 && first_k < nSlots);
+  assert(pos >= 0 && pos < nSlots && first_k > 0 && first_k <= nSlots);
 
   ZZX mask;
   ea.encodeUnitSelector(mask, pos);
   ctxt.multByConstant(mask);
-  replicate0(ea, ctxt, pos, first_k);
+
+  if (first_k < nSlots)
+    replicate0(ea, ctxt, pos, first_k);
+  else
+    replicate0(ea, ctxt, pos);
 }
 
 void replicate0(const EncryptedArray& ea, Ctxt& ctxt, long pos, const long first_k)
 {
   long dim = ea.dimension();
-
-  for (long d = 0; d < dim; d++) {
-      if (first_k < ea.size() || !ea.nativeDimension(d)) {
-          long shamt = -ea.coordinate(d, pos);
-          ea.rotate1D(ctxt, d, shamt, true); // "don't care"
-      }
-
+  for (long d = 0; d < dim - 1; d++) {
     Ctxt ctxt_orig = ctxt;
+    if (!ea.nativeDimension(d)) {
+      long shamt = -ea.coordinate(d, pos);
+      ea.rotate1D(ctxt, d, shamt, true); // "don't care"
+    }
 
     long sz = ea.sizeOfDimension(d);
     assert(first_k > 0 && sz >= first_k);

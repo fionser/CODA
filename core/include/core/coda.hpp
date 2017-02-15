@@ -31,8 +31,8 @@ struct PubKeyWrapper {
 
 struct {
     const int CTX_PER_FILE = 50;
-    const std::string decrypted_file = "File_result";
-    const std::string resulting_file = "File_result";
+    const std::string decrypted_file = "File_result"; // resulting file after decryption
+    const std::string evaluated_file = "File_result"; // resulting file after evaluation
     const std::string random_share_file = ".random_share";
     const int gc_user_port = 56789;
 } core_setting;

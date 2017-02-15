@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include <functional>
+#include <core/coda.hpp>
 
 class UserCipherLoader {
 public:
@@ -255,7 +256,7 @@ bool PercentileProtocol::Imp::decrypt(const std::string &inputFilePath,
     }
     fin.close();
 
-    std::string resultFile = util::concatenate(outputDirPath, core::core_setting.resulting_file);
+    std::string resultFile = util::concatenate(outputDirPath, core::core_setting.decrypted_file);
     std::ofstream fd(resultFile);
     if (!fd.is_open()) {
         L_WARN(global::_console, "Can not create {0}", resultFile);
@@ -306,7 +307,7 @@ bool PercentileProtocol::Imp::evaluate(const StringList &inputDirs,
     const int threshold = static_cast<int>(std::ceil(percentile * total_record / 100.0));
     core::Attribute targetAttr = attributes.at(attrIndex - 1);
     const EncryptedArray *ea = context->ea;
-    std::string saveTo = util::concatenate(outputDir, core::core_setting.resulting_file);
+    std::string saveTo = util::concatenate(outputDir, core::core_setting.evaluated_file);
     std::ofstream fout(saveTo);
 
     for (int index = 1; index <= targetAttr.size; index++) {

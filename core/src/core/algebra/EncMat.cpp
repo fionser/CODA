@@ -7,8 +7,9 @@
 namespace core {
 class EncMat::Imp {
 public:
-    Imp(core::pk_ptr pk) : pk_(pk) {
+    Imp(core::pk_ptr pk) : rowCnt_(0), pk_(pk) {
         ea_ = pk->getContext().ea;
+        ctxts_.clear();
     }
 
     ~Imp() {}
@@ -47,19 +48,18 @@ public:
     }
 
     bool unpack(Matrix &mat, core::sk_ptr sk, bool negate) const {
-        if (ctxts_.empty()) {
+        if (empty()) {
             std::cerr << "core::EncMat. Unpacking empty ciphertext" << std::endl;
             return false;
         }
         mat.SetDims(rowCnt_, ctxts_.front().length());
-        for (long r = 0; r < rowCnt_; r++) {
+        for (long r = 0; r < rowCnt_; r++)
             ctxts_.at(r).unpack(mat[r], sk, negate);
-        }
         return true;
     }
 
     bool dot(const std::shared_ptr<Imp> &oth) {
-        if (ctxts_.empty()) {
+        if (empty()) {
             std::cerr << "WARN: empty EncMat::dot" << std::endl;
             return false;
         }
@@ -87,54 +87,91 @@ public:
 
     EncVec sym_dot(const EncVec &oth) const {
         assert(rowNums() == colNums() && colNums() == oth.length() && "Only for symmetric matrix");
+        assert(!empty() && "EncVec::sym_dot not for empty object");
         EncVec ret(rowAt(0));
-        ret.mul(oth.replicate(0, colNums()));
+        ret.lowLevelMul(oth.replicate(0, colNums()));
         for (long r = 1; r < rowNums(); r++) {
             EncVec tmp(rowAt(r));
-            tmp.mul(oth.replicate(r, colNums()));
+            tmp.lowLevelMul(oth.replicate(r, colNums()));
             ret.add(tmp);
         }
+        ret.reLinearize();
         return ret;
     }
 
     bool mul(const Matrix &mat) {
-        if (rowCnt_ != mat.NumRows()) return false;
-        for (size_t r = 0; r < rowCnt_; r++) {
-            ctxts_[r].mul(mat[r]);
+        if (empty()) {
+            Matrix zeros;
+            zeros.SetDims(mat.NumRows(), mat.NumCols());
+            pack(zeros);
+        } else if (rowCnt_ == mat.NumRows()) {
+            for (size_t r = 0; r < rowCnt_; r++)
+                ctxts_[r].mul(mat[r]);
+        } else {
+            std::cerr << "Mismatch matrix size in EncMat::mul()" << std::endl;
+            return false;
         }
         return true;
     }
 
     bool add(const std::shared_ptr<Imp> &oth) {
-        if (rowCnt_ != oth->rowCnt_) return false;
-        for (size_t r = 0; r < rowCnt_; r++) {
-            ctxts_[r].add(oth->rowAt(r));
+        assert(pk_ == oth->pk_);
+        if (empty()) {
+            this->operator=(*oth);
+        } else if (rowCnt_ == oth->rowCnt_) {
+            for (size_t r = 0; r < rowCnt_; r++)
+                ctxts_[r].add(oth->rowAt(r));
+        } else {
+            std::cerr << "Mismatch matrix size in EncMat::add()" << std::endl;
+            return false;
         }
         return true;
     }
 
     bool add(const Matrix &mat) {
-        if (rowCnt_ != mat.NumRows()) return false;
-        for (size_t r = 0; r < rowCnt_; r++) {
-            ctxts_[r].add(mat[r]);
+        if (empty()) {
+            pack(mat);
+        } else if (rowCnt_ == mat.NumRows()) {
+            for (size_t r = 0; r < rowCnt_; r++)
+                ctxts_[r].add(mat[r]);
+        } else {
+            std::cerr << "Mismatch matrix size in EncMat::add()" << std::endl;
+            return false;
         }
         return true;
     }
 
     bool sub(const std::shared_ptr<Imp> &oth) {
-        if (rowCnt_ != oth->rowCnt_) return false;
-        for (size_t r = 0; r < rowCnt_; r++) {
-            ctxts_[r].sub(oth->rowAt(r));
+        if (empty()) {
+            this->operator=(*oth);
+            this->negate();
+        } else if (rowCnt_ == oth->rowCnt_) {
+            for (size_t r = 0; r < rowCnt_; r++)
+                ctxts_[r].sub(oth->rowAt(r));
+        } else {
+            std::cerr << "Mismatch matrix size in EncMat::sub()" << std::endl;
+            return false;
         }
         return true;
     }
 
     bool sub(const Matrix &mat) {
-        if (rowCnt_ != mat.NumRows()) return false;
-        for (size_t r = 0; r < rowCnt_; r++) {
-            ctxts_[r].sub(mat[r]);
+        if (empty()) {
+            pack(mat);
+            negate();
+        } else if (rowCnt_ == mat.NumRows()) {
+            for (size_t r = 0; r < rowCnt_; r++)
+                ctxts_[r].sub(mat[r]);
+        } else {
+            std::cerr << "Mismatch matrix size in EncMat::sub()" << std::endl;
+            return false;
         }
         return true;
+    }
+
+    bool negate() {
+        for (auto &ctxt : ctxts_)
+            ctxt.negate();
     }
 
     bool dump(std::ostream &out) const {
@@ -155,6 +192,10 @@ public:
     }
 
     friend class EncMat;
+
+private:
+    bool empty() const { return ctxts_.empty(); }
+
 private:
     long rowCnt_;
     core::pk_ptr pk_;

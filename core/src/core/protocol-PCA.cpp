@@ -3,14 +3,13 @@
 #include "core/literal.hpp"
 #include "core/global.hpp"
 #include "core/file_util.hpp"
-#include "core/PPE/PubKey.hpp"
-#include "core/PPE/SecKey.hpp"
-#include "core/PPE/Context.hpp"
+#include "core/PPE/PPE.hpp"
 
 #include <list>
-#include <vector>
 #include <fstream>
-#include <NTL/mat_ZZ.h>
+#include <sstream>
+#include <core/coda.hpp>
+
 typedef NTL::mat_ZZ Matrix;
 class PCAProtocol::Imp {
 public:
@@ -19,12 +18,20 @@ public:
 
     bool encrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
-                 bool local_compute,
+                 bool /*local_compute*/,
                  ppe::pk_ptr pk,
                  ppe::context_ptr context) {
         std::ifstream in(inputFilePath, std::ios::binary);
         if (!in.is_open()) {
             L_WARN(global::_console, "Can not open {0}", inputFilePath);
+            return false;
+        }
+
+        std::string outputFile = util::concatenate(outputDirPath, "FILE_1");
+        std::ofstream out(outputFile, std::ios::binary);
+        if (!out.is_open()) {
+            L_WARN(global::_console, "Can not create {0}", outputFile);
+            in.close();
             return false;
         }
 
@@ -34,17 +41,28 @@ public:
             in.close();
             return false;
         }
+
         Matrix X = readData(in, magnifications.size());
-        if (X.NumCols() == 0)
+        if (X.NumCols() == 0) {
+            L_WARN(global::_console, "Empty file {0}", inputFilePath);
             return false;
+        }
+
         long max_m = *std::max_element(magnifications.begin(), magnifications.end());
         scale(X, magnifications);
-        Matrix XTX;
-        NTL::mul(XTX, NTL::transpose(X), X);
 
+        Matrix XtX; // X.T * X
+        NTL::mul(XtX, NTL::transpose(X), X);
+        ppe::EncMat encMat(*pk);
 
+        encMat.pack(XtX);
+        bool ok = encMat.dump(out);
 
-        return true;
+        if (ok)
+            createDoneFileForEncrypt(outputDirPath, magnifications);
+        in.close();
+        out.close();
+        return ok;
     }
 
     bool decrypt(const std::string &inputFilePath,
@@ -52,15 +70,87 @@ public:
                  ppe::pk_ptr pk,
                  ppe::sk_ptr sk,
                  ppe::context_ptr context) {
-        return false;
+        std::ifstream in(inputFilePath, std::ios::binary);
+        if (!in.is_open()) {
+            L_WARN(global::_console, "Can not open {0}.", inputFilePath);
+            return false;
+        }
+
+        std::string outputFilePath = util::concatenate(outputDirPath, core::core_setting.decrypted_file);
+        std::ofstream out(outputFilePath, std::ios::binary);
+        if (!out.is_open()) {
+            L_WARN(global::_console, "Can not open {0}.", outputFilePath);
+            return false;
+        }
+
+        ppe::EncVec u1(*pk), u2(*pk);
+        u2.restore(in);
+        u1.restore(in);
+        Vector vec;
+        u2.unpack(vec, *sk);
+        double nrm2 = norm(vec);
+        u1.unpack(vec, *sk);
+        double nrm1 = norm(vec);
+        out << nrm2 / nrm1;
+
+        FILE *done = util::createDoneFile(outputDirPath);
+        fclose(done);
+        in.close();
+        out.close();
+        return true;
     }
 
+    // sum the client ciphertext and apply Powermethod to calculate the largest eigvalue.
     bool evaluate(const StringList &inputDirs,
                   const std::string &outputDir,
                   const StringList &params,
                   ppe::pk_ptr pk,
                   ppe::context_ptr context) {
-        return false;
+        const std::string specificFile = "FILE_1";
+        ppe::EncMat summation(*pk);
+        for (const std::string &clientDir : inputDirs) {
+            auto files = util::listDir(clientDir, util::flag_t::FILE_ONLY);
+            for (const auto &file : files) {
+                if (file.compare(specificFile) != 0) continue;
+                ppe::EncMat tmp(*pk);
+                std::ifstream in(util::concatenate(clientDir, file), std::ios::binary);
+                if (!in.is_open()) continue;
+                tmp.restore(in);
+                summation.add(tmp);
+                in.close();
+            }
+        }
+
+        ppe::EncVec u1(*pk), u2(*pk);
+        ppe::EncVec *ptr1, *ptr2;
+        Vector rand_vec;
+        rand_vec.SetLength(summation.colNums());
+        for (long i = 0; i < rand_vec.MaxLength(); i++)
+            rand_vec[i] = NTL::to_ZZ(1);//NTL::RandomBits_ZZ(10);
+        u1.pack(rand_vec);
+        u2 = summation.sym_dot(u1);
+
+        ptr1 = &u2;
+        ptr2 = &u1;
+        long T = params.empty() ? 3 : literal::stol(params.front());
+        for (long t = 1; t < T; t++) {
+            *ptr2 = summation.sym_dot(*ptr1);
+            std::swap(ptr1, ptr2);
+        }
+
+        std::string saveTo = util::concatenate(outputDir, core::core_setting.evaluated_file);
+        std::ofstream out(saveTo, std::ios::binary);
+        if (!out.is_open()) {
+            L_WARN(global::_console, "Can not open {0}.", saveTo);
+            return false;
+        }
+        ptr1->dump(out);
+        ptr2->dump(out);
+        out.close();
+
+        FILE *fd = util::createDoneFile(outputDir);
+        fclose(fd);
+        return true;
     }
 
 private:
@@ -126,6 +216,20 @@ private:
             }
         }
     }
+
+    void createDoneFileForEncrypt(const std::string outDir, const std::vector<long> &mags) const {
+        FILE *fd = util::createDoneFile(outDir);
+        if (!fd)
+            return;
+        std::stringstream sstream("#");
+        for (size_t i = 0; i + 1 < mags.size(); i++)
+            sstream << mags[i] << " ";
+        if (!mags.empty())
+            sstream << mags.back();
+        std::string header = sstream.str();
+        fwrite(header.c_str(), header.size(), 1UL, fd);
+        fclose(fd);
+    }
 };
 
 PCAProtocol::PCAProtocol() : Protocol("PCA") {
@@ -161,9 +265,8 @@ bool PCAProtocol::evaluate(const StringList &inputDirs,
                            const core::ContextWrapper &context)
 {
 
-    if (imp_) return false;
-    return imp_->evaluate(inputDirs, outputDir,
-                          params, pk.ppe, context.ppe);
+    if (!imp_) return false;
+    return imp_->evaluate(inputDirs, outputDir, params, pk.ppe, context.ppe);
 }
 
 core::FHEArg PCAProtocol::parameters() const {

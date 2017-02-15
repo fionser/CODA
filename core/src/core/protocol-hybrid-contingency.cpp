@@ -235,7 +235,7 @@ public:
         if (!createRandomShares(evaluationResult, tableSize, context, outputDir))
             return false;
 
-        auto resultFile = util::concatenate(outputDir, core::core_setting.resulting_file);
+        auto resultFile = util::concatenate(outputDir, core::core_setting.evaluated_file);
         if (!core::dumpCiphers(evaluationResult, resultFile)) {
             L_ERROR(global::_console, "Error happend when to dump ciphertexts in {0}", resultFile);
             return false;

@@ -62,6 +62,21 @@ int test_EncVec() {
         NTL::conv(computed, vec3);
         if (computed != vec_p_2)
             return -1;
+
+        ppe::EncVec encVec4(pk);
+        encVec4.add(encVec);
+        encVec4.unpack(vec2, sk);
+        NTL::conv(computed, vec2);
+        if (computed != vec_p)
+            return -1;
+
+        ppe::EncVec encVec5(pk);
+        encVec5.sub(encVec);
+        encVec5.unpack(vec2, sk);
+        NTL::conv(computed, vec2);
+        NTL::negate(vec_p_2, vec_p);
+        if (computed !=  vec_p_2)
+            return -1;
     } // Test addition
 
     {
@@ -207,11 +222,11 @@ int test_io() {
 }
 
 int test_EncMat() {
-    std::vector<long> Ms = {2048, 4096};
-    std::vector<long> Ps = {13, 23};
-    std::vector<long> Rs = {1, 1};
+    std::vector<long> Ms = {512};
+    std::vector<long> Ps = {8209};
+    std::vector<long> Rs = {1};
     ppe::Context context(Ms, Ps, Rs);
-    context.buildModChain(7);
+    context.buildModChain(15);
     ppe::SecKey sk(context);
     sk.GenSecKey(64);
     sk.addSome1DMatrices();
@@ -222,8 +237,8 @@ int test_EncMat() {
 
     Matrix mat;
     Vector vec;
-    mat.SetDims(10, 10);
-    vec.SetLength(10);
+    mat.SetDims(7, 7);
+    vec.SetLength(7);
     for (long r = 0; r < mat.NumRows(); r++) {
         for (long c = r; c < mat.NumCols(); c++) {
             mat[r][c] = NTL::to_ZZ(r * 10 + c);
@@ -243,8 +258,10 @@ int test_EncMat() {
         NTL::mat_ZZ_p computed, groud_truth;
         NTL::conv(groud_truth, mat);
         NTL::conv(computed, mat2);
-        if (groud_truth != computed)
+        if (groud_truth != computed) {
+            std::cerr << "Test pack & unpack failed" << std::endl;
             return -1;
+        }
     } // test pack & unpack
     {
         ppe::EncMat encMat2(encMat);
@@ -258,31 +275,65 @@ int test_EncMat() {
         groud_truth *= 2;
 
         NTL::conv(computed, mat2);
-        if (groud_truth != computed)
+        if (groud_truth != computed) {
+            std::cerr << "Test matrix addtion (1) failed " << std::endl;
             return -1;
+        }
 
         ppe::EncMat encMat3(encMat);
         encMat3.add(encMat);
         encMat3.unpack(mat2, sk);
         NTL::conv(computed, mat2);
-        if (groud_truth != computed)
+        if (groud_truth != computed) {
+            std::cerr << "Test matrix addtion (2) failed " << std::endl;
             return -1;
+        }
+
+        NTL::conv(groud_truth, mat);
+        ppe::EncMat encMat4(pk);
+        encMat4.add(mat);
+        encMat4.unpack(mat2, sk);
+        NTL::conv(computed, mat2);
+        if (groud_truth != computed) {
+            std::cerr << "Test matrix addtion (3) failed " << std::endl;
+            return -1;
+        }
+
+        ppe::EncMat encMat5(pk);
+        encMat5.sub(encMat);
+        encMat5.unpack(mat2, sk);
+        NTL::conv(computed, mat2);
+        NTL::mat_ZZ_p negated;
+        NTL::negate(negated, groud_truth);
+        if (negated != computed) {
+            std::cerr << "Test matrix addtion (4) failed " << std::endl;
+            return -1;
+        }
     } // test add
     {
         ppe::EncMat encMat2(encMat);
         encMat2.sub(encMat);
         Matrix mat2;
         encMat2.unpack(mat2, sk);
-        for (long r = 0; r < mat2.NumRows(); r++)
-            for (long c = 0; c < mat2.NumCols(); c++)
-                if (mat2[r][c] != 0) return -1;
+        for (long r = 0; r < mat2.NumRows(); r++) {
+            for (long c = 0; c < mat2.NumCols(); c++) {
+                if (mat2[r][c]!=0) {
+                    std::cerr << "Test matrix sub (1) failed " << std::endl;
+                    return -1;
+                }
+            }
+        }
 
         ppe::EncMat encMat3(encMat);
         encMat3.sub(mat);
         encMat2.unpack(mat2, sk);
         for (long r = 0; r < mat2.NumRows(); r++)
-            for (long c = 0; c < mat2.NumCols(); c++)
-                if (mat2[r][c] != 0) return -1;
+            for (long c = 0; c < mat2.NumCols(); c++) {
+                if (mat2[r][c] != 0) {
+                    std::cerr << "Test matrix sub (2) failed " << std::endl;
+                    return -1;
+                }
+            }
     } // test sub
     {
         ppe::EncVec ret = encMat.sym_dot(encVec);
@@ -297,19 +348,20 @@ int test_EncMat() {
         NTL::conv(vec_p, vec);
         NTL::conv(computed, vec2);
         NTL::mul(ret_p, mat_p, vec_p);
-
-        if (computed != ret_p)
+        if (computed != ret_p) {
+            std::cerr << "Test matrix-vec mult (1) failed " << std::endl;
             return -1;
+        }
     } // test matrix-vector multiplication
     return 0;
 }
 
 int main() {
-    if (test_EncVec() != 0)
-        return -1;
+//    if (test_EncVec() != 0)
+//        return -1;
     if (test_EncMat() != 0)
         return -1;
-    if (test_io() != 0)
-        return -1;
+//    if (test_io() != 0)
+//        return -1;
     return 0;
 }

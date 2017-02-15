@@ -1,25 +1,27 @@
 #include "core/protocol-PCA.hpp"
-#include "core/coda.hpp"
 #include "core/file_util.hpp"
-#include "core/literal.hpp"
+#include "core/PPE/PPE.hpp"
+
 #include "HElib/FHE.h"
-#include "HElib/timing.h"
 
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/dirent.h>
+#include <core/coda.hpp>
+
 bool create_dir(const std::string &path) {
     struct stat st;
     if (stat(path.c_str(), &st) != 0)
     {
-        /* Directory does not exist. EEXIST for race condition */
+        /* Directory does not exist. EXIST for race condition */
         if (mkdir(path.c_str(), 0777) != 0)
             return false;
     } else {
         auto files = util::listDir(path, util::flag_t::FILE_ONLY);
         for (auto file : files) {
-            auto full = util::concatenate(path, file);
-            if (full.compare(".") == 0 || full.compare("..")) continue;
+            if (file.compare(".") == 0 || file.compare("..")) continue;
+            std::string full = util::concatenate(path, file);
+            std::cout << full << std::endl;
             unlink(full.c_str());
         }
 
@@ -27,35 +29,74 @@ bool create_dir(const std::string &path) {
     return true;
 }
 
-long MP = 1;
-long MQ = 2;
-long MV = 0;
+std::vector<long> mags = {1, 0, 0};
 struct Cell {
     long p, q, v;
 };
 
 // test cases
-std::vector<Cell> _cells = {
-    {10, 200, 1},
-    {20, 100, 1},
-    {20, 100, 1},
-    {20, 100, 1},
-    {30, 100, 2},
-    {30, 100, 2},
-    {30, 100, 2},
-    {30, 100, 2},
-    {40, 200, 2}
-};
+NTL::mat_ZZ matrix;
 
 bool gen_content(const std::string &path) {
     std::ofstream fout(util::concatenate(path, "data.csv"), std::ios::out | std::ios::trunc);
     if (!fout.is_open())
         return false;
-    fout << "#" << MP << " " << MQ << " " << MV << "\n";
-    for (auto &cell : _cells)
-        fout << cell.p << " " << cell.q << " " << cell.v << "\n";
+
+    fout << "#" << mags[0] << " " << mags[1] << " " << mags[2] << std::endl;
+    matrix.SetDims(2, 3);
+    matrix[0][0] = 1; matrix[0][1] = 2; matrix[0][2] = 3;
+    matrix[1][0] = 6; matrix[1][1] = 5; matrix[1][2] = 4;
+    for (long r = 0; r < matrix.NumRows(); r++) {
+        for (long c = 0; c < matrix.NumCols(); c++)
+            fout << matrix[r][c] << " ";
+        fout << std::endl;
+    }
     fout.close();
     return true;
+}
+
+bool check(const std::string &dir) {
+    auto max_m = std::max_element(mags.begin(), mags.end());
+    for (long r = 0; r < matrix.NumRows(); r++) {
+        for (long c = 0; c < matrix.NumCols(); c++) {
+            long f = *max_m - mags[c];
+            matrix[r][c] *= NTL::power_long(10, f);
+        }
+    }
+    NTL::mat_ZZ Xt;
+    NTL::transpose(Xt, matrix);
+    NTL::mat_ZZ XtX;
+    NTL::mul(XtX, Xt, matrix);
+
+    XtX *= 2; // two clients
+
+    auto get_norm = [](const NTL::vec_ZZ &v) -> double {
+        NTL::ZZ sum(0);
+        for (auto itr = v.begin(); itr != v.end(); itr++)
+            sum += (*itr) * (*itr);
+        double d = NTL::to_double(sum);
+        return std::sqrt(d);
+    };
+
+    NTL::vec_ZZ u1, u2;
+    u1.SetLength(XtX.NumCols());
+    for (long i = 0; i < u1.MaxLength(); i++)
+        u1[i] = NTL::RandomBits_ZZ(10);
+    for (long t = 0; t < 10; t++) {
+        u2 = XtX * u1;
+        if (t + 1 < 10)
+            u1 = u2;
+    }
+    double ground = get_norm(u2) / get_norm(u1);
+
+    std::ifstream in(util::concatenate(dir, core::core_setting.evaluated_file));
+    double eigval;
+    in >> eigval;
+
+    if (std::abs(ground - eigval) < ground * 1e-5)
+        return true;
+    else
+        return false;
 }
 
 int main () {
@@ -63,16 +104,18 @@ int main () {
         return -1;
     if (!create_dir("test-ct-2"))
         return -1;
+    if (!create_dir("test-out"))
+        return -1;
 
-    core::ContextWrapper context;
-    core::SecKeyWrapper sk;
-    core::PubKeyWrapper pk;
-    // core::context_ptr context = std::make_shared<FHEcontext>(256, 8191, 3);
-    // buildModChain(*context, 7);
-    // core::sk_ptr sk = std::make_shared<FHESecKey>(*context);
-    // sk->GenSecKey(64);
-    // addSome1DMatrices(*sk);
-    // core::pk_ptr pk = std::make_shared<FHEPubKey>(*sk);
+    std::vector <long> Ms = {256, 512, 512};
+    std::vector <long> Ps = {8191, 8209, 1031};
+    std::vector <long> Rs = {1, 1, 2};
+    core::ContextWrapper context = {.ppe = std::make_shared <ppe::Context>(Ms, Ps, Rs), .single = nullptr};
+    context.ppe->buildModChain(25);
+    core::SecKeyWrapper sk = {.ppe = std::make_shared <ppe::SecKey>(*context.ppe), .single = nullptr};
+    sk.ppe->GenSecKey(64);
+    sk.ppe->addSome1DMatrices();
+    core::PubKeyWrapper pk = {.ppe = std::make_shared <ppe::PubKey>(*sk.ppe), .single = nullptr};
 
     PCAProtocol protocol;
     gen_content("test-ct-1");
@@ -81,5 +124,21 @@ int main () {
     gen_content("test-ct-2");
     if (!protocol.encrypt("test-ct-2/data.csv", "test-ct-2/", true, pk, context))
         return -1;
+
+    std::vector <std::string> inputDirs;
+    inputDirs.push_back("test-ct-1");
+    inputDirs.push_back("test-ct-2");
+    if (!protocol.evaluate(inputDirs, "test-out", {"3"}, pk, context)) {
+        std::cerr << "Failed in evaluate" << std::endl;
+        return -1;
+    }
+    if (!protocol.decrypt("test-out/" + core::core_setting.evaluated_file, ".", pk, sk, context)) {
+        std::cerr << "Failed in decrypt" << std::endl;
+        return -1;
+    }
+    if (!check(".")) {
+        std::cerr << "Failed in check" << std::endl;
+        return -1;
+    }
     return 0;
 }

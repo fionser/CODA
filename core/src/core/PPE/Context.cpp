@@ -1,5 +1,6 @@
 #include "core/PPE/Context.hpp"
 #include "HElib/FHEContext.h"
+#include "HElib/EncryptedArray.h"
 #include <cmath>
 #include <vector>
 #include <cassert>

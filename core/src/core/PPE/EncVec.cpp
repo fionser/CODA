@@ -175,14 +175,13 @@ private:
             std::cerr << "Invalid parameter for apply_crt\n";
             return false;
         }
-
         Vector tmp;
         tmp.SetLength(plains.front().length());
         for (long pos = 0; pos < tmp.length(); pos++) {
             std::vector <NTL::ZZ> alphas;
             alphas.reserve(plains.size());
             for (auto &plain : plains) {
-                if (plain.length()!=tmp.length()) {
+                if (plain.length() != tmp.length()) {
                     std::cerr << "Mismath length for apply_crt\n";
                     return false;
                 }
