@@ -18,7 +18,7 @@ public:
         operator =(oth);
     }
 
-    Imp &operator =(const Imp &oth) {
+    Imp &operator=(const Imp &oth) {
         ea_ = oth.ea_;
         primes_ = oth.primes_;
         pk_ = oth.pk_;
@@ -34,7 +34,7 @@ public:
     }
 
     bool pack(const Vector &vec) {
-#pragma omp parallel for
+        #pragma omp parallel for
         for (size_t i = 0; i < crtParts_.size(); i++)
             crtParts_.at(i).pack(vec);
         return true;
@@ -44,43 +44,42 @@ public:
         if (crtParts_.empty())
             return false;
         std::vector <Vector> alphas(crtParts_.size());
+        #pragma omp parallel for
         for (size_t i = 0; i < sk.partsNum(); i++)
             crtParts_.at(i).unpack(alphas.at(i), sk.get(i), false);
         return apply_crt(result, alphas, negate);
     }
 
     bool add(const std::shared_ptr <Imp> &oth) {
-#pragma omp parallel for
+        assert(pk_ == oth->pk_);
         for (size_t i = 0; i < crtParts_.size(); i++)
             crtParts_.at(i).add(oth->crtParts_.at(i));
         return true;
     }
 
     bool add(const Vector &c) {
-#pragma omp parallel for
         for (auto &crtPart : crtParts_)
             crtPart.add(c);
         return true;
     }
 
     bool sub(const std::shared_ptr <Imp> &oth) {
-#pragma omp parallel for
+        #pragma omp parallel for
         for (size_t i = 0; i < crtParts_.size(); i++)
             crtParts_.at(i).sub(oth->crtParts_.at(i));
         return true;
     }
 
     bool sub(const Vector &c) {
-#pragma omp parallel for
         for (auto &crtPart : crtParts_)
             crtPart.sub(c);
         return true;
     }
 
     bool mul(const Vector &c) {
-#pragma omp parallel for
-        for (auto &crtPart : crtParts_)
-            crtPart.mul(c);
+        #pragma omp parallel for
+        for (size_t i = 0; i < crtParts_.size(); i++)
+            crtParts_[i].mul(c);
         return true;
     }
 
@@ -91,16 +90,16 @@ public:
     }
 
     bool lowLevelMul(const std::shared_ptr <Imp> &oth) {
-#pragma omp parallel for
+        #pragma omp parallel for
         for (size_t i = 0; i < crtParts_.size(); i++)
             crtParts_.at(i).lowLevelMul(oth->crtParts_.at(i));
         return true;
     }
 
     bool reLinearize() {
-#pragma omp parallel for
-        for (auto &crtPart : crtParts_)
-            crtPart.reLinearize();
+        #pragma omp parallel for
+        for (size_t i = 0; i < crtParts_.size(); i++)
+            crtParts_[i].reLinearize();
         return true;
     }
 
@@ -120,9 +119,9 @@ public:
         return replicateAll(length());
     }
 
-    std::vector <EncVec> replicateAll(long width) const {
+    std::vector<EncVec> replicateAll(long width) const {
         std::vector <EncVec> replicated(length(), pk_);
-#pragma omp parallel for
+        #pragma omp parallel for
         for (size_t i = 0; i < replicated.size(); i++) {
             replicated.at(i) = replicate(i, width);
         }
@@ -148,12 +147,14 @@ public:
         int32_t part_num;
         in >> part_num;
         if (part_num != crtParts_.size()) {
-            std::cerr << "Restore mismatch type ppe::EncVec" << std::endl;
+            std::cerr << "Restore mismatch type ppe::EncVec.";
+            std::cerr << "Need " << crtParts_.size() << " but get " << part_num << std::endl;
             return false;
         }
+        bool ok = true;
         for (auto &part : crtParts_)
-            part.restore(in);
-        return true;
+            ok &= part.restore(in);
+        return ok;
     }
 private:
     void getEncryptedArrays(const PubKey &pk) {

@@ -28,6 +28,17 @@ public:
         operator=(oth);
     }
 
+    std::shared_ptr<Imp> copyAsEmpty() const {
+        auto dummy = std::make_shared<Imp>(pk_);
+        dummy->colNum_ = colNum_;
+        dummy->ea_ = ea_;
+        dummy->pk_ = pk_;
+        dummy->primes_ = primes_;
+        dummy->colNum_ = colNum_;
+        dummy->rowNum_ = rowNum_;
+        return dummy;
+    }
+
     Imp& operator=(const Imp &oth) {
         ea_ = oth.ea_;
         pk_ = oth.pk_;
@@ -151,6 +162,11 @@ public:
         return ret;
     }
 
+    void negate() {
+        for (size_t i = 0; i < crtParts_.size(); i++)
+            crtParts_[i].negate();
+    }
+
     bool dump(std::ostream &out) const {
         out << rowNum_ << " " << colNum_ << std::endl;
         for (const auto &part : crtParts_)
@@ -226,10 +242,14 @@ EncMat::EncMat(const EncMat &oth) {
     imp_ = std::make_shared<Imp>(*oth.imp_);
 }
 
-EncMat EncMat::zeros(long rowNums, long colNums, const PubKey &pk) {
+EncMat EncMat::copyAsEmpty() const {
+    EncMat dummy;
+    dummy.imp_ = imp_->copyAsEmpty();
+    return dummy;
 }
 
-EncMat &EncMat::operator=(const EncMat &oth) {
+EncMat& EncMat::operator=(const EncMat &oth) {
+    imp_ = std::make_shared<Imp>(*oth.imp_);
     return *this;
 }
 
@@ -281,6 +301,11 @@ EncVec EncMat::sym_dot(const EncVec &oth) const {
 
 EncMat& EncMat::mul(const Matrix &oth) {
     imp_->mul(oth);
+    return *this;
+}
+
+EncMat& EncMat::negate() {
+    imp_->negate();
     return *this;
 }
 

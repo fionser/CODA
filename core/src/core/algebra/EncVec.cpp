@@ -149,8 +149,8 @@ public:
             if (!lowLevelMul(oth))
                 return false;
             reLinearize();
-            return true;
         }
+        return true;
     }
 
     bool lowLevelMul(const std::shared_ptr<Imp> &oth) {
@@ -195,18 +195,33 @@ public:
         return true;
     }
 
+    bool mul(const NTL::ZZ &c) {
+        if (!empty()) {
+           long slots = std::min(ea_->size(), length_);
+           std::vector<long> constants(slots, NTL::to_long(c));
+           NTL::ZZX encoded;
+           ea_->encode(encoded, constants);
+           for (size_t i = 0; i < ctxts_.size(); i++) {
+               ctxts_[i]->multByConstant(encoded);
+           }
+        }
+        return true;
+    }
+
     bool negate() {
        for (auto &ctxt : ctxts_)
            ctxt->negate();
+       return true;
     }
 
     EncVec replicate(long i) const {
         return replicate(i, length());
     }
+
     //TODO(riku) to implement the partial replicate
     EncVec replicate(long i, long width) const {
         assert(i >= 0 && i < length());
-        assert(width >= 0 && width < length());
+        assert(width > 0 && width <= length());
 
         long N = NUM_PARTS(ea_->size(), width);
         long idx = i / ea_->size();
@@ -214,7 +229,6 @@ public:
         long replication_length = N > 1 ? ea_->size() : width;
         assert(idx >= 0 && idx < ctxts_.size());
         auto ctx = std::make_shared<Ctxt>(*ctxts_.at(idx));
-//        ::replicate(*ea_, *ctx, pos);
         core::replicate(ctx.get(), pos, replication_length, ea_);
 
         std::vector<ctxt_ptr> all_same(N);
@@ -345,7 +359,7 @@ private:
 };
 
 EncVec::EncVec(core::pk_ptr pk) {
-    imp_ = std::make_shared<EncVec::Imp>(pk);
+    imp_ = std::make_shared<Imp>(pk);
 }
 
 EncVec::EncVec(const EncVec &oth) {
@@ -397,6 +411,16 @@ EncVec& EncVec::mul(const Vector &c) {
     return *this;
 }
 
+EncVec& EncVec::mul(const long &c) {
+    imp_->mul(NTL::to_ZZ(c));
+    return *this;
+}
+
+EncVec& EncVec::mul(const NTL::ZZ &c) {
+    imp_->mul(c);
+    return *this;
+}
+
 EncVec& EncVec::pack(const Vector &vec) {
     imp_->pack(vec);
     return *this;
@@ -407,9 +431,7 @@ EncVec& EncVec::negate() {
     return *this;
 }
 
-bool EncVec::unpack(Vector &result,
-                    core::sk_ptr sk,
-                    bool negate) const {
+bool EncVec::unpack(Vector &result, core::sk_ptr sk, bool negate) const {
     return imp_->unpack(result, sk, negate);
 }
 

@@ -1,16 +1,16 @@
-#ifndef CORE_PROTOCOL_PCA_HPP
-#define CORE_PROTOCOL_PCA_HPP
+#ifndef CORE_PROTOCOL_LR_HPP
+#define CORE_PROTOCOL_LR_HPP
 #include "protocol.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
 typedef std::vector<std::string> StringList;
-class PCAProtocol : public Protocol {
+class LRProtocol : public Protocol {
 public:
-    PCAProtocol();
+    LRProtocol();
 
-    ~PCAProtocol() {}
+    ~LRProtocol() {}
 
     bool encrypt(const std::string &inputFilePath,
                  const std::string &outputDirPath,
@@ -40,4 +40,4 @@ private:
     std::shared_ptr<Imp> imp_;
 };
 
-#endif // CORE_PROTOCOL_PCA_HPP
+#endif // CORE_PROTOCOL_LR_HPP

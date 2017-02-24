@@ -283,10 +283,10 @@ bool PCAProtocol::genKeypair() const {
         return false;
     }
 
-    const std::vector<long> Ms = {16384};
-    const std::vector<long> Ps = {8191};
-    const std::vector<long> Rs = {1};
-    const long L = 10;
+    const std::vector<long> Ms = {27893, 27893, 27893, 27893, 27893, 27893, 27893, 27893};
+    const std::vector<long> Ps = { 4139,  7321,  5381,  5783,  4231,  4937,  5279, 6679};
+    const std::vector<long> Rs = {    3,     3,     3,     3,     3,     3,     3,    3};
+    const long L = 32;
 
     ppe::Context context(Ms, Ps, Rs);
     context.buildModChain(L);

@@ -85,6 +85,39 @@ public:
         return true;
     }
 
+    bool sym_dot(const std::shared_ptr<Imp> &oth) {
+        if (oth->aux_replicated_.empty()) { // no auxilary data is made
+            return dot(oth);
+        }
+        if (empty()) {
+            std::cerr << "WARN: empty object in " << __func__ << std::endl;
+            return false;
+        }
+        if (colNums() != rowNums()) {
+            std::cerr << "WARN: sym_dot need square matrix" << std::endl;
+            return false;
+        }
+        if (colNums() != oth->rowNums()) {
+            std::cerr << "WARN: mismatch matrix size in " << __func__ << std::endl;
+            return false;
+        }
+
+        return false;
+    }
+
+    bool make_auxilary() {
+        if (empty()) {
+            std::cerr << "WARN: Can not make auxilary for empty EncMat" << std::endl;
+            return false;
+        }
+        if (!aux_replicated_.empty()) return true;
+        aux_replicated_.resize(rowCnt_);
+        for (size_t r = 0; r < aux_replicated_.size(); r++) {
+            aux_replicated_[r] = ctxts_[r].replicateAll(rowCnt_);
+        }
+        return true;
+    }
+
     EncVec sym_dot(const EncVec &oth) const {
         assert(rowNums() == colNums() && colNums() == oth.length() && "Only for symmetric matrix");
         assert(!empty() && "EncVec::sym_dot not for empty object");
@@ -105,11 +138,20 @@ public:
             zeros.SetDims(mat.NumRows(), mat.NumCols());
             pack(zeros);
         } else if (rowCnt_ == mat.NumRows()) {
+            #pragma omp parallel for
             for (size_t r = 0; r < rowCnt_; r++)
                 ctxts_[r].mul(mat[r]);
         } else {
             std::cerr << "Mismatch matrix size in EncMat::mul()" << std::endl;
             return false;
+        }
+        return true;
+    }
+
+    bool mul(const NTL::ZZ &c) {
+        if(!empty()) {
+            for (size_t r = 0; r < rowCnt_; r++)
+                ctxts_[r].mul(c);
         }
         return true;
     }
@@ -172,6 +214,7 @@ public:
     bool negate() {
         for (auto &ctxt : ctxts_)
             ctxt.negate();
+        return true;
     }
 
     bool dump(std::ostream &out) const {
@@ -200,6 +243,7 @@ private:
     long rowCnt_;
     core::pk_ptr pk_;
     std::vector<EncVec> ctxts_;
+    std::vector<std::vector<EncVec>> aux_replicated_;
     const EncryptedArray *ea_ = nullptr;
 };
 
@@ -234,12 +278,31 @@ EncMat& EncMat::dot(const EncMat &oth) {
     return *this;
 }
 
+EncMat& EncMat::sym_dot(const EncMat &oth) {
+    imp_->sym_dot(oth.imp_);
+    return *this;
+}
+
+bool EncMat::make_auxilary() {
+    return imp_->make_auxilary();
+}
+
 EncVec EncMat::sym_dot(const EncVec &oth) const {
     return imp_->sym_dot(oth);
 }
 
 EncMat& EncMat::mul(const Matrix &c) {
     imp_->mul(c);
+    return *this;
+}
+
+EncMat& EncMat::mul(const NTL::ZZ &c) {
+    imp_->mul(c);
+    return *this;
+}
+
+EncMat& EncMat::mul(const long &c) {
+    imp_->mul(NTL::to_ZZ(c));
     return *this;
 }
 
@@ -271,6 +334,11 @@ bool EncMat::unpack(Matrix &result,
 
 const EncVec& EncMat::rowAt(int r) const {
     return imp_->rowAt(r);
+}
+
+EncMat& EncMat::negate() {
+    imp_->negate();
+    return *this;
 }
 
 bool EncMat::dump(std::ostream &out) const {

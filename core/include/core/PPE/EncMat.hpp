@@ -19,9 +19,11 @@ public:
 
 	EncMat(const EncMat &oth);
 
-	static EncMat zeros(long rowNums, long colNums, const PubKey &pk);
+    EncMat copyAsEmpty() const;
 
 	EncMat& operator=(const EncMat &oth);
+
+    EncMat& negate();
 
 	long rowNums() const;
 
@@ -50,6 +52,9 @@ public:
 	bool dump(std::ostream &out) const;
 
 	bool restore(std::istream &in);
+
+private:
+    EncMat() : imp_(nullptr) {}
 
 private:
 	class Imp;

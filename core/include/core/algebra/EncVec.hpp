@@ -1,10 +1,10 @@
 #ifndef CORE_ALGEBRA_ENCVEC_HPP
 #define CORE_ALGEBRA_ENCVEC_HPP
 #include "core/coda.hpp"
+#include "core/COWPtr.hpp"
 #include <NTL/vec_ZZ.h>
 #include <iosfwd>
 #include <vector>
-#include <memory>
 typedef NTL::vec_ZZ Vector;
 double norm(const Vector &vec);
 namespace core {
@@ -35,6 +35,11 @@ public:
 	EncVec& sub(const Vector &c);
 
     EncVec& mul(const Vector &c);
+
+    EncVec& mul(const NTL::ZZ &c);
+
+    EncVec& mul(const long &c);
+
     // equals to lowLevelMul + reLinearize
     EncVec& mul(const EncVec &oth);
 
@@ -57,6 +62,7 @@ public:
     bool dump(std::ostream &out) const;
 
     bool restore(std::istream &in);
+
 private:
 	class Imp;
     friend class Imp;

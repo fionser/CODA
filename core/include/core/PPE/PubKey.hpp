@@ -16,6 +16,8 @@ public:
 
     ~PubKey() {}
 
+    bool operator==(const PubKey &oth) const;
+
     const raw_pk_ptr get(int idx) const { return pks_.at(idx); }
 
     size_t partsNum() const { return pks_.size(); }

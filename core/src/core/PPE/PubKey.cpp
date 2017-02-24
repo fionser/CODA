@@ -29,4 +29,8 @@ bool PubKey::restore(std::istream &istream, const Context &context) {
     }
     return true;
 }
+
+bool PubKey::operator==(const PubKey &oth) const {
+    return pks_ == oth.pks_;
+}
 } // name ppe

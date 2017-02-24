@@ -25,7 +25,7 @@ public:
     EncMat& pack(const Matrix &mat);
 
 	bool unpack(Matrix &result, core::sk_ptr sk, bool negate = false) const;
-    
+
     const EncVec& rowAt(int r) const;
 
     EncMat& add(const EncMat &oth);
@@ -35,13 +35,25 @@ public:
     EncMat& sub(const EncMat &oth);
 
     EncMat& sub(const Matrix &c);
-
+    /// this * oth
     EncMat& dot(const EncMat &oth);
+    /// this * oth, but this is symmetric matrix
+    /// faster when oth is with the auxilary made.
+    /// this * oth equals to oth * this since this is symmetric
+    EncMat& sym_dot(const EncMat &oth);
+
+    bool make_auxilary();
 
     EncVec sym_dot(const EncVec &oth) const;
 
     EncMat& mul(const Matrix &oth);
-    
+
+    EncMat& mul(const NTL::ZZ &c);
+
+    EncMat& mul(const long &c);
+
+    EncMat& negate();
+
 	bool dump(std::ostream &out) const;
 
 	bool restore(std::istream &in);
