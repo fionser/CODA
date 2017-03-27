@@ -10,6 +10,8 @@ The statistics supported by CODA:
 * Principle component analysis
 * Linear regression
 
+This is project is based on this [paper](https://www.internetsociety.org/doc/using-fully-homomorphic-encryption-statistical-analysis-categorical-ordinal-and-numerical-data).
+
 ## Outline of CODA
 ![coda-outline](coda-outline.svg){width  = 35%}
 In CODA, we have three stakeholders: analyst, data contributor, cloud server.
