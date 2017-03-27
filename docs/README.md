@@ -11,4 +11,4 @@ The statistics supported by CODA:
 * Linear regression
 
 ## Outline
-[!coda-outline](coda-outline.svg)
+![coda-outline](coda-outline.svg)
