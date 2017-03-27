@@ -7,6 +7,8 @@ The statistics supported by CODA:
 * Histogram
 * Contingency table (cell-suppression supported)
 * Percentile
-* Principle Component Analysis
+* Principle component analysis
 * Linear regression
 
+## Outline
+[!coda-outline](coda-outline.svg)
