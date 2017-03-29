@@ -13,7 +13,7 @@ The statistics supported by CODA:
 This is project is based on this [paper](https://www.internetsociety.org/doc/using-fully-homomorphic-encryption-statistical-analysis-categorical-ordinal-and-numerical-data).
 
 ## Outline of CODA
-![coda-outline](coda-outline.svg){width  = 35%}
+![coda-outline](coda-outline.svg)
 In CODA, we have three stakeholders: analyst, data contributor, cloud server.
 
 **Analyst** is an entity that
@@ -32,9 +32,100 @@ In CODA, we have three stakeholders: analyst, data contributor, cloud server.
 * provdies computational resources and storage volume for computations;
 * receives requests from the analyst and do the responding computation on ciphertexts that collected from the data contributors.
 
+The work flows in CODA is as follows.
+
+1. The analyst generates a key-pair using fully homomorphic encryption.
+2. The analyst sends a request to the cloud server to open up a computing _session_, attached with a specification file (called meta file)
+for describing data format, parameters etc.
+3. The analyst sends his public encrytion key to the cloud server.
+4. The data contributor sends a request to the cloud server to _join_ the analyst's session, and obtains the analyst's encryption key from the cloud.
+5. The data contributor preprocesses and encrypts the data according to analyst's specification file.
+6. The data contributor uploads the ciphertexts to the cloud.
+7. When all the data contributors have uploaded the ciphertexts, the analyst sends a request to the cloud to start the homomorphic computation.
+8. The cloud performs the computation and sends the resulting ciphertexts to the analyst.
+9. The analyst decrypts the ciphertexts received from the cloud.
+
 ### Notice
 
 * In advance, the analyst and data contributors should have some aggrements about the data, e.g., the precision of fixed-point values, 
     the ways of pre-processing the plain data.
 * Since the analyst holds the decryption key, the data contributors need to trust the analyst and the cloud are collusion-free. In other words,
     the cloud server will not give the ciphertexts that collected from the data contributors to the analyst.
+* We assume that the analyst knows how many data contributors will join his session.
+
+## Installation
+CODA leverages the [HElib](https://github.com/shaih/HElib) for fully homomorphic operations. 
+
+*Requirements*
+
+* Linux (g++ 4.9+) Mac OSX (llvm 6.1+) 
+* cmake, make, perl, m4
+
+*Build*
+
+We provide a script `build.sh` for building CODA from scratch. The script will also ask you to set up the number of threads for multithreads programs (for Linux platform only).
+
+## Components of CODA
+In CODA, we have three executable components, _core_, _client_ and _server_. 
+The _core_ mainly performs homomorphic operations including key generation, encryption, decryption and homomorphic computation etc.
+
+The _client_ does the job for data contributors and the analyst. For instance, sending request to the cloud for opening or joining  a session; uploading or receving ciphertexts between the cloud.
+
+The _server_ does the job on the cloud side. For example, listening the request from the clients.
+
+These components are totall isolated and thus can work alone. To correctly join together, we have an aggrement between these three components: the directory structure. We are going to give some demo examplesto show the work flow of CODA and how these three components might work.
+
+For instance, Alice (the analyst) opens a session (named SEC), and he is going to invite Bob and Clare to join his session. When Alice sends a request to the cloud server (by using the _client_ command), a directory will be created on the cloud side as follows.
+
+```
+Alice/
+└── SEC
+    ├── data
+    ├── meta
+    │   ├── meta.ini
+    │   └── schema.csv
+    ├── result
+    ├── Bob 
+    └── Clare
+```
+<!--TODO description for these folders -->
+
+In the meantime, on Alice side, the _client_ command will create a working directory for Alice like
+```
+SEC/
+├── data
+│   ├── enc
+│   │   ├── result
+│   │   └── uploading
+│   └── plain
+│       ├── result
+│       └── uploading
+└── meta
+    ├── meta.ini
+    └── schema.csv
+```
+Folder `enc` holds the ciphertexts, including ciphertexts to be uploaded and ciphertexts that received from the cloud. Folder `plain` holds the plaintexts, including data to be encrypted, and decrypted result. Files `meta.ini` and `schema.csv` in folder `meta` are some meta inforamtion and will be discussed later.
+
+
+Also, Alice can open more sessions. For instance, Alice opens a new session `SEC_2`. This time `Daniel` and `Ella` are invited. After Alice sending the second request to the cloud, the directory on the cloud side becomes 
+```
+Alice/
+├── SEC
+│   ├── data
+│   ├── meta
+│   │   ├── meta.ini
+│   │   └── schema.csv
+│   ├── result
+│   ├── Bob
+│   └── Clare
+└── SEC_2
+    ├── data
+    ├── meta
+    │   ├── meta.ini
+    │   └── schema.csv
+    ├── result
+    ├── Daniel
+    └── Ella
+```
+
+
