@@ -1,8 +1,3 @@
----
-layout: index
-use_math: true
----
-
 Crytographically secure of statistical Data Analysis (CODA)
 ==
 CODA is built for doing secure outsourcing, specifically for the computation of statistics.
