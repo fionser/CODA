@@ -1,18 +1,6 @@
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-TeX: {
-equationNumbers: {
-autoNumber: "AMS"
-}
-},
-tex2jax: {
-inlineMath: [ ['$','$'], ['\(', '\)'] ],
-displayMath: [ ['$$','$$'] ],
-processEscapes: true,
-}
-});
-</script>
-<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+layout: index
+use_math: true
+
 Crytographically secure of statistical Data Analysis (CODA)
 ==
 CODA is built for doing secure outsourcing, specifically for the computation of statistics.
