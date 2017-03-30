@@ -128,9 +128,11 @@ Alice/
     └── Ella
 ```
 
-##Schema
+## Schema
 In CODA, we leverage a schema file to specify howo to pre-process the data. Here is an example of the schema file.
+
 ![schema](schema.png)
+
 We have 6 attributes here (5 categorical attributes, 1 numerical attributes). 
 This schema file specify how we quantify these non-numerical values. Take the first attribute _sex_ as an example.
 The 1st row `sex` is the label of this attribute. The 2nd row `category` indicates this is a categorical attribute.
@@ -140,9 +142,7 @@ value as numerical value `1`, and encode the `female` value as value `2`. These 
 For numerical values, we need to specify the precision, because we use fixed-point values to represent real numbers.
 The `3` in the `blood` column indicates that we preserve 3 digits for this attribute. More specifically, for a real value $x$ we convert to $\lceil x \times 10^3 \rfloor$.
 
-
-
-##Usages
+## Usages
 We start with the _server_ executable, which is run on the cloud side. 
 We type `./server <port>` to setup a program for listening requests (on the specified port number) listen from the data contributors and analyst.
 *Notice that*, the current directory will become a working directory, and thus _server_ will store the ciphertexts collected from the data contributors on
