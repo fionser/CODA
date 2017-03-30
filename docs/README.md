@@ -128,4 +128,36 @@ Alice/
     └── Ella
 ```
 
+##Schema
+In CODA, we leverage a schema file to specify howo to pre-process the data. Here is an example of the schema file.
+![schema](./schema.png)
+We have 6 attributes here (5 categorical attributes, 1 numerical attributes). 
+This schema file specify how we quantify these non-numerical values. Take the first attribute _sex_ as an example.
+The 1st row `sex` is the label of this attribute. The 2nd row `category` indicates this is a categorical attribute.
+The 3rd row `2` means this attribute can take two values, i.e., `male` and `female`. In this schema file, we encode the `male`
+value as numerical value `1`, and encode the `female` value as value `2`. These converting rules are specifed in Row 4 to Row 7. Moreover, missing values and unknown values will be encoded as `0`. 
 
+For numerical values, we need to specify the precision, because we use fixed-point values to represent real numbers.
+The `3` in the `blood` column indicates that we preserve 3 digits for this attribute. More specifically, for a real value $x$ we convert to $\lceil x \times 10^3 \rfloor$.
+
+
+
+##Usages
+We start with the _server_ executable, which is run on the cloud side. 
+We type `./server <port>` to setup a program for listening requests (on the specified port number) listen from the data contributors and analyst.
+*Notice that*, the current directory will become a working directory, and thus _server_ will store the ciphertexts collected from the data contributors on
+the working directory.
+
+The _client_ executable is much functional. We type `./client` to see its usage:
+```
+Usage :
+      : ./client init <session_name> <protocol> <schema_file_path> <user_name ...>
+      : ./client send_key <session_name>
+      : ./client join <hostname> <portno> <session_name> <analyst_name> <user_name>
+      : ./client send_data <hostname> <portno> <session_name> <analyst_name> <user_name>
+      : ./client receive_result <hostname> <portno> <session_name> <analyst_name>
+      : ./client conv [-e] <session_name> <csv_data_file_path>
+      : ./client conv [-d] <session_name> <result_file_path>
+      : ./client d_net <hostname> <port_no>
+```
+The first five commands are basically the workflow described before. The last three commands are utility functions.
