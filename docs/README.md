@@ -12,9 +12,7 @@ processEscapes: true,
 }
 });
 </script>
-<script type="text/javascript"
-src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-    </script>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 Crytographically secure of statistical Data Analysis (CODA)
 ==
 CODA is built for doing secure outsourcing, specifically for the computation of statistics.
@@ -147,7 +145,7 @@ Alice/
 
 ##Schema
 In CODA, we leverage a schema file to specify howo to pre-process the data. Here is an example of the schema file.
-![schema](./schema.png)
+![schema](schema.png)
 We have 6 attributes here (5 categorical attributes, 1 numerical attributes). 
 This schema file specify how we quantify these non-numerical values. Take the first attribute _sex_ as an example.
 The 1st row `sex` is the label of this attribute. The 2nd row `category` indicates this is a categorical attribute.
