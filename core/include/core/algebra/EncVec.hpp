@@ -1,7 +1,6 @@
 #ifndef CORE_ALGEBRA_ENCVEC_HPP
 #define CORE_ALGEBRA_ENCVEC_HPP
 #include "core/coda.hpp"
-#include "core/COWPtr.hpp"
 #include <NTL/vec_ZZ.h>
 #include <iosfwd>
 #include <vector>

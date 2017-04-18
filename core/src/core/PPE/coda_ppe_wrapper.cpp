@@ -1,6 +1,6 @@
 #include "core/coda.hpp"
 #include "HElib/FHE.h"
-#include "HElib/FHEcontext.h"
+#include "HElib/FHEContext.h"
 class context_ptr {
 
 };
