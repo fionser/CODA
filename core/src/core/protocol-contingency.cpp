@@ -326,7 +326,7 @@ bool ProtocolImp::doEncrypt(std::ifstream &fin,
         } else {
             fout.close();
             file_nr += 1;
-            fout = std::ofstream(makePath(outputDirPath, file_nr), std::ios::binary);
+            fout.open(makePath(outputDirPath, file_nr), std::ios::binary);
             assert(fout.is_open() && "Can not create new file");
             fout << ctx;
             ctx_dumped = 1;

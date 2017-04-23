@@ -472,7 +472,8 @@ bool PercentileProtocol::evaluate(const StringList &inputDirs,
 }
 
 core::FHEArg PercentileProtocol::parameters() const {
-    core::FHEArg arg = { .p = 8191, .m = 16384, .r = 1, .L = 8 };
+    /// NOTE: should keep the order as the same order in FHEArg.
+    core::FHEArg arg = { .m = 16384, .p = 8191, .r = 1, .L = 8 };
     return arg;
 }
 

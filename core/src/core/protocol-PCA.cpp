@@ -8,6 +8,7 @@
 #include <list>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 #include <core/coda.hpp>
 
 typedef NTL::mat_ZZ Matrix;
