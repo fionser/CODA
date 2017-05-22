@@ -1,4 +1,4 @@
-Crytographically secure of statistical Data Analysis (CODA)
+Crytographically Secure Statistical Data Analysis (CODA)
 ==
 CODA is built for doing secure outsourcing, specifically for the computation of statistics.
 The statistics supported by CODA:
