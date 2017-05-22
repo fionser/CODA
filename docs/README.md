@@ -98,4 +98,4 @@ workspace
     └── evaluation_result
         └── FILE_1
 ```
-* We can see the mean from `File_result`: *cat File_result*.
+* We can see the mean from `File_result`: **cat File_result**.
