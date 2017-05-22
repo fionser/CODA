@@ -38,7 +38,7 @@ workspace/
 ```
 
 * add this line `protocol PROT_MEAN` to the `meta.init` file.
-* then run *core gen meta/meta.init* to generate the publick key and private key. The `meta` folder then becomes
+* then run _core gen meta/meta.init_ to generate the publick key and private key. The `meta` folder then becomes
 ```
 workspace/meta/
 ├── fhe_key.ctxt
@@ -59,9 +59,9 @@ workspace/meta/
 ```
 Here `#4` indicates that there are four attributes of the numerical data. For instance, we can have the `age`, `incomes`, `weight` and `height` attributes. All these values should be integer. To handle float reals in CODA, we might need some pre-processing. For example, to save 2-digit precision, we have convert the float value `1.245` to the integer `125`, by multipying `10^2` to the float values.
 
-* Run the command to encrypt Alice's plain data: *core enc clients/Alice/input1.csv server/encrypted_clients/Alice/ meta/meta.init*. The ciphertexts are stored in the folder `server/encrypted_clients/Alice`. Indeed, in a real applicaiton, the ciphertexts are generated on the Alice's side, and then transferred to the server through the network. We in here, omit these kinds of network transferring.
+* Run the command to encrypt Alice's plain data: _core enc clients/Alice/input1.csv server/encrypted_clients/Alice/ meta/meta.init_. The ciphertexts are stored in the folder `server/encrypted_clients/Alice`. Indeed, in a real applicaiton, the ciphertexts are generated on the Alice's side, and then transferred to the server through the network. We in here, omit these kinds of network transferring.
 
-  Also, do the same encryption on Bob's data. *core enc clients/Bob/input2.csv server/encrypted_clients/Bob/ meta/meta.init*. Now the folders on the server's side become 
+  A_so, do the same encryption on Bob's data. _core enc clients/Bob/input2.csv server/encrypted_clients/Bob/ meta/meta.init_. Now the folders on the server's side become 
   ```
   server/
   ├── encrypted_clients
@@ -73,9 +73,9 @@ Here `#4` indicates that there are four attributes of the numerical data. For in
   ```
   The `FILE_1` are the encryption of Alice's and Bob's plain data.
 
-* Run the command to calculate the mean on the ciphertexts: *core eva server/encrypted_clients/ server/evaluation_result/ meta/meta.init -p PROT_MEAN*. This command will do the evaluation from ciphertexts that stored under `sever/encrypted_clients/`. We use the flag `-p PROT_MEAN` to tell CODA to evaluate the mean protocol. The computation result is stored in file `server/evaluation_result/FILE_1`, which is also a ciphertext.
+* Run the command to calculate the mean on the ciphertexts: _core eva server/encrypted_clients/ server/evaluation_result/ meta/meta.init -p PROT_MEAN_. This command will do the evaluation from ciphertexts that stored under `sever/encrypted_clients/`. We use the flag `-p PROT_MEAN` to tell CODA to evaluate the mean protocol. The computation result is stored in file `server/evaluation_result/FILE_1`, which is also a ciphertext.
 
-* Run the command to decrypt the ciphertext and get the mean of Alice's and Bob's data: *core dec server/evaluation_result/FILE_1 ./ meta/meta.init*. The fourth argument `./` means that the decrypted file (i.e., `File_result`) will put in the current directory. To this end, the workspace folder becomes
+* Run the command to decrypt the ciphertext and get the mean of Alice's and Bob's data: _core dec server/evaluation_result/FILE_1 ./ meta/meta.init_. The fourth argument `./` means that the decrypted file (i.e., `File_result`) will put in the current directory. To this end, the workspace folder becomes
 ```
 workspace
 ├── File_result
@@ -98,4 +98,4 @@ workspace
     └── evaluation_result
         └── FILE_1
 ```
-* We can see the mean from `File_result`: **cat File_result**.
+* We can see the mean from `File_result`: _cat File_result_.
