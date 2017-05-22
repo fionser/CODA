@@ -136,7 +136,7 @@ bool MeanProtocol::ProtocolImp::doEncrypt(const std::string &inputFilePath,
         } else {
             fout.close();
             file_nr += 1;
-            fout = std::ofstream(makePath(outputDirPath, file_nr), std::ios::binary);
+            fout.open(makePath(outputDirPath, file_nr), std::ios::binary);
             assert(fout.is_open() && "Can not create new FILE_* file");
             fout << ctx;
             ctx_dumped = 1;
@@ -318,7 +318,7 @@ doEvaluate(const std::vector<std::string> &inputDirs,
     assert(content.nr_records == nr_records && "Seems cipher files are invalid");
     fout.close();
 
-    fout = std::ofstream(makePath(outputDir, 1), std::ios::binary);
+    fout.open(makePath(outputDir, 1), std::ios::binary);
     if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create new file in {0}", outputDir);
         return false;

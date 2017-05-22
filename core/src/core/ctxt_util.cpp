@@ -72,14 +72,14 @@ void replicate(Ctxt *out, const int pos ,const int length, const EncryptedArray 
     for (long j = k-2; j >= 0; j--) {
         // e -> 2*e
         Ctxt tmp = *out;
-        ea->rotate(tmp, e); 
+        ea->rotate(tmp, e);
         out->addCtxt(tmp);
         e <<= 1;
 
-        long b = test_bit(length, j); 
+        long b = test_bit(length, j);
         // e -> e+b
         if (b) {
-            ea->rotate(*out, 1); 
+            ea->rotate(*out, 1);
             out->addCtxt(ctxt_orig);
             e++;
         }
@@ -164,7 +164,7 @@ bool dumpCtxts(const std::vector<Ctxt> &ctxts,
         } else {
             fout.close();
             file_nr += 1;
-            fout = std::ofstream(makePath(outputDirPath, file_nr), std::ios::binary);
+            fout.open(makePath(outputDirPath, file_nr), std::ios::binary);
             if (!fout.is_open())
                 return false;
             fout << ctx;
