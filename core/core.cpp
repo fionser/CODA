@@ -14,12 +14,11 @@ static const char USAGE[] =
      core gen <meta file path>
      core enc <input file path> <output dir path> <meta file path> [-l type]
      core dec <input file path> <output dir path> <meta file path>
-     core eva <data dir path> <output dir path> <meta file path> -p <protocol> [<data> ...]
+     core eva <data dir path> <output dir path> <meta file path> [<data> ...]
 
    Options:
      -h --help  Show Help.
      -l --local Set Local Computation
-     -p --protocol Set Protocol
      --version  Show Version.
 )";
 

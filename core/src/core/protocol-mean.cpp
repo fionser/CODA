@@ -293,7 +293,7 @@ doEvaluate(const std::vector<std::string> &inputDirs,
            core::pk_ptr pk,
            core::context_ptr context) const
 {
-    auto resultFile = util::concatenate(outputDir, "FILE_1");
+    auto resultFile = util::concatenate(outputDir, core::core_setting.evaluated_file);
     std::ofstream fout(resultFile, std::ios::binary);
     if (!fout.is_open()) {
         L_WARN(global::_console, "Can not create {0}", resultFile);
@@ -335,6 +335,7 @@ localEvaluate(const std::vector<std::string> &inputDirs,
               core::pk_ptr pk,
               core::context_ptr context) const
 {
+    L_WARN(global::_console, "Not implemented yet");
     return false;
 }
 
