@@ -147,7 +147,10 @@ in the contingency table. For this threshold `2`, the computed contingency is as
 Since there only two records of `(1 2)`, then this values will be hidden. We note that, the processing is done inside the ciphertexts.
 Thus, CODA does not aware of the actual numbers of `(1 2)`.
 
-After we decrypt the evaluation_result as _core dec server/evaluation_result/File_result . meta/meta.init_. 
+After we decrypt the evaluation_result as 
+
+_core dec server/evaluation_result/File_result . meta/meta.init_. 
+
 The computed contingency table is 
 
 ```
